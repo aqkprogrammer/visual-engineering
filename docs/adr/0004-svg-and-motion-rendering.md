@@ -17,9 +17,13 @@ Diagrams must be crisp at any size, themeable in light and dark, accessible, ser
 
 ## Decision
 
-Visualizations are SVG components styled only with design tokens and animated with Motion using transform and opacity. React Flow is reserved for the drag-and-connect system design builder and is lazy-loaded on that route. Individual `d3-*` modules may be used where scales or shapes genuinely help. Mermaid is deferred.
+Visualizations are SVG components styled only with design tokens. Movement between frames uses plain CSS transitions on `transform`, timed by a `--frame-ms` custom property the player sets (and sets to `0ms` under reduced motion). React Flow is reserved for the drag-and-connect system design builder and is lazy-loaded on that route. Individual `d3-*` modules may be used where scales or shapes genuinely help. Mermaid is deferred.
 
 ## Consequences
 
 - Every diagram states its meaning in text and never relies on colour alone (icons, line styles and labels carry state).
 - Very large simulations need aggregation rather than one SVG element per entity.
+
+## Update (Phase 2)
+
+Motion was planned for tweening, but CSS transitions proved sufficient: the frames are precomputed, so only position changes need interpolating. The `motion` dependency was removed rather than shipped unused. It can be reintroduced if a visualization needs layout animation or gestures.

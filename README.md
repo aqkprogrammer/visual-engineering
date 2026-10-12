@@ -19,6 +19,8 @@ built to be watched, changed and broken, not just read.
   &nbsp;·&nbsp;
   <a href="https://aqkprogrammer.github.io/visual-engineering/system-design/load-balancing/">▶️ Start the first lesson</a>
   &nbsp;·&nbsp;
+  <a href="https://aqkprogrammer.github.io/visual-engineering/playground/">🕹️ Playground</a>
+  &nbsp;·&nbsp;
   <a href="#-curriculum">🧭 Curriculum</a>
   &nbsp;·&nbsp;
   <a href="#-roadmap">🗺️ Roadmap</a>
@@ -32,6 +34,7 @@ built to be watched, changed and broken, not just read.
 ![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 ![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8?logo=tailwindcss&logoColor=white)
 ![Accessibility checked with axe in CI](https://img.shields.io/badge/a11y-axe_checked_in_CI-5b8def)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2ea44f)](LICENSE)
 
 </div>
 
@@ -48,6 +51,18 @@ Most explanations of how systems work are static — a diagram and a wall of tex
 | 📚 **Sourced, dated content** | Every lesson cites official docs and specs and shows when it was last reviewed. Analogies are marked as analogies. |
 | ♿ **Accessible by default** | Keyboard-operable, screen-reader friendly, reduced-motion aware, never colour-only — checked by axe on every page type. |
 | 🔓 **Free, private, open** | No account, no API key, no tracking. Fonts are self-hosted at build time. |
+
+## 🕹️ Playground
+
+Every demo runs on the same deterministic simulation engine: play, pause, step, scrub, change the speed, inject failures — and the same actions always produce the same result. Each one lists the simplifications it makes.
+
+<!-- playground:start -->
+| Demo | Type | What you can do |
+|---|---|---|
+| [**Load balancer simulator**](https://aqkprogrammer.github.io/visual-engineering/playground/load-balancer/) | 🧪 Simulation · System Design | Send traffic through a load balancer, crash servers, switch routing algorithms and watch health checks, queues and tail latency respond. |
+| [**TLS 1.3 handshake, step by step**](https://aqkprogrammer.github.io/visual-engineering/playground/tls-handshake/) | 👣 Walkthrough · Networking & Web | Walk through every message of a TLS 1.3 handshake, see what each side knows at each moment, and compare it with what an eavesdropper can read. |
+| [**Kubernetes self-healing**](https://aqkprogrammer.github.io/visual-engineering/playground/kubernetes-self-healing/) | 🧪 Simulation · Containers & Kubernetes | Crash containers, delete pods and take down a node, then watch the kubelet, ReplicaSet, scheduler and node controller each play their part. |
+<!-- playground:end -->
 
 ## 🎓 How every lesson teaches
 
@@ -163,7 +178,7 @@ flowchart LR
 
 - [x] **Phase 0 — Plan.** Requirements, taxonomy, architecture, design direction → [`docs/PLAN.md`](docs/PLAN.md)
 - [x] **Phase 1 — Foundation.** Static site, design system, content pipeline, first lesson, tests, CI, GitHub Pages
-- [ ] **Phase 2 — Simulation engine.** Play / pause / step / speed controls, failure injection, reduced-motion step mode; demos for load balancing, the TLS handshake and Kubernetes self-healing
+- [x] **Phase 2 — Simulation engine.** Deterministic engine and shared player (play, pause, step, scrub, speed, event log, keyboard shortcuts, reduced motion); load balancer, TLS 1.3 and Kubernetes self-healing demos
 - [ ] **Phase 3 — First 12 lessons** across system design, AI, containers, networking and CS
 - [ ] **Phase 4 — Platform.** Search, learning paths, glossary, quizzes, interview hub, local progress
 - [ ] **Phase 5 — Quality.** Accessibility audit, performance budgets, contributor guide
@@ -189,7 +204,7 @@ flowchart LR
 
 **Next.js 16** (App Router, fully static) · **React 19** · **TypeScript 6** (strict) · **Tailwind CSS 4** with OKLCH design tokens · **MDX** + **Zod** · **Shiki** (build-time highlighting) · **Vitest** · **Playwright** + **axe-core** · **GitHub Actions**
 
-Every route is prerendered — there is no server. Read the [architecture overview](docs/ARCHITECTURE.md) and the [decision records](docs/adr/) for the why behind each choice.
+Every route is prerendered — there is no server. Simulations are pure TypeScript models replayed from a seed plus a log of your actions, so frames are reproducible and testable without a browser. Read the [architecture overview](docs/ARCHITECTURE.md) and the [decision records](docs/adr/) for the why behind each choice.
 
 <details>
 <summary><b>📁 Project structure</b></summary>
@@ -199,15 +214,19 @@ app/                     routes and layouts (all statically generated)
 components/
   layout/                header, footer, breadcrumbs, theme toggle
   lessons/               lesson building blocks used from MDX
-  visualizations/        diagrams (simulation engine arrives in Phase 2)
+  visualizations/
+    player/              shared player: controls, timeline, event log, playback hooks
+    scenes/              one folder per demo: SVG scene + interactive container
 content/
   domains.ts             curriculum: domains → modules → planned topics
+  playground.ts          playground demos and their "try this" prompts
   lessons/<domain>/<slug>/
     meta.ts              typed metadata (validated)
     index.mdx            lesson body
 lib/
   content/               schemas, validation, MDX analysis, catalog queries
   design/                design tokens and colour-contrast maths
+  simulation/            engine (seeded RNG, runner, playback) and models — no React
 scripts/
   content.ts             validates content, generates the registry
   readme.ts              generates this README's banner and curriculum
@@ -277,6 +296,8 @@ Then open http://localhost:3000.
 
 Drafts are visible in `pnpm dev` only. Reading time and the table of contents are generated for you.
 
+Building an interactive simulation? Follow [docs/SIMULATION-GUIDE.md](docs/SIMULATION-GUIDE.md): a pure model, an SVG scene and a small container, with the shared player doing the rest.
+
 </details>
 
 ## ✅ Quality gates
@@ -287,7 +308,7 @@ Drafts are visible in `pnpm dev` only. Reading time and the table of contents ar
 | Formatting | Prettier | CI |
 | Strict types | TypeScript 6 | CI |
 | Content schema, cross-references, prerequisite cycles | Zod + custom validation | every build |
-| Unit and component tests, WCAG contrast of every design token | Vitest + Testing Library | CI |
+| Unit and component tests: simulation models, playback rules, player controls, WCAG contrast of every design token | Vitest + Testing Library | CI |
 | Journeys, 404s, keyboard, theme, no horizontal scroll — desktop and mobile | Playwright | CI |
 | WCAG 2.2 A/AA scan of every page type in both themes | axe-core | CI |
 | Production dependency audit | pnpm audit | CI |
@@ -300,4 +321,4 @@ Corrections, new lessons and simulation ideas are welcome — open an issue or a
 
 ## 📄 License
 
-**Not yet chosen.** Until a license file is added, default copyright applies and the code and content are not licensed for reuse. Proposed: MIT for code, CC BY 4.0 for lesson content.
+[MIT](LICENSE) © 2026 Abdul Qadir Khan — covering the code, lessons and diagrams alike.

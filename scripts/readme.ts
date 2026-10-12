@@ -2,7 +2,7 @@
  * Generates the README's visual assets and curriculum section from the real project data:
  *
  *   docs/assets/hero-dark.svg, hero-light.svg   animated banner, coloured from app/globals.css
- *   README.md  <!-- curriculum:start --> … <!-- curriculum:end -->   built from content/
+ *   README.md  curriculum and playground blocks (between <!-- name:start/end --> markers), from content/
  *
  *   pnpm readme           regenerate
  *   pnpm readme --check   exit non-zero if anything is out of date (used in CI)
@@ -201,7 +201,29 @@ async function curriculum(): Promise<string> {
   ].join("\n");
 }
 
+// ---------------------------------------------------------------- playground section
+
+async function playgroundSection(): Promise<string> {
+  const { playground, domains } = await loadCatalog();
+  const rows = playground.map((demo) => {
+    const domain = domains.find((d) => d.id === demo.domain)?.title ?? demo.domain;
+    const kind = demo.kind === "simulation" ? "🧪 Simulation" : "👣 Walkthrough";
+    return `| [**${demo.title}**](${site.liveUrl}/playground/${demo.slug}/) | ${kind} · ${domain} | ${demo.summary} |`;
+  });
+  return ["| Demo | Type | What you can do |", "|---|---|---|", ...rows].join("\n");
+}
+
 // ---------------------------------------------------------------- write / check
+
+function replaceBlock(readme: string, name: string, content: string): string {
+  const start = `<!-- ${name}:start -->`;
+  const end = `<!-- ${name}:end -->`;
+  const [before, rest] = readme.split(start);
+  const after = rest?.split(end)[1];
+  if (before === undefined || after === undefined)
+    throw new Error(`README ${name} markers missing`);
+  return `${before}${start}\n${content}\n${end}${after}`;
+}
 
 async function main() {
   const outputs = new Map<string, string>([
@@ -211,13 +233,8 @@ async function main() {
 
   const readmePath = root("README.md");
   const readme = await readFile(readmePath, "utf8");
-  const start = "<!-- curriculum:start -->";
-  const end = "<!-- curriculum:end -->";
-  const [before, rest] = readme.split(start);
-  const after = rest?.split(end)[1];
-  if (before === undefined || after === undefined)
-    throw new Error("README curriculum markers missing");
-  outputs.set(readmePath, `${before}${start}\n${await curriculum()}\n${end}${after}`);
+  const withCurriculum = replaceBlock(readme, "curriculum", await curriculum());
+  outputs.set(readmePath, replaceBlock(withCurriculum, "playground", await playgroundSection()));
 
   const stale: string[] = [];
   for (const [path, content] of outputs) {

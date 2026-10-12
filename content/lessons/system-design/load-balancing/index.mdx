@@ -1,3 +1,5 @@
+import { LoadBalancerSimulation } from "@/components/visualizations/scenes/load-balancer/load-balancer-simulation";
+
 <Definition>
 
 A **load balancer** is a component that receives incoming requests on behalf of a group of servers and forwards each one to a server that is able to handle it — spreading the work and keeping failed servers out of the path.
@@ -24,9 +26,17 @@ A busy restaurant has a host at the door. Guests don't pick a waiter themselves;
 
 Where the analogy breaks down: a real load balancer cannot *see* how busy a server is. It only has signals it can measure — how many requests it has sent, how many are still open, how long responses take, and whether periodic health checks succeed. Every algorithm below is a different bet about which of those signals best predicts load.
 
-## The picture
+## See it in action
 
-<LoadBalancerDiagram />
+The simulation below runs a small, deterministic model of a load balancer in front of three servers. Press **Play**, then try breaking things:
+
+- **Crash a server.** Requests sent to it fail until it has failed two health checks in a row; after that, traffic flows only to the survivors.
+- **Turn health checks off, then crash a server.** The errors never stop — nothing tells the balancer the server is gone.
+- **Set traffic to High with 40% heavy requests** and switch between round robin and least connections. Watch the queues and the p95 latency.
+
+<LoadBalancerSimulation />
+
+Everything you see is a teaching model: the numbers are illustrative, and the assumptions panel lists exactly what it simplifies. The rest of this lesson explains the real mechanics behind each behaviour.
 
 ## Step by step: one request
 

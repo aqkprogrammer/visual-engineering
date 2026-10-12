@@ -2,12 +2,9 @@ import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { site } from "@/lib/site";
 import { LogoMark } from "./logo";
+import { MobileNav } from "./mobile-nav";
+import { NAV_ITEMS } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
-
-const NAV = [
-  { href: "/explore", label: "Explore" },
-  { href: "/about", label: "About" },
-] as const;
 
 export function SiteHeader() {
   return (
@@ -23,12 +20,12 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav aria-label="Primary" className="ml-auto flex items-center text-sm sm:gap-1">
-          {NAV.map((item) => (
+        <nav aria-label="Primary" className="ml-auto flex items-center gap-1 text-sm">
+          {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-md px-2 py-1.5 text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg sm:px-2.5"
+              className="hidden rounded-md px-2.5 py-1.5 text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg sm:inline-block"
             >
               {item.label}
             </Link>
@@ -41,6 +38,7 @@ export function SiteHeader() {
             <ArrowUpRight aria-hidden className="size-3.5" />
           </a>
           <ThemeToggle />
+          <MobileNav />
         </nav>
       </div>
     </header>

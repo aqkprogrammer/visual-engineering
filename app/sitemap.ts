@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getDomains, getLessons } from "@/lib/content/catalog";
+import { getDomains, getLessons, getPlaygroundDemos } from "@/lib/content/catalog";
 import { absoluteUrl } from "@/lib/site";
 
 export const dynamic = "force-static";
@@ -13,6 +13,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: url("/") },
     { url: url("/explore") },
     { url: url("/about") },
+    { url: url("/playground") },
+    ...getPlaygroundDemos().map((d) => ({ url: url(`/playground/${d.slug}`) })),
     ...getDomains().map((d) => ({ url: url(`/${d.id}`) })),
     ...getLessons().map((l) => ({ url: url(`/${l.id}`), lastModified: l.lastReviewed })),
   ];

@@ -47,6 +47,27 @@ All routes are prerendered. Dynamic segments set `dynamicParams = false`, so unk
 
 Domain ids share the top-level URL namespace with static routes, so `RESERVED_SEGMENTS` in the schema is enforced by validation.
 
+## Simulation engine
+
+```
+ lib/simulation (pure TS)                         components/visualizations (React)
+┌───────────────────────────────┐                ┌──────────────────────────────────────┐
+│ model.init / tick / apply     │  runSimulation │ container ("use client")             │
+│ seeded RNG (mulberry32)       │ ─────────────▶ │  useActionLog → actions[]            │
+│ (params, seed, actions[])     │    Frame[]     │  usePlayback  → playbackReducer      │
+│        → Frame[]              │                │  <SimulationPlayer> + <Scene>        │
+│ playbackReducer (pure)        │                │  controls → act() → new action       │
+└───────────────────────────────┘                └──────────────────────────────────────┘
+```
+
+- **Models** (`lib/simulation/models/`) are pure: no React, DOM, clocks or `Math.random`. Frames are precomputed from the seed and the action log, so stepping backwards and restarting are exact, and tests assert exact outcomes.
+- **Every control is an action** recorded at the next tick, so changes take effect "now" without altering the past.
+- **The player** (`components/visualizations/player/`) provides the controls, timeline, live caption (polite while paused, silent while playing), event log, assumptions panel, keyboard shortcuts, and pausing when hidden or scrolled away. Scenes are `aria-hidden` SVG, and the text equivalents live in the player.
+- **Motion** between frames is a CSS transition timed by `--frame-ms`, which the player sets to `0ms` under reduced motion. Playback never starts on its own.
+- **Code splitting:** each playground page loads only its own demo through `next/dynamic`. The first frame is still server-rendered.
+
+How to add one: [SIMULATION-GUIDE.md](SIMULATION-GUIDE.md).
+
 ## Design system
 
 - Tokens are CSS custom properties in `app/globals.css`, defined in OKLCH for dark (default) and light themes and mapped into Tailwind with `@theme inline`.
@@ -79,4 +100,4 @@ Domain ids share the top-level URL namespace with static routes, so `RESERVED_SE
 
 ## Not yet built
 
-The simulation engine and player (Phase 2), quizzes, search, learning paths, glossary, interview hub, progress tracking (Phase 4), Lighthouse budgets in CI and the contributor guide (Phase 5).
+Shareable scenario URLs, phone-specific scene layouts, quizzes, search, learning paths, glossary, interview hub, progress tracking (Phase 4), Lighthouse budgets in CI and the contributor guide (Phase 5).
