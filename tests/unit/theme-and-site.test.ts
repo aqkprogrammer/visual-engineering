@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getSiteUrl } from "@/lib/site";
+import { absoluteUrl, getBasePath, getSiteUrl } from "@/lib/site";
 import { nextPreference, resolveTheme, themeInitScript } from "@/lib/theme";
 
 describe("theme preferences", () => {
@@ -51,5 +51,37 @@ describe("getSiteUrl", () => {
   it.each(["http://example.org", "not a url"])("rejects %j", (value) => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", value);
     expect(getSiteUrl()).toBeUndefined();
+  });
+});
+
+describe("absoluteUrl", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is undefined without a production origin", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+    expect(absoluteUrl("/explore")).toBeUndefined();
+  });
+
+  it("joins origin, base path and a trailing-slash page path", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://aqkprogrammer.github.io");
+    vi.stubEnv("NEXT_PUBLIC_BASE_PATH", "/visual-engineering");
+    expect(absoluteUrl("/")).toBe("https://aqkprogrammer.github.io/visual-engineering/");
+    expect(absoluteUrl("/system-design/load-balancing")).toBe(
+      "https://aqkprogrammer.github.io/visual-engineering/system-design/load-balancing/",
+    );
+    expect(absoluteUrl("/sitemap.xml")).toBe(
+      "https://aqkprogrammer.github.io/visual-engineering/sitemap.xml",
+    );
+  });
+
+  it("works at a domain root and ignores any path in the origin variable", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://example.org/ignored/path");
+    vi.stubEnv("NEXT_PUBLIC_BASE_PATH", "");
+    expect(absoluteUrl("/about")).toBe("https://example.org/about/");
+  });
+
+  it.each(["visual-engineering", "/bad path", "/../etc"])("rejects base path %j", (value) => {
+    vi.stubEnv("NEXT_PUBLIC_BASE_PATH", value);
+    expect(getBasePath()).toBe("");
   });
 });

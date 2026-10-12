@@ -71,7 +71,11 @@ Domain ids share the top-level URL namespace with static routes, so `RESERVED_SE
 
 - MDX compiles to code. Only reviewed repository content is compiled; nothing renders MDX or HTML from user input.
 - CI runs with `contents: read`, actions are pinned by commit SHA, and checkouts do not persist credentials.
-- The static export cannot set HTTP headers; CSP and other security headers will be configured with the hosting decision (ADR-0009).
+- The static export cannot set HTTP headers, and GitHub Pages does not allow custom headers (ADR-0009).
+
+## Deployment
+
+`.github/workflows/deploy.yml` deploys to GitHub Pages only after CI passes on `main`. The build reads the origin and base path from the Pages configuration (`NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_BASE_PATH`), and `trailingSlash: true` emits `route/index.html` for every page.
 
 ## Not yet built
 

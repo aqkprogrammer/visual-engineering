@@ -522,14 +522,16 @@ Ordered by the central promise. Each item gets its own ADR and plan before imple
 
 ## Decision log (since approval)
 
-| Date       | Decision                                                               | Notes                                                                                                            |
-| ---------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| 2026-10-12 | Plan approved; create the public repository now rather than at Phase 6 | So CI runs from the start                                                                                        |
-| 2026-10-12 | Hosting: **deferred**                                                  | Build stays host-agnostic static output (ADR-0009 pending)                                                       |
-| 2026-10-12 | Domain: **none yet**                                                   | Canonical URLs and sitemap entries are omitted until `NEXT_PUBLIC_SITE_URL` is set                               |
-| 2026-10-12 | License: **pending confirmation**                                      | No LICENSE file until chosen (ADR-0010 pending)                                                                  |
-| 2026-10-12 | Cache Components / Partial Prefetching disabled                        | Not useful for a fully static site; incompatible with `force-static` route handlers (ADR-0001)                   |
-| 2026-10-12 | ESLint 10 instead of 9                                                 | ESLint 9 is end-of-life; Next's plugins work on 10 despite their peer ranges (ADR-0008)                          |
-| 2026-10-12 | radix-ui 1.7.0, zod 4.6.5, vitest 5.0.3                                | pnpm's minimum-release-age guard rejected the day-old releases; we pin the previous ones instead of bypassing it |
-| 2026-10-12 | MDX excluded from Prettier                                             | Prettier reflowed Markdown nested inside JSX and merged an ordered list; an E2E test now guards it               |
-| 2026-10-12 | Shiki GitHub **high-contrast** themes                                  | Default GitHub themes failed axe colour-contrast on our surfaces                                                 |
+| Date       | Decision                                                               | Notes                                                                                                                          |
+| ---------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-12 | Plan approved; create the public repository now rather than at Phase 6 | So CI runs from the start                                                                                                      |
+| 2026-10-12 | Hosting: **GitHub Pages** via Actions, only after CI passes            | ADR-0009 · <https://aqkprogrammer.github.io/visual-engineering/>                                                               |
+| 2026-10-12 | Domain: GitHub Pages project URL for now                               | Canonicals and sitemap use it; a custom domain needs no code change                                                            |
+| 2026-10-12 | License: **pending confirmation**                                      | No LICENSE file until chosen (ADR-0010 pending)                                                                                |
+| 2026-10-12 | Cache Components / Partial Prefetching disabled                        | Not useful for a fully static site; incompatible with `force-static` route handlers (ADR-0001)                                 |
+| 2026-10-12 | ESLint 10 instead of 9                                                 | ESLint 9 is end-of-life; Next's plugins work on 10 despite their peer ranges (ADR-0008)                                        |
+| 2026-10-12 | radix-ui 1.7.0, zod 4.6.5, vitest 5.0.3                                | pnpm's minimum-release-age guard rejected the day-old releases; we pin the previous ones instead of bypassing it               |
+| 2026-10-12 | MDX excluded from Prettier                                             | Prettier reflowed Markdown nested inside JSX and merged an ordered list; an E2E test now guards it                             |
+| 2026-10-12 | Shiki GitHub **high-contrast** themes                                  | Default GitHub themes failed axe colour-contrast on our surfaces                                                               |
+| 2026-10-12 | README generated from real data                                        | `scripts/readme.ts` renders the animated banner from design tokens and the curriculum from `content/`; CI fails if it is stale |
+| 2026-10-12 | Commits carry no AI co-author trailer                                  | Maintainer preference                                                                                                          |

@@ -1,14 +1,13 @@
 import type { MetadataRoute } from "next";
 import { getDomains, getLessons } from "@/lib/content/catalog";
-import { getSiteUrl } from "@/lib/site";
+import { absoluteUrl } from "@/lib/site";
 
 export const dynamic = "force-static";
 
-/** Sitemap URLs must be absolute. Until a production domain is configured it is left empty. */
+/** Sitemap URLs must be absolute. Until a production origin is configured it is left empty. */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = getSiteUrl();
-  if (!base) return [];
-  const url = (path: string) => new URL(path, base).toString();
+  if (!absoluteUrl("/")) return [];
+  const url = (path: string) => absoluteUrl(path) ?? path;
 
   return [
     { url: url("/") },

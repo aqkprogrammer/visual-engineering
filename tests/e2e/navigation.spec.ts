@@ -11,15 +11,15 @@ test.describe("core journeys", () => {
       .getByRole("navigation", { name: "Primary" })
       .getByRole("link", { name: "Explore" })
       .click();
-    await expect(page).toHaveURL(/\/explore$/);
+    await expect(page).toHaveURL(/\/explore\/?$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Explore");
 
     await page.getByRole("link", { name: "System Design", exact: true }).click();
-    await expect(page).toHaveURL(/\/system-design$/);
+    await expect(page).toHaveURL(/\/system-design\/?$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("System Design");
 
     await page.getByRole("link", { name: /How load balancing works/ }).click();
-    await expect(page).toHaveURL(/\/system-design\/load-balancing$/);
+    await expect(page).toHaveURL(/\/system-design\/load-balancing\/?$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("How load balancing works");
     await expect(page).toHaveTitle("How load balancing works · Visual Engineering");
   });

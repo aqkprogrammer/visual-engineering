@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
-import { getSiteUrl, site } from "@/lib/site";
+import { absoluteUrl, site } from "@/lib/site";
 import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
@@ -21,10 +21,10 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
-const siteUrl = getSiteUrl();
+const siteUrl = absoluteUrl("/");
 
 export const metadata: Metadata = {
-  ...(siteUrl && { metadataBase: siteUrl }),
+  ...(siteUrl && { metadataBase: new URL(siteUrl) }),
   title: { default: site.title, template: `%s · ${site.name}` },
   description: site.description,
   applicationName: site.name,

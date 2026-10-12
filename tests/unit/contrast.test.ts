@@ -1,22 +1,8 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { contrastRatio, parseOklch, relativeLuminance } from "@/lib/design/contrast";
+import { contrastRatio, oklchToHex, parseOklch, relativeLuminance } from "@/lib/design/contrast";
+import { readThemeTokens } from "@/lib/design/tokens";
 
-const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
-
-/** Extracts `--token: value;` pairs from the first rule block whose selector matches. */
-function tokens(selectorPattern: RegExp): Record<string, string> {
-  const block = css.match(new RegExp(`${selectorPattern.source}\\s*\\{([^}]*)\\}`))?.[1];
-  if (!block) throw new Error(`No block for ${selectorPattern}`);
-  return Object.fromEntries(
-    [...block.matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2]!.trim()]),
-  );
-}
-
-const THEMES = {
-  dark: tokens(/\[data-theme="dark"\]/),
-  light: tokens(/\[data-theme="light"\]/),
-};
+const THEMES = { dark: readThemeTokens("dark"), light: readThemeTokens("light") };
 
 // WCAG 2.2: 4.5:1 for body text, 3:1 for large text and essential non-text UI (icons, focus rings).
 const TEXT_PAIRS = [
@@ -47,6 +33,13 @@ describe("contrast math", () => {
       21,
       1,
     );
+  });
+
+  it("converts to hex sRGB", () => {
+    expect(oklchToHex(parseOklch("oklch(1 0 0)"))).toBe("#ffffff");
+    expect(oklchToHex(parseOklch("oklch(0 0 0)"))).toBe("#000000");
+    // Reference: CSS Color 4 — oklch(0.628 0.2577 29.23) is sRGB red.
+    expect(oklchToHex(parseOklch("oklch(0.628 0.2577 29.23)"))).toBe("#ff0000");
   });
 
   it("parses alpha and percentages", () => {

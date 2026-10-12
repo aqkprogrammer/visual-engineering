@@ -12,7 +12,7 @@ Each record captures one significant decision: the context, the options consider
 | [0006](0006-typescript-6-pin.md)                   | Pin TypeScript 6.0 until the lint toolchain supports 7               | Accepted                           |
 | [0007](0007-ui-primitives.md)                      | Radix-based primitives owned in-repo                                 | Accepted                           |
 | [0008](0008-tooling.md)                            | ESLint 10, Prettier, Vitest, Playwright + axe                        | Accepted                           |
-| 0009                                               | Hosting target                                                       | Pending                            |
+| [0009](0009-hosting-github-pages.md) | Host on GitHub Pages, deployed by GitHub Actions | Accepted |
 | 0010                                               | Licensing                                                            | Pending                            |
 
 New record: copy [`template.md`](template.md) to the next number.

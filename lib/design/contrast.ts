@@ -36,6 +36,18 @@ export function oklchToLinearSrgb({ l, c, h }: Oklch): [number, number, number] 
   ];
 }
 
+/** Hex sRGB for contexts that cannot use oklch(), e.g. SVG images embedded in a README. */
+export function oklchToHex(color: Oklch): string {
+  const encode = (v: number) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+  return `#${oklchToLinearSrgb(color)
+    .map((v) =>
+      Math.round(encode(v) * 255)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
+}
+
 export function relativeLuminance(color: Oklch): number {
   const [r, g, b] = oklchToLinearSrgb(color);
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;

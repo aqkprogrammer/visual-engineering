@@ -10,6 +10,7 @@
   },
   "scripts": {
     "content": "tsx scripts/content.ts",
+    "readme": "tsx scripts/readme.ts",
     "dev": "pnpm content && next dev",
     "build": "pnpm content && next build",
     "preview": "serve out --listen 3000",
@@ -20,7 +21,7 @@
     "test": "pnpm content && vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm readme --check && pnpm build"
   },
   "dependencies": {
     "@mdx-js/loader": "3.1.1",

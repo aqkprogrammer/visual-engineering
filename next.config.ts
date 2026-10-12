@@ -7,8 +7,17 @@ import type { NextConfig } from "next";
  * request-time data, and `output: "export"` needs `force-static` route handlers, which
  * Cache Components rejects.
  */
+// e.g. "/visual-engineering" for a GitHub Pages project site; empty when served from a domain root.
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.trim() ?? "";
+if (basePath && !/^\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/i.test(basePath)) {
+  throw new Error(`NEXT_PUBLIC_BASE_PATH must look like "/segment", got "${basePath}"`);
+}
+
 const nextConfig: NextConfig = {
   output: "export",
+  ...(basePath && { basePath }),
+  // Emit `route/index.html` so every static host (including GitHub Pages) resolves clean URLs.
+  trailingSlash: true,
   reactStrictMode: true,
   poweredByHeader: false,
   // Static export cannot use the default image optimizer.

@@ -8,3 +8,5 @@ content/.generated
 next-env.d.ts
 # Prettier's MDX support predates MDX 3 and reflows Markdown nested in JSX (it merged lists).
 *.mdx
+# Generated sections are written by scripts/readme.ts
+README.md
