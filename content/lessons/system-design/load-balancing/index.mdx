@@ -1,0 +1,199 @@
+<Definition>
+
+A **load balancer** is a component that receives incoming requests on behalf of a group of servers and forwards each one to a server that is able to handle it — spreading the work and keeping failed servers out of the path.
+
+</Definition>
+
+## The problem it solves
+
+Imagine an online store running on a single application server. As traffic grows you hit two walls.
+
+The first is **capacity**. One machine has a fixed amount of CPU, memory and network bandwidth. You can buy a bigger machine — *vertical scaling* — but prices rise steeply at the top end, and eventually there is no bigger machine to buy.
+
+The second is **availability**. If that one server crashes, is rebooted for a security patch, or is replaced during a deployment, the store is offline. A component whose failure takes the whole system down is called a **single point of failure**.
+
+The usual answer is *horizontal scaling*: run several identical servers. But that creates a new question. Clients know one address — `shop.example.com` — so who decides which server handles each request, and who notices when one of them is broken? That is the load balancer's job.
+
+## An everyday analogy
+
+<Analogy>
+
+A busy restaurant has a host at the door. Guests don't pick a waiter themselves; the host looks at which sections have free tables and seats each party accordingly. If a waiter goes home sick, the host simply stops seating people in that section. Guests only ever deal with the host at the entrance.
+
+</Analogy>
+
+Where the analogy breaks down: a real load balancer cannot *see* how busy a server is. It only has signals it can measure — how many requests it has sent, how many are still open, how long responses take, and whether periodic health checks succeed. Every algorithm below is a different bet about which of those signals best predicts load.
+
+## The picture
+
+<LoadBalancerDiagram />
+
+## Step by step: one request
+
+<Steps>
+
+1. **Name resolution.** The browser resolves `shop.example.com` through DNS. The answer is the address of the load balancer, not of any application server.
+2. **Connection.** The client opens a TCP connection to the load balancer and, for HTTPS, completes a TLS handshake with it.
+3. **Selection.** The load balancer picks one backend from the pool of servers it currently considers healthy, using its configured algorithm.
+4. **Forwarding.** It forwards the request to that backend. A layer 7 balancer typically reuses a pool of open connections to its backends and adds headers such as `X-Forwarded-For` so the application can still see the original client address.
+5. **Response.** The backend processes the request and replies through the load balancer, which relays the response to the client.
+6. **In the background.** Independently of any client traffic, the load balancer keeps checking every backend's health and updates the pool it chooses from.
+
+</Steps>
+
+## Layer 4 versus layer 7
+
+Load balancers are often described by the network layer they understand, borrowing the numbering of the OSI model.
+
+| | Layer 4 (transport) | Layer 7 (application) |
+|---|---|---|
+| Sees | IP addresses, ports, TCP/UDP connections | Full HTTP requests: method, path, headers, cookies |
+| Balances | Whole **connections** | Individual **requests** |
+| Can route by URL or header | No | Yes, e.g. `/api/*` to one pool, `/images/*` to another |
+| TLS | Usually passes encrypted bytes through | Usually terminates TLS so it can read the request |
+| Cost | Very cheap per packet | More CPU per request; more features |
+
+The distinction matters most for **long-lived connections**. HTTP/2 and gRPC multiplex many requests over one TCP connection. A layer 4 balancer chooses a backend once, when the connection opens, so every request on that connection lands on the same server. The gRPC project's own guidance is to use request-level (layer 7) or client-side balancing when load varies between connections.
+
+## Choosing a backend: algorithms
+
+**Round robin** sends requests to each server in turn: A, B, C, A, B, C… It is simple, stateless and is the default in both nginx and AWS Application Load Balancer target groups. It balances the *number* of requests, not the *amount of work*; if some requests are far more expensive than others, servers drift out of balance.
+
+**Weighted round robin** gives servers different shares, for example when a pool mixes machine sizes, or when you want a new version to receive a small slice of traffic.
+
+**Least connections** (nginx `least_conn`) or **least outstanding requests** (an ALB option) sends each request to the server with the fewest requests still in progress. Slow servers accumulate open requests, so they naturally receive less new work. This adapts better to uneven request costs than round robin.
+
+**Power of two choices** samples two servers at random and picks the less busy one. It gets most of the benefit of least-connections while needing only two comparisons, and it avoids a subtle problem with pure least-connections at scale: many balancers with slightly stale data all rushing to the same "emptiest" server. Envoy's least-request balancer samples two hosts by default; nginx offers `random two least_conn`.
+
+**Hash-based** strategies (nginx `ip_hash`, `hash`, consistent hashing) map a key — client IP, user ID, URL — to the same server every time. That gives *affinity*, useful for per-server caches, at the cost of less even distribution.
+
+## Health checks: noticing failure
+
+A load balancer is only as good as its knowledge of which servers are alive. There are two broad approaches.
+
+**Active health checks** probe each backend on a timer — for example an HTTP `GET /healthz` every few seconds — and remove a backend after a number of consecutive failures, then restore it after a number of consecutive successes. AWS Application Load Balancer target groups work this way; by default they check every 30 seconds and mark a target unhealthy after 2 consecutive failures.
+
+**Passive health checks** watch real traffic instead. Open-source nginx marks a server as failed after `max_fails` unsuccessful attempts (default 1) within `fail_timeout` (default 10 seconds), stops sending it requests for that period, and then cautiously tries it again. Periodic active checks in nginx are part of the commercial NGINX Plus product.
+
+<Callout kind="illustrative" title="Detection is never instant">
+
+With checks every **10 s** and a threshold of **3** failures, a server that crashes just after a successful check can keep receiving traffic for around **30 s** before it is removed. These numbers are illustrative — the point is that detection delay ≈ interval × threshold, so tuning them trades faster detection against false alarms from a single slow response.
+
+</Callout>
+
+What should a health endpoint check? A **shallow** check ("the process is up and can serve HTTP") is fast and safe. A **deep** check that also queries the database sounds more accurate, but if the shared database has a brief hiccup, *every* server fails its check at the same time and the load balancer may remove the entire pool. Many teams keep the load balancer's check shallow and monitor dependencies separately.
+
+<Callout kind="warning" title="When everything is unhealthy">
+
+Load balancers differ in what they do when no backend passes. AWS Application Load Balancer **fails open**: if every target in a target group is unhealthy, it routes to all of them anyway, on the reasoning that a possibly-working server beats a guaranteed error. Other configurations return `502`/`503` immediately. Know which behaviour yours has before an incident teaches you.
+
+</Callout>
+
+## Example: nginx in front of three servers
+
+```nginx
+upstream app_servers {
+    least_conn;                                      # pick the server with fewest active requests
+    server 10.0.1.10:8080;
+    server 10.0.1.11:8080;
+    server 10.0.1.12:8080 max_fails=3 fail_timeout=15s;  # passive health check tuning
+}
+
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://app_servers;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+The `upstream` block defines the pool and the algorithm. `proxy_pass` turns nginx into a **reverse proxy** for that pool — the general pattern of a server that accepts requests on behalf of others. Every load balancer is a reverse proxy; not every reverse proxy balances load.
+
+## In production
+
+A typical cloud deployment of the online store looks like this: DNS points at a managed layer 7 load balancer that has nodes in at least two **Availability Zones** (physically separate data centres within a region). Behind it, an auto-scaling group runs application servers in both zones and registers each new instance with the load balancer's target group.
+
+Two operational details make deployments smooth:
+
+- **Connection draining.** When an instance is removed, the load balancer stops sending it *new* requests but lets in-flight requests finish, for a configurable period. On AWS this is the target group's deregistration delay, 300 seconds by default.
+- **Slow start.** A freshly started server with cold caches can be overwhelmed if it immediately receives a full share. Some balancers ramp new targets up gradually; ALB's `slow_start.duration_seconds` does this and is off by default.
+
+The load balancer itself must not become the new single point of failure. Managed cloud load balancers run as many nodes behind one DNS name. Self-hosted setups typically run two or more balancer instances, using a shared floating IP address that moves on failure, multiple DNS records, or anycast routing.
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "You run more than one instance of a service and want clients to see one address.",
+    "You need to take servers out for deploys or maintenance without downtime.",
+    "You want a single place to terminate TLS, enforce timeouts or route by path.",
+  ]}
+  avoid={[
+    "Internal service-to-service traffic already uses client-side balancing (e.g. a service mesh or gRPC client) — an extra hop adds latency and cost.",
+    "A single small server comfortably handles the load and brief downtime is acceptable.",
+    "You actually need data partitioning: a load balancer spreads requests, not data — a single overloaded database behind it stays overloaded.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Round robin means every server does equal work."** It means every server receives an equal *number* of requests. One report export and one health check are both "one request".
+
+**"A load balancer removes downtime."** It reduces the impact of individual server failures, but only after detection, and only if the balancer itself is redundant.
+
+**"Least connections is always better."** It needs accurate, current connection counts. With many independent balancer nodes, each sees only its own traffic. Randomised approaches such as power of two choices are often more robust.
+
+**"Sticky sessions are a free convenience."** Pinning users to a server makes that server's failure log those users out, and it unbalances load when some users are far more active than others. Storing session state in a shared store is usually the better fix.
+
+## Failure modes and debugging
+
+**Intermittent `502 Bad Gateway` under light load.** A classic cause is a keep-alive timeout mismatch: the backend closes idle connections *sooner* than the balancer expects, and the balancer sends a request on a connection that has just been closed. AWS recommends setting the application's idle timeout higher than the load balancer's (60 seconds by default). Node.js's built-in HTTP server, for example, defaults `keepAliveTimeout` to 5 seconds.
+
+**One server is much hotter than the rest.** Look for long-lived connections (WebSockets, HTTP/2, gRPC) pinned at layer 4, hash-based affinity with a few very heavy keys, or a recently restarted server receiving a full share while its caches are cold.
+
+**Servers flapping in and out of the pool.** Health check thresholds may be too tight for normal latency spikes, or the health endpoint may depend on something slow.
+
+**A small failure becomes a large one.** If clients retry every error immediately, a partial outage multiplies traffic onto the remaining servers. Retries need limits, backoff and jitter — topics covered in the resilience module.
+
+When debugging, compare **per-backend** request counts and error rates rather than totals, check the healthy-host count over time, and use the balancer's access logs to distinguish errors generated *by the load balancer* from errors *returned by a backend*.
+
+## Security and operations
+
+- **TLS termination** at the balancer centralises certificate management. Decide deliberately whether traffic to backends is re-encrypted; inside a trusted private network some teams don't, but many compliance regimes require it.
+- **Trust forwarded headers only from your balancer.** A client can send its own `X-Forwarded-For`; applications should only trust the value appended by the proxy they know.
+- **A natural choke point.** The balancer is a convenient place for request-size limits, timeouts, rate limits and a web application firewall — and a convenient place to misconfigure them for everyone at once.
+
+## Interview questions
+
+<InterviewQuestion question="What is the difference between layer 4 and layer 7 load balancing, and when would you choose each?">
+
+A layer 4 balancer forwards TCP/UDP connections using addresses and ports, without reading the payload; it is fast and protocol-agnostic. A layer 7 balancer parses the application protocol (usually HTTP), so it can route by path or header, terminate TLS, and balance individual requests rather than whole connections. Choose layer 4 for raw throughput or non-HTTP protocols; choose layer 7 when you need content-based routing, or when long-lived multiplexed connections (HTTP/2, gRPC) would otherwise pin all of a client's traffic to one server.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="How does a load balancer know a server has failed, and what is the trade-off in configuring that?">
+
+Through active health checks (periodic probes with failure and recovery thresholds) and/or passive checks (observing errors on real traffic). Shorter intervals and lower thresholds detect failures faster but risk removing healthy servers during brief slowdowns; longer settings are more stable but send traffic to dead servers for longer. Health endpoints should usually be shallow, so a shared dependency's blip does not remove every server simultaneously.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Round robin versus least connections — which would you pick for an API where some requests take 10 ms and others 5 seconds?">
+
+Least connections (or least outstanding requests, or power of two choices). Round robin would give each server the same number of requests regardless of cost, so a server that happens to receive several 5-second requests falls behind while still receiving its full share. Load-aware algorithms route new work away from servers with many requests in flight.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Isn't the load balancer itself a single point of failure?">
+
+It can be. Managed cloud balancers run as many nodes across Availability Zones behind one DNS name. Self-managed setups run multiple balancer instances with a floating IP that moves on failure, multiple DNS records, or anycast. The goal is that no single machine's failure takes the entry point down.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Why might sticky sessions be a bad idea?">
+
+They tie a user to one server, so that server's failure or replacement disrupts its users, deploys must drain sessions, and load becomes uneven when a few users are very active. Moving session state to a shared store such as a database or cache keeps servers interchangeable, which is what makes balancing and scaling straightforward.
+
+</InterviewQuestion>

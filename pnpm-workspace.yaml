@@ -1,0 +1,10 @@
+# pnpm 11 refuses packages published less than minimumReleaseAge ago (supply-chain guard).
+# Prefer pinning an older release over adding exclusions here.
+allowBuilds:
+  esbuild: true
+  sharp: false
+  unrs-resolver: false
+
+overrides:
+  # GHSA-vc2v-76pw-4v95 (via serve, dev-only). Remove once serve depends on >=1.8.2 itself.
+  compression: ^1.8.2

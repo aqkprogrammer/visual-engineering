@@ -1,0 +1,10 @@
+pnpm-lock.yaml
+.next
+out
+coverage
+test-results
+playwright-report
+content/.generated
+next-env.d.ts
+# Prettier's MDX support predates MDX 3 and reflows Markdown nested in JSX (it merged lists).
+*.mdx

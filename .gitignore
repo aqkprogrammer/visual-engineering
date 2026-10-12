@@ -1,0 +1,32 @@
+# dependencies
+/node_modules
+
+# build output
+/.next/
+/out/
+/build
+*.tsbuildinfo
+next-env.d.ts
+
+# generated content registry (rebuilt by `pnpm content`)
+/content/.generated/
+
+# testing
+/coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# env files — never commit secrets
+.env*
+!.env.example
+
+# misc
+.DS_Store
+*.pem
+*.log
+.vercel
+
+# local tooling
+/.claude/

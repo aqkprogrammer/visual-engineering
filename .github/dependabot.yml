@@ -1,0 +1,56 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # Matches the spirit of pnpm's minimum-release-age guard: let fresh releases settle first.
+    cooldown:
+      default-days: 3
+    open-pull-requests-limit: 10
+    groups:
+      next-and-react:
+        patterns:
+          [
+            "next",
+            "@next/*",
+            "eslint-config-next",
+            "react",
+            "react-dom",
+            "@types/react",
+            "@types/react-dom",
+          ]
+      testing:
+        patterns:
+          [
+            "vitest",
+            "@vitest/*",
+            "@vitejs/*",
+            "jsdom",
+            "@playwright/test",
+            "@testing-library/*",
+            "@axe-core/*",
+          ]
+      lint-and-format:
+        patterns: ["eslint", "prettier", "prettier-plugin-*", "typescript"]
+      content-pipeline:
+        patterns:
+          [
+            "@mdx-js/*",
+            "remark-*",
+            "rehype-*",
+            "unified",
+            "mdast-*",
+            "unist-*",
+            "shiki",
+            "@shikijs/*",
+            "github-slugger",
+          ]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
