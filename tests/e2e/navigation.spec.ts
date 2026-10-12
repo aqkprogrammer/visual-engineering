@@ -1,16 +1,22 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+/** Follows a primary navigation link, opening the menu first on narrow screens. */
+async function navigateTo(page: Page, label: string, isMobile: boolean) {
+  if (isMobile) await page.getByRole("button", { name: "Menu" }).click();
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: label, exact: true })
+    .click();
+}
 
 test.describe("core journeys", () => {
-  test("home → explore → domain → lesson", async ({ page }) => {
+  test("home → explore → domain → lesson", async ({ page, isMobile }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Watch it work. Change it. Break it.",
     );
 
-    await page
-      .getByRole("navigation", { name: "Primary" })
-      .getByRole("link", { name: "Explore" })
-      .click();
+    await navigateTo(page, "Explore", isMobile);
     await expect(page).toHaveURL(/\/explore\/?$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Explore");
 
@@ -36,9 +42,7 @@ test.describe("core journeys", () => {
     // The step-by-step walkthrough must render as a real ordered list (guards MDX formatting).
     await expect(page.locator(".prose-ve ol").first().locator("> li")).toHaveCount(6);
 
-    await expect(
-      page.getByRole("img", { name: /Load balancer distributing requests/ }),
-    ).toBeVisible();
+    await expect(page.getByRole("region", { name: "Load balancer simulation" })).toBeVisible();
     await expect(page.getByRole("complementary", { name: "Analogy" })).toContainText("not literal");
     await expect(page.getByRole("heading", { name: "Further reading" })).toBeVisible();
     await expect(page.locator("pre.shiki")).toHaveCount(1);
@@ -101,12 +105,38 @@ test.describe("keyboard and preferences", () => {
     await context.close();
   });
 
+  test("the mobile menu opens, closes with Escape and navigates", async ({ page, isMobile }) => {
+    test.skip(!isMobile, "The menu button only exists on narrow screens.");
+    await page.goto("/");
+    const menu = page.getByRole("button", { name: "Menu" });
+    await expect(menu).toHaveAttribute("aria-expanded", "false");
+    await menu.click();
+    await expect(menu).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Escape");
+    await expect(menu).toHaveAttribute("aria-expanded", "false");
+    await expect(menu).toBeFocused();
+    await menu.click();
+    await page
+      .getByRole("navigation", { name: "Primary" })
+      .getByRole("link", { name: "Playground", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/playground\/?$/);
+    await expect(page.getByRole("button", { name: "Menu" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+  });
+
   test("pages never scroll horizontally", async ({ page }) => {
     for (const path of [
       "/",
       "/explore",
       "/system-design",
       "/system-design/load-balancing",
+      "/playground",
+      "/playground/load-balancer",
+      "/playground/tls-handshake",
+      "/playground/kubernetes-self-healing",
       "/about",
     ]) {
       await page.goto(path);

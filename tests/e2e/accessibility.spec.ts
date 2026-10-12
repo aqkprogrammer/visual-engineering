@@ -7,6 +7,10 @@ const PAGES = [
   "/system-design",
   "/ai",
   "/system-design/load-balancing",
+  "/playground",
+  "/playground/load-balancer",
+  "/playground/tls-handshake",
+  "/playground/kubernetes-self-healing",
   "/about",
   "/missing-page",
 ];
@@ -44,9 +48,9 @@ test("reduced motion preference disables CSS transitions", async ({ browser }) =
     const context = await browser.newContext({ reducedMotion });
     const page = await context.newPage();
     await page.goto("/");
+    // The theme toggle has a colour transition and is visible at every screen size.
     const value = await page
-      .getByRole("navigation", { name: "Primary" })
-      .getByRole("link", { name: "Explore" })
+      .getByRole("button", { name: /theme/ })
       .evaluate((el) => getComputedStyle(el).transitionDuration);
     await context.close();
     return Number.parseFloat(value);

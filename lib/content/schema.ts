@@ -93,6 +93,24 @@ export type Lesson = LessonMeta & {
   headings: Heading[];
 };
 
+export const playgroundDemoSchema = z.object({
+  slug: slugSchema,
+  title: z.string().min(5).max(70),
+  /** One sentence; doubles as the meta description. */
+  summary: z.string().min(70).max(170),
+  domain: domainIdSchema,
+  /** The lesson that explains this demo, if one is published. */
+  lesson: lessonRefSchema.optional(),
+  kind: z.enum(["simulation", "walkthrough"]),
+  tryThis: z.array(z.string().min(20)).min(2),
+  references: z.array(referenceSchema).min(1),
+});
+export type PlaygroundDemo = z.infer<typeof playgroundDemoSchema>;
+
+export function definePlayground(demos: z.input<typeof playgroundDemoSchema>[]) {
+  return demos;
+}
+
 /** Typed identity helper for lesson `meta.ts` files. */
 export function defineLesson(meta: LessonMetaInput): LessonMetaInput {
   return meta;

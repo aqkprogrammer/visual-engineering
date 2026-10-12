@@ -23,6 +23,9 @@ export function SiteFooter() {
           <Link href="/explore" className="hover:text-fg">
             Explore
           </Link>
+          <Link href="/playground" className="hover:text-fg">
+            Playground
+          </Link>
           <Link href="/about" className="hover:text-fg">
             About
           </Link>

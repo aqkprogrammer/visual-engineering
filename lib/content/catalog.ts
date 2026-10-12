@@ -3,8 +3,9 @@ import {
   domains as allDomains,
   lessonBodies,
   lessons as allLessons,
+  playground as allDemos,
 } from "@/content/.generated/registry";
-import type { Domain, DomainId, Lesson, LessonRef, Module } from "./schema";
+import type { Domain, DomainId, Lesson, LessonRef, Module, PlaygroundDemo } from "./schema";
 
 /**
  * Read-only queries over the generated content registry. Server-only: lesson bodies and the
@@ -77,4 +78,17 @@ export async function loadLessonBody(lesson: Lesson) {
   const load = lessonBodies[lesson.id];
   if (!load) throw new Error(`No MDX body registered for lesson ${lesson.id}`);
   return (await load()).default;
+}
+
+export function getPlaygroundDemos(): PlaygroundDemo[] {
+  return allDemos;
+}
+
+export function getPlaygroundDemo(slug: string): PlaygroundDemo | undefined {
+  return allDemos.find((d) => d.slug === slug);
+}
+
+/** Demos that belong to a lesson, for linking from the lesson page. */
+export function getLessonDemos(lesson: Lesson): PlaygroundDemo[] {
+  return allDemos.filter((d) => d.lesson === lesson.id);
 }

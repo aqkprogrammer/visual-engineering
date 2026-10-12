@@ -10,9 +10,11 @@ import { analyzeMdx } from "./mdx-text";
 import {
   domainSchema,
   lessonMetaSchema,
+  playgroundDemoSchema,
   type Domain,
   type Lesson,
   type LessonMeta,
+  type PlaygroundDemo,
 } from "./schema";
 import { lessonRef, validateCatalog, type ContentIssue } from "./validate";
 
@@ -21,6 +23,7 @@ export const CONTENT_DIR = fileURLToPath(new URL("../../content", import.meta.ur
 export type LoadedCatalog = {
   domains: Domain[];
   lessons: (Lesson & { plainText: string; sourcePath: string })[];
+  playground: PlaygroundDemo[];
   issues: ContentIssue[];
 };
 
@@ -111,5 +114,28 @@ export async function loadCatalog(contentDir = CONTENT_DIR): Promise<LoadedCatal
   }
 
   issues.push(...validateCatalog(domains, metas));
-  return { domains, lessons, issues };
+
+  const playgroundModule = (await import(
+    pathToFileURL(path.join(contentDir, "playground.ts")).href
+  )) as { default: unknown };
+  const parsedPlayground = z.array(playgroundDemoSchema).safeParse(playgroundModule.default);
+  if (!parsedPlayground.success) {
+    issues.push({
+      where: "content/playground.ts",
+      message: formatZodError(parsedPlayground.error),
+    });
+  }
+  const playground = parsedPlayground.success ? parsedPlayground.data : [];
+  const published = new Set(metas.filter((m) => m.status === "published").map(lessonRef));
+  const seen = new Set<string>();
+  for (const demo of playground) {
+    const where = `playground:${demo.slug}`;
+    if (seen.has(demo.slug)) issues.push({ where, message: "duplicate playground slug" });
+    seen.add(demo.slug);
+    if (demo.lesson && !published.has(demo.lesson)) {
+      issues.push({ where, message: `lesson "${demo.lesson}" is not a published lesson` });
+    }
+  }
+
+  return { domains, lessons, playground, issues };
 }

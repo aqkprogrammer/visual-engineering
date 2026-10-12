@@ -34,3 +34,12 @@ describe("curriculum content on disk", async () => {
     }
   });
 });
+
+describe("playground content", async () => {
+  const { DEMO_SLUGS } = await import("@/components/visualizations/demo-registry");
+  const catalog = await loadCatalog();
+
+  it("registers a component for every playground demo and vice versa", () => {
+    expect(catalog.playground.map((d) => d.slug).sort()).toEqual([...DEMO_SLUGS].sort());
+  });
+});
