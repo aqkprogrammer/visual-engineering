@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Interactive, visual lessons on system design, AI engineering, infrastructure, networking and computer science.",
+  "license": "MIT",
   "packageManager": "pnpm@11.9.0",
   "engines": {
     "node": ">=24"

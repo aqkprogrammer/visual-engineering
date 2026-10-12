@@ -32,6 +32,7 @@ built to be watched, changed and broken, not just read.
 ![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 ![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8?logo=tailwindcss&logoColor=white)
 ![Accessibility checked with axe in CI](https://img.shields.io/badge/a11y-axe_checked_in_CI-5b8def)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2ea44f)](LICENSE)
 
 </div>
 
@@ -300,4 +301,4 @@ Corrections, new lessons and simulation ideas are welcome — open an issue or a
 
 ## 📄 License
 
-**Not yet chosen.** Until a license file is added, default copyright applies and the code and content are not licensed for reuse. Proposed: MIT for code, CC BY 4.0 for lesson content.
+[MIT](LICENSE) © 2026 Abdul Qadir Khan — covering the code, lessons and diagrams alike.
