@@ -1,6 +1,6 @@
 # 0003. Deterministic simulation engine with precomputed frames
 
-- **Status:** Accepted — implementation in Phase 2
+- **Status:** Accepted — implemented in Phase 2
 - **Date:** 2026-10-12
 
 ## Context
@@ -22,3 +22,9 @@ Option 3. Simulation models in `lib/simulation/` are pure TypeScript with no Rea
 - Models are unit-tested for exact outcomes and invariants.
 - Frame counts and on-screen entities must be bounded so precomputation stays cheap.
 - Every simulation must declare its assumptions, which the UI shows as a "teaching model" notice.
+
+## Implementation notes (Phase 2)
+
+- `lib/simulation/run.ts` runs a model to a frame list; `lib/simulation/playback.ts` is the pure playback state machine; `components/visualizations/player/` renders it.
+- **Every control is an action**, not only failure injection: changing the algorithm or traffic is recorded at the current tick, so a change takes effect "now" without rewriting the past. Acting after seeking backwards discards later actions, like typing after an undo.
+- Shareable scenario URLs (seed + action log in the URL) are not built yet.
