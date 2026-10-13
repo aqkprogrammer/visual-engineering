@@ -13,6 +13,9 @@ export const DEMO_SLUGS = [
   "tokenizer",
   "message-queue",
   "system-design-sandbox",
+  "availability-zones",
+  "deployment-strategies",
+  "autoscaling",
 ] as const;
 
 export type DemoSlug = (typeof DEMO_SLUGS)[number];

@@ -43,6 +43,15 @@ const DockerSimulation = dynamic(() =>
 const TokenizerExplorer = dynamic(() =>
   import("./scenes/tokenizer/tokenizer-explorer").then((m) => m.TokenizerExplorer),
 );
+const ZonesSimulation = dynamic(() =>
+  import("./scenes/zones/zones-simulation").then((m) => m.ZonesSimulation),
+);
+const DeploymentsSimulation = dynamic(() =>
+  import("./scenes/deployments/deployments-simulation").then((m) => m.DeploymentsSimulation),
+);
+const AutoscalingSimulation = dynamic(() =>
+  import("./scenes/autoscaling/autoscaling-simulation").then((m) => m.AutoscalingSimulation),
+);
 const SandboxSimulation = dynamic(() =>
   import("./scenes/sandbox/sandbox-simulation").then((m) => m.SandboxSimulation),
 );
@@ -78,5 +87,11 @@ export function Demo({ slug }: { slug: DemoSlug }) {
       return <QueueSimulation />;
     case "system-design-sandbox":
       return <SandboxSimulation />;
+    case "availability-zones":
+      return <ZonesSimulation />;
+    case "deployment-strategies":
+      return <DeploymentsSimulation />;
+    case "autoscaling":
+      return <AutoscalingSimulation />;
   }
 }

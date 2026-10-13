@@ -345,4 +345,91 @@ export default definePlayground([
       },
     ],
   },
+  {
+    slug: "availability-zones",
+    title: "Regions and Availability Zones",
+    summary:
+      "Run an application in one zone, three zones or two regions, then fail a zone, a region or the control plane, and see which layouts keep serving.",
+    domain: "cloud",
+    lesson: "cloud/regions-and-availability-zones",
+    kind: "simulation",
+    tryThis: [
+      "With One zone, fail zone a1: every request fails, and auto-recovery can't help because there's nowhere healthy to launch.",
+      "Switch to Three zones with Just enough capacity and fail a zone: a third of requests fail for five minutes while replacements launch.",
+      "Choose Survive a zone, then fail a zone: nothing fails, because the spare capacity was already running.",
+      "With Just enough capacity, impair the control plane before failing a zone: the errors never stop. That's why static stability matters.",
+    ],
+    references: [
+      {
+        title: "AWS Fault Isolation Boundaries: Availability Zones",
+        url: "https://docs.aws.amazon.com/whitepapers/latest/aws-fault-isolation-boundaries/availability-zones.html",
+        publisher: "Amazon Web Services",
+        kind: "official-docs",
+      },
+      {
+        title: "Static stability using Availability Zones",
+        url: "https://builder.aws.com/content/3K9SiqiJ369TGkkGzqPM95BuYWI/static-stability-using-availability-zones",
+        publisher: "Amazon Web Services",
+        kind: "article",
+      },
+    ],
+  },
+  {
+    slug: "deployment-strategies",
+    title: "Deployment strategies",
+    summary:
+      "Ship the same buggy release all at once, rolling, blue-green or as a canary, with and without automated rollback, and count the failed requests.",
+    domain: "cloud",
+    lesson: "cloud/blue-green-and-canary-deployments",
+    kind: "simulation",
+    tryThis: [
+      "Start with Canary: the bug is caught at 5% of traffic and rolled back within two minutes, before the overall error rate ever crosses the alarm.",
+      "Switch to Blue-green: rollback is instant too, but every user hit the bug first, and you paid for two full fleets.",
+      "Try All at once: there's downtime even when v2 is healthy — turn off the bug to see it.",
+      "Turn off Automated rollback and compare the failed requests for each strategy.",
+    ],
+    references: [
+      {
+        title: "Canarying Releases (The Site Reliability Workbook)",
+        url: "https://sre.google/workbook/canarying-releases/",
+        publisher: "Google",
+        kind: "book",
+      },
+      {
+        title: "Deployments: strategy",
+        url: "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy",
+        publisher: "Kubernetes",
+        kind: "official-docs",
+      },
+    ],
+  },
+  {
+    slug: "autoscaling",
+    title: "Autoscaling",
+    summary:
+      "Watch a target tracking policy add and remove instances as traffic ramps, spikes and bursts — and see what start-up time and scale-in windows change.",
+    domain: "cloud",
+    lesson: "cloud/autoscaling",
+    kind: "simulation",
+    tryThis: [
+      "Play the Ramp at a 60% target: capacity climbs ahead of demand, then steps back down gently.",
+      "Raise the target to 90%: it's cheaper, but there's no room for the climb and requests fail.",
+      "Pick Bursty traffic and set the scale-in window to None: capacity is removed in every lull, just before the next burst needs it.",
+      "Set start-up to 6 minutes and add a traffic surge: new instances arrive after the surge has done its damage.",
+    ],
+    references: [
+      {
+        title: "Target tracking scaling policies for Amazon EC2 Auto Scaling",
+        url: "https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-scaling-target-tracking.html",
+        publisher: "Amazon Web Services",
+        kind: "official-docs",
+      },
+      {
+        title: "Horizontal Pod Autoscaling",
+        url: "https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/",
+        publisher: "Kubernetes",
+        kind: "official-docs",
+      },
+    ],
+  },
 ]);

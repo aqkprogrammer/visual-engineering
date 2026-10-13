@@ -54,10 +54,14 @@ test.describe("learning paths and progress", () => {
     ).toBeVisible();
 
     await page.goto("/paths/");
-    await expect(page.getByText(/^1 of 12 lessons completed/)).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Your progress" }).getByText(/^1 of \d+ lessons completed/),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Reset progress" }).click();
     await page.getByRole("button", { name: "Yes, reset progress" }).click();
-    await expect(page.getByText(/^0 of 12 lessons completed/)).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Your progress" }).getByText(/^0 of \d+ lessons completed/),
+    ).toBeVisible();
   });
 
   test("a finished knowledge check shows its score", async ({ page }) => {
