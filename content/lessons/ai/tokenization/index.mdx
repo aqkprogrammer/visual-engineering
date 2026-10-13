@@ -1,0 +1,148 @@
+import { TokenizerExplorer } from "@/components/visualizations/scenes/tokenizer/tokenizer-explorer";
+
+<Definition>
+
+A **token** is the unit of text a language model actually reads and writes — often a whole common word, sometimes a piece of a word, a single character or punctuation mark. **Tokenization** is the fixed procedure that splits text into tokens and maps each one to a number the model can process.
+
+</Definition>
+
+## The problem it solves
+
+A neural network works on numbers, so text must be turned into a sequence of ids from a fixed vocabulary. The obvious choices both fail:
+
+- **Whole words** need an enormous vocabulary, and still break on anything new — a typo, a product name, a word in another language. Unknown words become a useless "unknown" token.
+- **Single characters** have a tiny vocabulary and never meet an unknown word, but sequences become very long, and long sequences are expensive for a model to process.
+
+**Subword tokenization** sits in between. Frequent words get a single token; rare words are built from a few reusable pieces. Nothing is ever truly unknown, and sequences stay reasonably short.
+
+## An everyday analogy
+
+<Analogy>
+
+A court stenographer uses shorthand: common words and endings like "the", "and" and "-ing" each get one quick symbol, while an unusual surname is spelled out from smaller pieces. The more often something appears, the more it deserves its own symbol.
+
+</Analogy>
+
+Where the analogy breaks down: the stenographer chooses symbols thoughtfully. A tokenizer's vocabulary is learned purely from frequency statistics, so its pieces often don't line up with meaningful parts of words.
+
+## Explore it
+
+<TokenizerExplorer />
+
+Things to try:
+
+- Drag **merges learned** down to 0: every word falls apart into single characters. Drag it up and watch common endings like `est_` and whole words like `low_` appear.
+- Type `lowest` — a word that isn't in the training corpus. It is still tokenized, from pieces learned from *low* and *newest*.
+- Type a word with letters the corpus never saw, such as `zebra`. This toy tokenizer has no id for them; real byte-level tokenizers always do.
+
+## Step by step: byte-pair encoding
+
+The most widely used method is **byte-pair encoding** (BPE), adapted from a data-compression algorithm for word segmentation by Sennrich et al. in 2016.
+
+<Steps>
+
+1. **Start from characters.** Split every word in a training corpus into single characters, plus a marker for the end of the word.
+2. **Count adjacent pairs** across the whole corpus, weighted by how often each word appears.
+3. **Merge the most frequent pair** into a new symbol and add it to the vocabulary — for example `e` + `s` → `es`.
+4. **Repeat** until the vocabulary reaches a chosen size. Each merge is recorded in order.
+5. **To tokenize new text,** split it into characters and apply the learned merges in the same order. Each resulting symbol is looked up in the vocabulary to get its id.
+
+</Steps>
+
+The explorer's corpus is the four-word example from that paper — *low, lower, newest, widest*. Its first merges, `es`, `est` and `est_`, come from the frequent ending shared by *newest* and *widest*.
+
+## Under the hood
+
+**Byte-level BPE.** Production tokenizers usually run BPE over the raw **bytes** of UTF-8 text rather than characters. With all 256 byte values in the base vocabulary, any input — emoji, any script, binary junk — can always be tokenized; there is no "unknown" token.
+
+**Spaces belong to tokens.** Many tokenizers attach the leading space to the following word, so `" cat"` and `"cat"` can be different tokens. SentencePiece, used by several model families, treats the input as a raw character stream and represents spaces with a visible symbol, so the same tokenizer works for languages that don't separate words with spaces.
+
+**Vocabulary size is a trade-off.** Modern LLM vocabularies typically hold tens of thousands to a few hundred thousand tokens. A bigger vocabulary means shorter sequences but a larger embedding table and more rarely seen tokens.
+
+**Tokenizers are tied to their model.** A model only understands the ids from the tokenizer it was trained with. Counts and ids from one tokenizer say nothing about another.
+
+## Example: count tokens before you send them
+
+```python
+import tiktoken
+
+enc = tiktoken.get_encoding("o200k_base")   # a tokenizer used with OpenAI models
+tokens = enc.encode("Tokenization isn't word splitting.")
+
+print(len(tokens))                           # how many tokens this text costs
+print([enc.decode([t]) for t in tokens])     # the text of each token
+```
+
+Most model providers publish a tokenizer library or a counting endpoint like this. Use the one that matches the model you are calling.
+
+## Why tokens matter in practice
+
+**Cost and limits are measured in tokens.** Context windows, rate limits and API prices are all quoted per token, not per word or character. Long prompts, retrieved documents and conversation history all consume the same budget.
+
+**Not every language costs the same.** Tokenizers trained mostly on English text often split other languages, and some scripts, into more tokens per word — making the same content more expensive and leaving less room in the context window.
+
+**Models don't see letters.** Because a word may arrive as one or two tokens, tasks that depend on individual characters — counting letters, reversing a word, exact spelling — can be surprisingly hard for a model. Numbers can be split into arbitrary chunks too, which can make arithmetic on long numbers unreliable.
+
+<Callout kind="note" title="A rough rule of thumb">
+
+For typical English text, a token is often around three to four characters, or a bit less than one word. Treat that only as an estimate: it varies with the tokenizer, the language and the kind of text — code and numbers behave very differently. Count with the real tokenizer when it matters.
+
+</Callout>
+
+## Trade-offs between tokenization schemes
+
+<TradeOffs
+  use={[
+    "Subword (BPE, unigram) tokenization for general text: compact sequences with no unknown words.",
+    "Byte-level BPE when inputs may contain any language, emoji or unusual characters.",
+    "A larger vocabulary when shorter sequences (lower cost, longer effective context) matter more than model size.",
+  ]}
+  avoid={[
+    "Word-level vocabularies for open-ended text: they can't handle new words.",
+    "Character-level tokenization for large models: sequences become several times longer and more expensive.",
+    "Estimating cost from word counts for non-English text or code — measure with the actual tokenizer.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"One token equals one word."** Common words are often one token, but many words are several, and punctuation and spaces count too.
+
+**"All models tokenize the same way."** Each model family has its own tokenizer and vocabulary; token counts differ between them.
+
+**"The model reads the text character by character."** It reads token ids. Character-level structure inside a token is only indirectly available to it.
+
+**"Tokenization is a minor preprocessing detail."** It shapes cost, context limits, multilingual fairness and some characteristic model failures.
+
+## Failure modes and debugging
+
+- **Context limit exceeded unexpectedly** — the text was measured in words or characters. Count tokens with the model's tokenizer, including system prompts and retrieved context.
+- **Costs higher for some users** — their language tokenizes into more tokens per word. Monitor token usage by language.
+- **Odd behaviour around specific strings** — rare tokens or strings that split strangely (long numbers, unusual identifiers) can confuse models. Inspect how the input was tokenized.
+- **Mismatched tokenizer** — counting with one tokenizer and calling a model that uses another gives wrong budgets.
+
+## Interview questions
+
+<InterviewQuestion question="Why do language models use subword tokenization instead of words or characters?">
+
+Word vocabularies explode in size and still can't represent new or misspelled words, while character sequences are long and expensive to process. Subword methods such as BPE give frequent words their own tokens and build rare words from reusable pieces, keeping sequences short with no unknown words.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Explain how byte-pair encoding builds its vocabulary.">
+
+Start from single characters (or bytes) for every word in a corpus. Repeatedly count all adjacent symbol pairs, weighted by word frequency, merge the most frequent pair into a new symbol and add it to the vocabulary, until the vocabulary reaches the target size. Tokenizing new text applies the learned merges in the same order.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Why might an LLM struggle to count the letters in a word?">
+
+The model never sees the individual letters: the word reaches it as one or a few token ids, and the spelling inside each token is only indirectly encoded. Character-level tasks therefore depend on knowledge the model has to infer rather than read directly.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Why can the same prompt cost more in one language than another?">
+
+Pricing and limits are per token, and tokenizers trained mostly on one language split other languages into more, shorter tokens. The same meaning therefore needs more tokens, costing more and using more of the context window.
+
+</InterviewQuestion>
