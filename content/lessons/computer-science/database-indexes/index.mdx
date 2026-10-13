@@ -1,5 +1,3 @@
-import { BTreeSimulation } from "@/components/visualizations/scenes/btree/btree-simulation";
-
 <Definition>
 
 A **database index** is a separate, sorted data structure that maps values in one or more columns to the rows that contain them, so the database can find matching rows without reading the whole table.
@@ -24,7 +22,7 @@ Where the analogy breaks down: a book's index is printed once. A database index 
 
 ## See it in action
 
-<BTreeSimulation />
+<Demo slug="btree-index" />
 
 Search for a few ids and compare **index pages read** with **full table scan reads**. Then insert ids and watch pages split — sometimes all the way up to the root, which makes the tree one level taller.
 

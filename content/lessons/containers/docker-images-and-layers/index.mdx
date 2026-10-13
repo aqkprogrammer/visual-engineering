@@ -1,5 +1,3 @@
-import { DockerSimulation } from "@/components/visualizations/scenes/docker/docker-simulation";
-
 <Definition>
 
 A **Docker image** is a read-only package of everything an application needs to run — files, libraries, settings — built as a stack of **layers**, one for each filesystem change in its Dockerfile. A **container** is a running instance of an image with a thin writable layer on top.
@@ -24,7 +22,7 @@ Where the analogy breaks down: with Docker's build cache, redrawing a sheet also
 
 ## See it in action
 
-<DockerSimulation />
+<Demo slug="docker-build-cache" />
 
 Things to try:
 

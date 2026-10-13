@@ -4,7 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { References } from "@/components/lessons/lesson-footer";
-import { hasDemo, PlaygroundDemoView } from "@/components/visualizations/demo-registry";
+import { Demo } from "@/components/visualizations/demo-registry";
+import { hasDemo } from "@/components/visualizations/demo-slugs";
 import { getLessonsByRef, getPlaygroundDemo, getPlaygroundDemos } from "@/lib/content/catalog";
 import { alternatesFor } from "@/lib/seo";
 
@@ -50,7 +51,7 @@ export default async function PlaygroundDemoPage({ params }: PageProps<"/playgro
         )}
       </header>
 
-      <PlaygroundDemoView slug={demo.slug} />
+      <Demo slug={demo.slug} />
 
       <div className="grid gap-12 lg:grid-cols-[1fr_18rem]">
         <section aria-labelledby="try-this">

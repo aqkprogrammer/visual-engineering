@@ -112,6 +112,50 @@ export function definePlayground(demos: z.input<typeof playgroundDemoSchema>[]) 
   return demos;
 }
 
+export const learningPathSchema = z.object({
+  slug: slugSchema,
+  title: z.string().min(5).max(60),
+  /** One sentence; doubles as the meta description. */
+  summary: z.string().min(70).max(170),
+  /** Who the path is for, in one or two sentences. */
+  audience: z.string().min(20).max(240),
+  /** What a learner can do after finishing the path. */
+  outcomes: z.array(z.string().min(10).max(160)).min(2).max(6),
+  steps: z
+    .array(
+      z.object({
+        lesson: lessonRefSchema,
+        /** Why this lesson comes at this point in the path. */
+        why: z.string().min(20).max(200),
+      }),
+    )
+    .min(2),
+});
+export type LearningPath = z.infer<typeof learningPathSchema>;
+
+export function defineLearningPaths(paths: z.input<typeof learningPathSchema>[]) {
+  return paths;
+}
+
+export const glossaryTermSchema = z.object({
+  /** Anchor id on the glossary page: /glossary#<id>. */
+  id: slugSchema,
+  term: z.string().min(2).max(60),
+  /** Other names and abbreviations, also matched by search. */
+  aliases: z.array(z.string().min(2)).default([]),
+  /** Plain-language definition in one to three sentences. */
+  definition: z.string().min(40).max(400),
+  /** The published lesson that explains the term in depth. */
+  lesson: lessonRefSchema.optional(),
+  /** Ids of other glossary terms worth reading next. */
+  related: z.array(slugSchema).default([]),
+});
+export type GlossaryTerm = z.infer<typeof glossaryTermSchema>;
+
+export function defineGlossary(terms: z.input<typeof glossaryTermSchema>[]) {
+  return terms;
+}
+
 export const quizOptionSchema = z.object({
   id: z.string().regex(/^[a-e]$/, "option ids are a–e"),
   text: z.string().min(1),

@@ -1,5 +1,3 @@
-import { KubernetesSimulation } from "@/components/visualizations/scenes/kubernetes/kubernetes-simulation";
-
 <Definition>
 
 **Self-healing** in Kubernetes is the cluster continuously comparing what is running with what you asked for, and acting to close the gap — restarting crashed containers, replacing lost pods and routing traffic only to pods that are ready.
@@ -24,7 +22,7 @@ The analogy captures *declared state plus continuous correction*. Where it break
 
 ## See it in action
 
-<KubernetesSimulation />
+<Demo slug="kubernetes-self-healing" />
 
 Try crashing a container, then deleting a pod, then failing a node. Watch which component reacts in the event log, and how long each recovery takes.
 

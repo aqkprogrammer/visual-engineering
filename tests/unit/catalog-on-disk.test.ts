@@ -36,10 +36,37 @@ describe("curriculum content on disk", async () => {
 });
 
 describe("playground content", async () => {
-  const { DEMO_SLUGS } = await import("@/components/visualizations/demo-registry");
+  const { DEMO_SLUGS } = await import("@/components/visualizations/demo-slugs");
   const catalog = await loadCatalog();
 
   it("registers a component for every playground demo and vice versa", () => {
     expect(catalog.playground.map((d) => d.slug).sort()).toEqual([...DEMO_SLUGS].sort());
+  });
+});
+
+describe("learning paths and glossary on disk", async () => {
+  const catalog = await loadCatalog();
+  const published = new Set(
+    catalog.lessons.filter((l) => l.status === "published").map((l) => l.id),
+  );
+
+  it("has at least one path, each with two or more published lessons", () => {
+    expect(catalog.paths.length).toBeGreaterThan(0);
+    for (const path of catalog.paths) {
+      expect(path.steps.length, path.slug).toBeGreaterThanOrEqual(2);
+      for (const step of path.steps) expect(published.has(step.lesson), step.lesson).toBe(true);
+    }
+  });
+
+  it("links every glossary term to a published lesson", () => {
+    expect(catalog.glossary.length).toBeGreaterThan(20);
+    for (const term of catalog.glossary) {
+      expect(term.lesson && published.has(term.lesson), term.id).toBe(true);
+    }
+  });
+
+  it("puts every published lesson in at least one path", () => {
+    const inPaths = new Set(catalog.paths.flatMap((p) => p.steps.map((s) => s.lesson)));
+    expect([...published].filter((id) => !inPaths.has(id))).toEqual([]);
   });
 });

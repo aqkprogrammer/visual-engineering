@@ -1,5 +1,3 @@
-import { DnsWalkthrough } from "@/components/visualizations/scenes/dns/dns-walkthrough";
-
 <Definition>
 
 **DNS** (the Domain Name System) is the internet's distributed directory that turns human-friendly names like `shop.example.com` into the IP addresses computers use to connect. **Resolution** is the process of finding that answer.
@@ -24,7 +22,7 @@ The receptionist is the recursive resolver, the switchboard and department are t
 
 ## See it step by step
 
-<DnsWalkthrough />
+<Demo slug="dns-resolution" />
 
 Compare the three scenarios. The first lookup contacts three name servers; the repeat is answered from cache; a different name in the same domain skips straight to the authoritative server.
 

@@ -1,8 +1,12 @@
+"use client";
+
 import dynamic from "next/dynamic";
+import type { DemoSlug } from "./demo-slugs";
 
 /*
- * Playground demos by slug (see content/playground.ts). Each is code-split so a page only loads
- * its own simulation; all of them still server-render their first frame.
+ * Interactive demos by slug (see content/playground.ts), used by playground pages and lessons.
+ * This must stay a client module: only then does `dynamic()` give each demo its own chunk, so a
+ * page downloads just the demo it shows. Every demo still server-renders its first frame.
  */
 const LoadBalancerSimulation = dynamic(() =>
   import("./scenes/load-balancer/load-balancer-simulation").then((m) => m.LoadBalancerSimulation),
@@ -43,26 +47,7 @@ const QueueSimulation = dynamic(() =>
   import("./scenes/queue/queue-simulation").then((m) => m.QueueSimulation),
 );
 
-export const DEMO_SLUGS = [
-  "load-balancer",
-  "tls-handshake",
-  "kubernetes-self-healing",
-  "cache",
-  "rate-limiter",
-  "embeddings",
-  "btree-index",
-  "dns-resolution",
-  "rag-pipeline",
-  "docker-build-cache",
-  "tokenizer",
-  "message-queue",
-] as const;
-
-export function hasDemo(slug: string): boolean {
-  return (DEMO_SLUGS as readonly string[]).includes(slug);
-}
-
-export function PlaygroundDemoView({ slug }: { slug: string }) {
+export function Demo({ slug }: { slug: DemoSlug }) {
   switch (slug) {
     case "load-balancer":
       return <LoadBalancerSimulation />;
@@ -88,7 +73,5 @@ export function PlaygroundDemoView({ slug }: { slug: string }) {
       return <TokenizerExplorer />;
     case "message-queue":
       return <QueueSimulation />;
-    default:
-      return null;
   }
 }
