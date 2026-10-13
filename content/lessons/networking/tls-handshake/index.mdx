@@ -1,0 +1,162 @@
+import { TlsHandshakeWalkthrough } from "@/components/visualizations/scenes/tls/tls-walkthrough";
+
+<Definition>
+
+**TLS** (Transport Layer Security) is the protocol that encrypts and authenticates connections such as HTTPS. Its **handshake** is the opening exchange in which the client and server agree on secret keys and the client checks that it is really talking to the server it asked for.
+
+</Definition>
+
+## The problem it solves
+
+Data crossing the internet passes through many machines you don't control: Wi-Fi access points, home routers, internet providers, transit networks. Any of them could read the traffic, and some could change it. A secure connection needs three properties:
+
+- **Confidentiality** — nobody in the middle can read the data.
+- **Integrity** — nobody in the middle can change the data without being detected.
+- **Authentication** — the client is talking to the real `shop.example.com`, not an impostor.
+
+The first two need a secret key shared by both ends. But the two ends have never met, and every message they exchange to set up that key travels over the same untrusted network. The third property is just as important: encryption is worthless if you have carefully encrypted your password *to an attacker*. The TLS handshake solves both problems in a few messages.
+
+## An everyday analogy
+
+<Analogy>
+
+Two people want to agree on a secret paint colour while a spy watches everything they post to each other. Each privately picks a colour, mixes it with a shared public colour, and posts the mixture. Each then adds their own private colour to the *other's* mixture. Both end up with the same final colour — but the spy, who only saw the two mixtures, can't separate them back into the private colours.
+
+Before trusting the result, one person also asks the other for a passport issued by an authority they both trust.
+
+</Analogy>
+
+The paint mixing stands for the key exchange, and the passport for the certificate. Where the analogy breaks down: real key exchange uses mathematics that is easy to compute in one direction and infeasible to reverse, not paint, and the "passport check" must also prove the other person *holds* the passport rather than just showing a copy of it — which is exactly what one of the handshake messages does.
+
+## See it step by step
+
+<TlsHandshakeWalkthrough />
+
+Switch the view to **Eavesdropper on the network** to see how little an observer learns once the first two messages have passed.
+
+## Step by step
+
+<Steps>
+
+1. **ClientHello.** The browser lists the TLS versions and cipher suites it supports and, crucially, includes a **key share**: its half of a key exchange for a group it expects the server to accept (commonly X25519). It also names the site it wants in the **Server Name Indication** (SNI) field, so a server hosting many sites can pick the right certificate.
+2. **ServerHello.** The server picks a cipher suite and sends its own key share. Combining its private key with the client's public share gives the **shared secret**; the browser does the mirror-image calculation. Neither side ever sends the secret.
+3. **Handshake keys.** Both sides feed the shared secret into a key derivation function (HKDF) to produce handshake traffic keys. From here on, everything is encrypted.
+4. **EncryptedExtensions.** Settings that need not travel in the clear, such as the application protocol (for example HTTP/2, negotiated with ALPN).
+5. **Certificate.** The server's certificate chain: a signed statement from a certificate authority binding the name `shop.example.com` to a public key.
+6. **CertificateVerify.** A signature over the entire handshake so far, made with the private key that matches the certificate. Copying someone's certificate is easy; producing this signature without their private key is not.
+7. **Finished.** A message authentication code over the whole transcript, proving nothing earlier was tampered with. The server derives application traffic keys.
+8. **The browser verifies** the chain up to a root it trusts, that the name matches, that the certificate is in date, the CertificateVerify signature and the server's Finished. Any failure aborts the connection.
+9. **Client Finished**, then **application data** — the HTTP request — encrypted with application traffic keys.
+
+</Steps>
+
+The browser sends its request after a **single round trip** of handshake. That is the headline improvement over TLS 1.2, whose full handshake needs two.
+
+## Under the hood
+
+**Ephemeral key exchange gives forward secrecy.** The key shares are generated fresh for every connection (ECDHE: *Elliptic-Curve Diffie–Hellman, Ephemeral*) and thrown away afterwards. The certificate's long-term private key is only used to *sign*, never to encrypt the session key. So even if that private key is stolen years later, recorded past traffic still cannot be decrypted. TLS 1.3 removed the older RSA key-exchange mode that lacked this property.
+
+**Authenticated encryption protects every record.** TLS 1.3 only allows AEAD ciphers (*Authenticated Encryption with Associated Data*) such as AES-GCM and ChaCha20-Poly1305, which encrypt and integrity-protect each record at once. The three common TLS 1.3 cipher suites are `TLS_AES_128_GCM_SHA256`, `TLS_AES_256_GCM_SHA384` and `TLS_CHACHA20_POLY1305_SHA256`.
+
+**More of the handshake is hidden.** In TLS 1.2 the certificate travelled in plaintext. In TLS 1.3 everything after ServerHello is encrypted, and encrypted handshake records are sent with the same outer record type as application data, so an observer cannot even tell which message is which.
+
+**What still leaks.** The ClientHello is plaintext, including the SNI site name — unless Encrypted Client Hello (ECH), standardised in RFC 9849 in 2026, is used by both sides. The server's IP address, the DNS lookup (unless encrypted DNS is used), and the sizes and timing of records are also visible.
+
+<Callout kind="warning" title="When the guess is wrong">
+
+The single round trip relies on the client guessing a key-exchange group the server accepts. If it guesses wrong, the server replies with a **HelloRetryRequest** naming a group it does support, and the client starts again — costing an extra round trip. Clients therefore lead with widely supported groups.
+
+</Callout>
+
+**Resumption and 0-RTT.** After a first handshake the server can issue a *pre-shared key* (PSK) ticket. A later connection can use it to skip certificate verification and, optionally, send **0-RTT early data** with the very first flight. Early data is not protected against **replay**: an attacker can capture and resend it. RFC 8446 therefore advises using it only for requests that are safe to repeat, such as an idempotent `GET`, and many servers disable it entirely.
+
+## Example: inspect a connection from code
+
+```ts
+import tls from "node:tls";
+
+const socket = tls.connect({ host: "example.com", port: 443, servername: "example.com" }, () => {
+  console.log(socket.getProtocol());                        // e.g. "TLSv1.3"
+  console.log(socket.getCipher().name);                      // e.g. "TLS_AES_256_GCM_SHA384"
+  console.log(socket.authorized);                            // true: chain and hostname verified
+  console.log(socket.getPeerCertificate().subjectaltname);   // names the certificate covers
+  socket.end();
+});
+```
+
+`servername` sets the SNI field. By default Node.js verifies the certificate chain and hostname and refuses the connection if either fails. You will sometimes see `rejectUnauthorized: false` in code samples — it turns that verification off, which keeps the encryption but throws away the authentication, so never ship it.
+
+## In production
+
+Most applications don't implement TLS themselves; it is **terminated** somewhere in front of them — a CDN, a load balancer or a reverse proxy — which holds the certificate, completes the handshake and forwards the request.
+
+Certificates expire, and expired certificates are a classic cause of outages. Many teams automate issuance and renewal with **ACME**, the protocol behind services like Let's Encrypt (RFC 8555), and monitor expiry dates as a production alert, not a calendar reminder.
+
+Inside a company network, **mutual TLS** (mTLS) adds the reverse check: the client also presents a certificate, so services can authenticate each other. Service meshes commonly automate this between every pair of services.
+
+## Where to terminate TLS
+
+<TradeOffs
+  use={[
+    "Terminate at a CDN or load balancer to centralise certificates, offload handshake CPU and inspect HTTP for routing or a web application firewall.",
+    "Terminate at the edge when the hop to your servers stays inside a network you trust and your compliance rules allow it.",
+  ]}
+  avoid={[
+    "Traffic after the terminating proxy crosses networks you don't control — re-encrypt it or keep TLS end to end.",
+    "Compliance or a zero-trust design requires encryption on every hop, including inside the data centre.",
+    "The proxy would need the private keys of a system it shouldn't be trusted with.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"HTTPS hides which site I'm visiting."** It hides the path, query string, headers, cookies and body. The site name in SNI, the server's IP address and usually the DNS query remain visible unless ECH and encrypted DNS are used.
+
+**"The padlock means the site is trustworthy."** It means the connection is encrypted and the certificate matches the name in the address bar. A phishing site can have a perfectly valid certificate for its own lookalike domain.
+
+**"TLS 1.3 takes zero round trips."** A full TLS 1.3 handshake takes one. Zero round trips is only possible with resumption and 0-RTT early data, with the replay caveat above.
+
+**"Encryption is what matters; certificate errors are just warnings."** Without authentication, you may be encrypting traffic straight to an attacker. Clicking through a certificate error defeats the purpose of TLS.
+
+## Failure modes and debugging
+
+- **Expired certificate** — every client fails at once when the date passes. Monitor expiry and automate renewal.
+- **Missing intermediate certificate** — the server sends only its own certificate, so clients that don't already have the intermediate cached can't build a chain to a trusted root. Some browsers cope; many API clients don't. Always serve the full chain.
+- **Hostname mismatch** — the certificate doesn't cover the name the client asked for, often because SNI wasn't sent and the server returned its default certificate.
+- **Client clock wrong** — a device with a badly wrong clock sees valid certificates as expired or not yet valid.
+- **No shared protocol or cipher** — old clients that only speak TLS 1.0/1.1, which RFC 8996 deprecated in 2021, can't connect to modern servers.
+
+When debugging, check the full certificate chain the server actually sends, the names it covers and its validity dates, and which protocol version and cipher the client negotiated.
+
+## Security and operations
+
+- Allow only TLS 1.2 and 1.3; TLS 1.0 and 1.1 are formally deprecated.
+- Protect private keys like passwords: restrict access, prefer managed key storage, and rotate after any suspected exposure.
+- Send **HTTP Strict Transport Security** (HSTS) so browsers refuse to downgrade to plain HTTP after their first visit.
+- Treat certificate expiry as a monitored production risk with an alert and an owner.
+
+## Interview questions
+
+<InterviewQuestion question="Why can TLS 1.3 finish its handshake in one round trip when TLS 1.2 needed two?">
+
+The client sends its key share in the very first message, guessing a key-exchange group the server will accept. The server can immediately compute the shared secret, derive keys and send its certificate, proof of key possession and Finished message in one encrypted flight. In TLS 1.2 the two sides first negotiated parameters and only then exchanged key material. If the client's guess is wrong, a HelloRetryRequest costs an extra round trip.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="What is forward secrecy and how does TLS 1.3 provide it?">
+
+Forward secrecy means that compromising a server's long-term private key later does not let an attacker decrypt traffic they recorded earlier. TLS 1.3 achieves it by always using ephemeral (EC)DHE key exchange: fresh key shares per connection that are discarded afterwards. The certificate's key is used only to sign the handshake, never to transport the session key.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="A client can see the server's certificate. What stops an attacker from replaying that certificate to impersonate the server?">
+
+The CertificateVerify message: the server signs the handshake transcript — which includes fresh random values and key shares from this connection — with the private key matching the certificate. An attacker with only a copy of the certificate cannot produce that signature, and the client rejects the handshake.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="What risk does 0-RTT early data introduce, and how should you handle it?">
+
+Early data is sent before the handshake confirms the connection is fresh, so an attacker can capture and replay it. It should only carry requests that are safe to execute more than once — idempotent reads — or be disabled. Servers that accept it typically add replay protections and reject early data for state-changing requests.
+
+</InterviewQuestion>

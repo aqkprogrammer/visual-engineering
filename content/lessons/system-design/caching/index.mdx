@@ -1,0 +1,157 @@
+import { CacheSimulation } from "@/components/visualizations/scenes/cache/cache-simulation";
+
+<Definition>
+
+A **cache** is a small, fast store that keeps copies of data that is expensive to fetch or compute, so that repeated requests can be answered without going back to the slower original source.
+
+</Definition>
+
+## The problem it solves
+
+Reading a product page from a database might take tens of milliseconds and some database CPU. If thousands of users view the same popular product every second, the database repeats identical work thousands of times, and it becomes the bottleneck long before the web servers do.
+
+Most real workloads are **skewed**: a small fraction of the data receives a large fraction of the reads. Keeping that hot fraction in memory, close to the application, cuts latency for most requests and shields the database from load it doesn't need to carry.
+
+The catch is in the word *copy*. As soon as data lives in two places, they can disagree. Deciding what to keep, what to throw away and how to keep copies acceptably fresh is what makes caching a design topic rather than a one-line optimisation.
+
+## An everyday analogy
+
+<Analogy>
+
+A chef keeps the ingredients they use most on the counter and the rest in the walk-in cold room at the back. Grabbing from the counter is instant; a trip to the cold room takes a minute. The counter is small, so when something new is needed, something else has to go back.
+
+</Analogy>
+
+Where the analogy breaks down: when a supplier swaps the tomatoes in the cold room for a fresher batch, the chef can *see* that the counter ones are old. A cache usually can't — it will happily keep serving the old copy until something deletes it or it expires.
+
+## See it in action
+
+<CacheSimulation />
+
+Things to try:
+
+- Switch to **Sequential scan** with LRU. Eight keys cycle through four slots, and every request misses.
+- Turn **Invalidate on write** off, then write a new version of **A**. The cache keeps serving the old version — a stale read — until A is evicted or expires. Add a **TTL** and watch it bound how long staleness lasts.
+- Compare **LRU** and **LFU** under **Hot keys**, then shrink the capacity to 2.
+
+## Step by step: a cache-aside read
+
+The most common pattern is **cache-aside** (also called *lazy loading*): the application talks to both the cache and the database.
+
+<Steps>
+
+1. The application asks the cache for the key.
+2. **Hit:** the cache has it, and the application uses it. Done — typically well under a millisecond for an in-memory cache.
+3. **Miss:** the cache doesn't have it. The application reads the database, the source of truth.
+4. The application stores the result in the cache, usually with a **time to live** (TTL), and returns it.
+5. If the cache is full, storing the new entry first **evicts** an existing one, chosen by the eviction policy.
+
+</Steps>
+
+```ts
+async function getProduct(id: string): Promise<Product> {
+  const key = `product:${id}`;
+  const cached = await redis.get(key);
+  if (cached) return JSON.parse(cached);                       // hit
+
+  const product = await db.products.findById(id);              // miss: read the source of truth
+  await redis.set(key, JSON.stringify(product), { EX: 300 });  // keep for at most 5 minutes
+  return product;
+}
+
+async function updateProduct(id: string, changes: Partial<Product>) {
+  await db.products.update(id, changes);
+  await redis.del(`product:${id}`);                            // invalidate after writing
+}
+```
+
+## Choosing what to evict
+
+A full cache must drop something to make room. The policy is a bet on which entry is least likely to be needed again.
+
+- **LRU (least recently used)** evicts the entry that hasn't been read for the longest. It suits most workloads, where recently used data tends to be used again soon.
+- **LFU (least frequently used)** evicts the entry read the fewest times. It protects long-term favourites from being pushed out by a burst of one-off reads, but needs ageing so that once-popular keys eventually leave.
+- **FIFO (first in, first out)** evicts the oldest entry regardless of use. It is simple and cheap, but it will happily evict the most popular key.
+
+Production caches often approximate these rather than tracking them exactly. Redis, for example, implements LRU and LFU by sampling a few keys and evicting the best candidate among them, which costs far less memory and, according to its documentation, behaves almost identically for typical access patterns. Redis also offers policies that only evict keys with a TTL, random eviction, and a `noeviction` mode that rejects new writes instead of evicting.
+
+<Callout kind="warning" title="The scan problem">
+
+LRU and FIFO break down when something reads more distinct keys than the cache can hold, in order — a nightly report or a backfill job. Each new key pushes out an older one just before it would have been reused, so the hit ratio can collapse to zero and the scan also flushes out the genuinely hot data. The simulation's **Sequential scan** pattern shows this.
+
+</Callout>
+
+## Keeping data fresh
+
+There are only a few ways a cached copy stops being stale:
+
+- **Invalidation** — delete (or update) the cached entry when the source changes, as `updateProduct` does above.
+- **Expiry** — give every entry a TTL, so even a missed invalidation only causes staleness for a bounded time.
+- **Write-through** — write to the cache and the database together, so the cache always has the latest value for keys that are written.
+- **Write-behind** (write-back) — write to the cache and update the database asynchronously later. Fast writes, but data can be lost if the cache fails before it is flushed.
+
+Invalidation is harder than it looks. In the cache-aside example, a reader can fetch the *old* value from the database just before an update, then write that old value into the cache just *after* the update's `del`. The cache now holds stale data that no invalidation will remove. A TTL is the safety net that bounds how long such races last, which is why many teams use both.
+
+## In production
+
+Caches appear at every layer: the browser's HTTP cache, a CDN at the network edge, an in-process cache inside each server, a shared cache such as Redis or Memcached, and the database's own buffer pool. For HTTP responses, the `Cache-Control` header (defined in RFC 9111) tells browsers and CDNs how long a response may be reused.
+
+Measure the **hit ratio** — hits ÷ (hits + misses) — and watch it alongside eviction counts. Redis reports these as `keyspace_hits`, `keyspace_misses` and `evicted_keys` in `INFO stats`. A sudden drop in hit ratio, for example after a deploy changes the key format, can send a flood of traffic to the database.
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Reads greatly outnumber writes and the same data is read repeatedly.",
+    "The source is slow or expensive per request: a remote API, a heavy query, a computed result.",
+    "Slightly stale data is acceptable for some bounded time.",
+  ]}
+  avoid={[
+    "Every read must see the latest write — account balances, inventory at checkout. Read from the source of truth.",
+    "Access is spread evenly across far more data than the cache can hold; you pay for misses and eviction without the benefit.",
+    "The underlying problem is a slow query that an index would fix — a cache can hide it until the cache is cold.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"A cache only makes things faster."** It also adds a second copy that can be stale, another system that can fail, and new failure modes such as a cold cache after restart.
+
+**"A bigger cache always helps."** Only while the extra space holds data that will be read again. Past the size of the hot working set, hit ratio barely moves.
+
+**"Deleting the key on write keeps the cache consistent."** It narrows the window but, as shown above, races between concurrent reads and writes can still leave stale entries behind. TTLs bound the damage.
+
+**"LRU is always the right policy."** It is a good default, but scans defeat it, and workloads with stable favourites often do better with LFU.
+
+## Failure modes and debugging
+
+- **Cache stampede** (thundering herd) — a hot key expires and hundreds of concurrent requests miss at once, all hitting the database for the same value. Mitigations: let only one request rebuild the value while the others wait (request coalescing), add random jitter to TTLs so keys don't expire together, or refresh popular keys shortly before they expire.
+- **Cold start** — after a restart or a new deploy with a different key format, the hit ratio is zero and the database takes the full load. Warm critical keys gradually or roll deploys out slowly.
+- **Hot key** — one extremely popular key overloads the single cache node that owns it. Replicate that key or add a small in-process cache in front.
+- **Stale data bugs** — users see old values after an edit. Check that every write path invalidates, and that TTLs exist as a backstop.
+
+## Interview questions
+
+<InterviewQuestion question="Explain cache-aside, write-through and write-behind, and when you'd choose each.">
+
+Cache-aside: the application reads the cache, loads misses from the database and populates the cache; writes go to the database and invalidate the cache. It is simple and only caches what is read. Write-through: every write updates the cache and the database together, keeping written keys fresh at the cost of slower writes. Write-behind: writes go to the cache and are persisted asynchronously, giving fast writes but risking data loss if the cache fails before flushing. Cache-aside is the usual default; write-through suits read-after-write freshness; write-behind suits write-heavy workloads that can tolerate the risk.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="What is a cache stampede and how do you prevent it?">
+
+When a popular entry expires or is evicted, many concurrent requests miss at the same moment and all query the backing store for the same value, potentially overloading it. Prevent it by coalescing requests so only one rebuilds the value, adding jitter to TTLs, refreshing hot keys before they expire, or serving the slightly stale value while one request refreshes it in the background.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Why can LRU perform worse than no cache at all for some workloads?">
+
+A sequential scan over more keys than the cache holds evicts each entry just before it would be reused, so every access misses and the cache still pays the cost of storing and evicting. It also pushes out the genuinely hot data, hurting other traffic. Scan-resistant policies, LFU, or bypassing the cache for batch jobs avoid this.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="How would you make sure users see their own edits immediately when reads are cached?">
+
+Invalidate or update the cached entry as part of the write path, and for the user who just wrote, read from the source of truth (read-your-writes) for a short period or bypass the cache for that key. Keep TTLs as a backstop for missed invalidations, and be explicit about which data may be eventually consistent.
+
+</InterviewQuestion>

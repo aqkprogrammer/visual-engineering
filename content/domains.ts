@@ -35,12 +35,7 @@ export default defineDomains([
         title: "Traffic & Edge",
         summary:
           "Getting requests to the right place: load balancers, proxies, gateways, CDNs and rate limits.",
-        plannedTopics: [
-          "Reverse proxies",
-          "API gateways",
-          "CDN and edge computing",
-          "Rate limiting",
-        ],
+        plannedTopics: ["Reverse proxies", "API gateways", "CDN and edge computing"],
       },
       {
         id: "data",
@@ -48,7 +43,6 @@ export default defineDomains([
         summary:
           "Caching, indexing, replication and partitioning — and how to choose a data store.",
         plannedTopics: [
-          "Caching, invalidation and eviction",
           "Database indexing and query optimization",
           "SQL versus NoSQL",
           "Replication and partitioning",
@@ -224,8 +218,6 @@ export default defineDomains([
           "How text becomes numbers, and how transformers turn those numbers into predictions.",
         plannedTopics: [
           "Tokens and tokenization",
-          "Embeddings",
-          "Vector similarity and cosine similarity",
           "Attention mechanisms",
           "Transformers",
           "Large language models",
@@ -367,7 +359,6 @@ export default defineDomains([
           "Horizontal Pod Autoscaler",
           "Scheduling",
           "Rolling deployments and rollbacks",
-          "Self-healing",
           "Service discovery",
           "Network policies",
           "Helm",
@@ -498,7 +489,6 @@ export default defineDomains([
         summary: "HTTP in its versions, TLS, and how browsers put a request together.",
         plannedTopics: [
           "HTTP and HTTPS",
-          "TLS handshake",
           "HTTP/1.1, HTTP/2 and HTTP/3",
           "Browser request lifecycle",
           "WebSockets",

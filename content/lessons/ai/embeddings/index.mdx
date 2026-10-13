@@ -1,0 +1,145 @@
+import { EmbeddingExplorer } from "@/components/visualizations/scenes/embeddings/embedding-explorer";
+
+<Definition>
+
+An **embedding** is a list of numbers — a vector — produced by a model to represent a piece of content, such as a word, a sentence or an image, so that content with similar meaning ends up with vectors that point in similar directions.
+
+</Definition>
+
+## The problem it solves
+
+Computers compare text by its characters. To a keyword search, "How do I reset my password?" and "I forgot my login credentials" share almost no words, so they look unrelated, even though a person sees immediately that they ask the same thing.
+
+Embeddings give software a way to compare *meaning* instead of spelling. A model trained on large amounts of text learns to place related content close together in a high-dimensional space. Once everything is a vector, "find things like this" becomes geometry: find the vectors nearest to the query's vector. That one idea powers semantic search, recommendations, duplicate detection, clustering, and the retrieval step of retrieval-augmented generation (RAG).
+
+## An everyday analogy
+
+<Analogy>
+
+Imagine every song in a music library placed on a huge map, so that songs which feel alike sit near each other — calm acoustic tracks in one region, fast electronic tracks in another. To find songs like the one you're playing, you look around its spot on the map.
+
+</Analogy>
+
+Where the analogy breaks down: a real embedding "map" has hundreds or thousands of dimensions rather than two, and nobody chose what the directions mean. The model learned them, and individual dimensions usually don't correspond to any human-readable quality.
+
+## Explore it
+
+<EmbeddingExplorer />
+
+Things to try:
+
+- Pick **cat** and compare **Cosine** with **Dot product**. Under the dot product, the deliberately long **animals** vector jumps to first place, because the dot product grows with length as well as with direction.
+- Pick a fruit. Its nearest neighbours are other fruit; vehicles and animals point in different directions, so their cosine similarity is low or negative.
+- Switch to **Euclidean** and notice that a long vector can be far away in distance even when it points the same way.
+
+## Step by step: semantic search with embeddings
+
+<Steps>
+
+1. **Embed the collection.** Run every document (or chunk of a document) through an embedding model once, and store each vector alongside a reference to its text.
+2. **Embed the query** with *the same model*.
+3. **Compare** the query vector with the stored vectors using a similarity measure.
+4. **Return the top k** most similar items — the nearest neighbours — optionally re-ranking or filtering them afterwards.
+
+</Steps>
+
+For a few thousand items, comparing against every vector is fast enough. For millions, systems use an **approximate nearest neighbour** (ANN) index such as HNSW (*Hierarchical Navigable Small World* graphs), which trades a small chance of missing a true neighbour for searches that are orders of magnitude faster.
+
+## Measuring similarity
+
+Given two vectors **a** and **b**:
+
+- **Dot product** — multiply matching components and add them up. It is large when the vectors point the same way *and* are long.
+- **Cosine similarity** — the dot product divided by both lengths. It depends only on the angle between the vectors: 1 means the same direction, 0 means unrelated (perpendicular), −1 means opposite.
+- **Euclidean distance** — the straight-line distance between the two points. Smaller means more similar.
+
+```ts
+const dot = (a: number[], b: number[]) => a.reduce((sum, x, i) => sum + x * b[i]!, 0);
+const length = (a: number[]) => Math.sqrt(dot(a, a));
+const cosine = (a: number[], b: number[]) => dot(a, b) / (length(a) * length(b));
+
+// Normalise once at indexing time so every vector has length 1 …
+const normalise = (a: number[]) => a.map((x) => x / length(a));
+// … after which dot(normalise(a), normalise(b)) === cosine(a, b), and it's cheaper to compute.
+```
+
+<Callout kind="note" title="When the choice doesn't matter">
+
+If every vector is normalised to length 1, the three measures agree on the ranking: the dot product *equals* cosine similarity, and squared Euclidean distance equals 2 − 2 × cosine. Many embedding models already return normalised vectors, which is why the dot product is a common, cheap default. When vectors are *not* normalised, the measures can disagree — as the explorer shows — so use the one the model's documentation recommends.
+
+</Callout>
+
+## Under the hood
+
+Embedding models are neural networks trained so that the geometry of their outputs reflects some notion of similarity. Early word embeddings such as **word2vec** (2013) learned one vector per word from the words that tend to appear around it. Modern models embed whole sentences or passages; **Sentence-BERT** (2019), for example, fine-tuned a transformer so that sentences with similar meaning produce vectors with high cosine similarity.
+
+Two practical consequences follow:
+
+- **Vectors from different models are not comparable.** Each model learns its own space. If you change models, you must re-embed the entire collection.
+- **"Similar" means similar *in the way the model was trained*.** A model trained on general web text may not separate terms that matter in a specialised domain, such as two drug names that look alike or two contract clauses that differ by one condition.
+
+## In production
+
+A typical setup stores vectors in a vector database or a vector-capable extension of an existing database, next to the source text and metadata used for filtering (for example, only documents the user may access).
+
+Storage adds up quickly. As an illustrative calculation, one million 1,024-dimensional vectors stored as 32-bit floats take about 4 GB before any index overhead — which is why some systems reduce dimensions or quantise vectors to fewer bits per value, at some cost to accuracy.
+
+Embeddings also blur distinctions that keyword search keeps sharp: exact identifiers like order numbers or error codes, rare names, and sometimes negation ("with" versus "without"). For that reason many search systems run keyword and vector search together and merge the results — **hybrid search**.
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Users describe what they want in their own words, which rarely match the wording in your content.",
+    "You need “more like this”: related articles, similar products, duplicate tickets.",
+    "You are building retrieval for a language model and need passages relevant to a question.",
+  ]}
+  avoid={[
+    "Lookups by exact value — ids, SKUs, error codes. A database index or keyword search is exact, cheaper and explainable.",
+    "Results must be explainable to users or auditors; “the vectors were close” is hard to justify.",
+    "Your content changes constantly and re-embedding it would cost more than the improvement is worth.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Each dimension stands for a concept, like 'royalty' or 'size'."** In learned embeddings, dimensions are generally not individually meaningful. The toy space on this page was hand-made to be readable; real ones aren't.
+
+**"High similarity means the answer is correct."** It means the text is *about* similar things. A passage that confidently states the wrong fact can be extremely similar to the question.
+
+**"Any embedding model works with any vector database index."** The index stores whatever vectors you give it, but queries and documents must come from the same model, and the similarity measure should match what that model was trained for.
+
+**"Vector search replaces keyword search."** It complements it. Each finds things the other misses.
+
+## Failure modes and debugging
+
+- **Mixed models** — some documents embedded with an old model and some with a new one, giving nonsense results. Record the model name and version with every vector.
+- **Irrelevant but similar results** — check what text was actually embedded. Very long or very short chunks, boilerplate headers and navigation text can dominate the vectors.
+- **Missing exact matches** — add keyword search or metadata filters for identifiers and names.
+- **Search got worse after scaling up** — an approximate index may be tuned for speed over recall. Measure recall against exact search on a sample and adjust index parameters.
+
+## Interview questions
+
+<InterviewQuestion question="What is the difference between cosine similarity and the dot product, and when are they the same?">
+
+The dot product depends on both the angle between two vectors and their lengths; cosine similarity divides out the lengths and depends only on the angle. They are equal when both vectors have length 1. Normalising vectors at indexing time therefore lets you use the cheaper dot product while getting cosine rankings.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="You upgraded your embedding model and search quality collapsed. What probably happened?">
+
+The query is now embedded with the new model while the stored documents were embedded with the old one. Different models produce incompatible vector spaces, so distances between them are meaningless. Re-embed the whole collection with the new model, and store the model version with each vector so the mismatch can be detected.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Why do vector databases use approximate nearest neighbour search?">
+
+Exact search compares the query with every vector, which grows linearly with the collection and becomes too slow at millions or billions of items. ANN indexes such as HNSW navigate a graph or partitioned structure to find very likely neighbours in a small fraction of the comparisons, accepting a small loss of recall. Index parameters trade speed, memory and recall against each other.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Why might you combine keyword search with vector search?">
+
+Vector search captures meaning and paraphrase but can miss exact tokens such as product codes, names or error messages, and can blur important small differences. Keyword search handles exact terms precisely but misses synonyms. Running both and merging the results (hybrid search) usually beats either alone.
+
+</InterviewQuestion>
