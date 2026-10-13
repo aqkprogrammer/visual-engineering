@@ -6,7 +6,8 @@
  * Uses Lighthouse's default mobile emulation with simulated throttling. Each page is audited
  * five times and the median is compared with the budget: on shared CI runners a single page's
  * LCP and TBT varied by 30% or more between runs of identical code.
- * Budgets come from docs/PLAN.md §9.2. In CI the report also goes to the job summary.
+ * Budgets come from lib/quality/budgets.ts: category scores and CLS fail CI; LCP and TBT are
+ * reported as warnings. In CI the report also goes to the job summary.
  */
 import { spawn } from "node:child_process";
 import { appendFile } from "node:fs/promises";
@@ -62,6 +63,7 @@ async function main() {
 
   const rows: string[] = [];
   const failures: string[] = [];
+  const warnings: string[] = [];
   try {
     await waitForServer(ORIGIN);
     for (const page of PAGES) {
@@ -103,9 +105,13 @@ async function main() {
       }
       for (const m of Object.keys(metrics) as Metric[]) {
         const value = median(metrics[m]);
-        const { max, unit } = METRIC_BUDGETS[m];
+        const { max, unit, enforce } = METRIC_BUDGETS[m];
         cells.push(unit ? `${Math.round(value)} ${unit}` : value.toFixed(3));
-        if (value > max) failures.push(`${page}: ${m} ${value.toFixed(3)} > ${max}`);
+        if (value > max) {
+          (enforce === "fail" ? failures : warnings).push(
+            `${page}: ${m} ${value.toFixed(3)} > ${max}`,
+          );
+        }
       }
       rows.push(`| \`${page}\` | ${cells.join(" | ")} |`);
       console.log(`✓ audited ${page}`);
@@ -118,7 +124,7 @@ async function main() {
   const summary = [
     `### Lighthouse (mobile, median of ${RUNS} runs)`,
     "",
-    `Budgets: performance ≥ 90, accessibility ≥ 95, best practices ≥ 95, SEO ≥ 95, LCP ≤ 2,500 ms, TBT ≤ 200 ms, CLS ≤ 0.1.`,
+    `Failing budgets: performance ≥ 90, accessibility ≥ 95, best practices ≥ 95, SEO ≥ 95, CLS ≤ 0.1. Warning budgets: LCP ≤ 2,500 ms, TBT ≤ 200 ms.`,
     "",
     "| Page | Perf | A11y | Best practices | SEO | LCP | TBT | CLS |",
     "| --- | --- | --- | --- | --- | --- | --- | --- |",
@@ -128,6 +134,9 @@ async function main() {
       ? "✓ All Lighthouse budgets met."
       : `✗ ${failures.length} budget(s) missed:`,
     ...failures.map((f) => `- ${f}`),
+    ...(warnings.length > 0
+      ? ["", `⚠ ${warnings.length} warning budget(s) exceeded:`, ...warnings.map((w) => `- ${w}`)]
+      : []),
   ].join("\n");
   console.log(`\n${summary}`);
   if (process.env.GITHUB_STEP_SUMMARY) {

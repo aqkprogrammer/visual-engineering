@@ -340,7 +340,7 @@ Building an interactive simulation? Follow [docs/SIMULATION-GUIDE.md](docs/SIMUL
 | Production dependency audit | pnpm audit | CI |
 | README banner and curriculum match the real content | `scripts/readme.ts --check` | CI |
 | Page weight: ≤ 215 KB JS up front per page, ≤ 60 KB per simulation, ≤ 80 KB HTML (gzipped) | `scripts/budget.ts` | CI |
-| Lighthouse (mobile, median of 5): performance ≥ 90; accessibility, best practices, SEO ≥ 95; LCP ≤ 2.5 s, TBT ≤ 200 ms, CLS ≤ 0.1 | `scripts/lighthouse.ts` | CI |
+| Lighthouse (mobile, median of 5): performance ≥ 90; accessibility, best practices, SEO ≥ 95; CLS ≤ 0.1 — plus LCP ≤ 2.5 s and TBT ≤ 200 ms reported as warnings | `scripts/lighthouse.ts` | CI |
 | Keyboard-only journeys; no third-party requests or cookies | Playwright | CI |
 | Only green commits deploy | GitHub Actions → Pages | on `main` |
 
