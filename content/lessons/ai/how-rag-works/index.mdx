@@ -1,0 +1,150 @@
+import { RagWalkthrough } from "@/components/visualizations/scenes/rag/rag-walkthrough";
+
+<Definition>
+
+**Retrieval-augmented generation** (RAG) is a pattern in which an application first retrieves passages relevant to a question from its own documents, then gives those passages to a language model as context, so the model answers from that material rather than only from what it learned in training.
+
+</Definition>
+
+## The problem it solves
+
+A large language model (LLM) knows what was in its training data, up to some cut-off date, and nothing about your company's private documents. Asked about your expense policy, it can only guess — and LLMs guess fluently, producing plausible but invented answers (often called *hallucinations*).
+
+You could retrain the model on your documents, but that is slow, expensive and has to be repeated whenever a document changes. RAG takes a different approach: leave the model as it is, and at question time **look up** the relevant text and **put it in the prompt**. The model's job shrinks from "remember the answer" to "read these passages and answer from them". The term and the approach were popularised by Lewis et al. in 2020.
+
+## An everyday analogy
+
+<Analogy>
+
+An open-book exam. The student (the model) is smart but hasn't memorised your company handbook. Before each question, a librarian (the retriever) quickly finds the few pages most likely to contain the answer and hands them over. The student reads them and writes the answer, citing the page.
+
+</Analogy>
+
+Where the analogy breaks down: a student might notice that the librarian handed over an outdated edition and say so. A model usually just answers from whatever it's given — so if retrieval brings back the wrong page, the answer is wrong with full confidence.
+
+## See it step by step
+
+<RagWalkthrough />
+
+Things to try:
+
+- **Deadline question, whole-document chunks, top k = 1.** The outdated 2023 policy narrowly outscores the current one, and the answer is confidently wrong — with a citation.
+- Turn on the **reranker** with the same settings. It drops the superseded document and the answer becomes correct.
+- **Approval question, top k = 2.** Both policies reach the context and the model reports that the sources disagree.
+- Ask about the **gym membership**. Retrieval still returns *something*, but the right behaviour is to say the answer isn't in the documents.
+
+## Step by step
+
+There are two halves: **indexing**, done ahead of time, and **answering**, done for every question.
+
+<Steps>
+
+1. **Collect documents** — policies, tickets, manuals, wiki pages — and extract their text.
+2. **Chunk** each document into passages small enough to retrieve precisely but large enough to make sense on their own.
+3. **Embed and index** each chunk: an embedding model turns it into a vector, stored in a vector index along with the text and metadata (source, date, who may see it).
+4. **Embed the question** with the same embedding model.
+5. **Retrieve** the chunks whose vectors are most similar to the question's — the nearest neighbours.
+6. **Rerank** (optional) the candidates with a slower, more accurate model, and apply filters such as access permissions or "current documents only".
+7. **Build the context**: number the top *k* chunks and place them in a prompt with instructions to answer only from them and to cite sources.
+8. **Generate**: the LLM writes the answer, ideally with citations that point back to the chunks it used.
+
+</Steps>
+
+```ts
+// A sketch of the answering path. embed(), index.search() and llm.generate() stand in for
+// whichever embedding model, vector store and LLM you use.
+async function answer(question: string) {
+  const queryVector = await embed(question);
+  const candidates = await index.search(queryVector, { limit: 20, filter: { visibleTo: user.id } });
+  const top = (await rerank(question, candidates)).slice(0, 4);
+  const context = top.map((c, i) => `[${i + 1}] (${c.source}) ${c.text}`).join("\n");
+  return llm.generate({
+    system: "Answer only from the numbered context and cite sources like [1]. If the answer isn't there, say so.",
+    user: `${context}\n\nQuestion: ${question}`,
+  });
+}
+```
+
+## Under the hood: the decisions that matter
+
+**Chunk size.** Small chunks match questions precisely but can lose the surrounding context that makes them meaningful ("this applies only to contractors"). Large chunks keep context but mix several topics, diluting their similarity to any one question — and they use up more of the prompt. Many systems split on document structure (headings, paragraphs) with some overlap between chunks.
+
+**How many chunks (top k).** Too few and the answer may be missing; too many and you add noise, cost and latency. Research by Liu et al. (2023) found that models used information placed in the middle of a long context less reliably than information at the beginning or end — more context is not automatically better.
+
+**Reranking.** First-stage retrieval compares precomputed vectors, which is fast but approximate. A reranker, typically a *cross-encoder* that reads the question and each candidate together, re-scores a few dozen candidates more accurately. Metadata filters — by date, product, permission — remove whole classes of wrong answers cheaply.
+
+**Hybrid retrieval.** Combining vector search with keyword search catches exact terms such as product codes and names that embeddings can blur.
+
+<Callout kind="warning" title="Retrieval quality caps answer quality">
+
+If the right passage isn't retrieved, no prompt or model can produce the right answer from the context. If an outdated or wrong passage is retrieved, the model will usually repeat it, citation and all. Most RAG quality problems are retrieval problems — so measure retrieval separately from generation.
+
+</Callout>
+
+## In production
+
+**Evaluate both halves.** For retrieval, build a set of real questions with the passages that answer them and measure how often those passages appear in the top *k* (*recall at k*). For generation, check whether answers are *faithful* to the retrieved context and actually answer the question. Re-run the evaluation whenever you change chunking, models or prompts.
+
+**Keep the index fresh.** Re-index documents when they change, delete superseded ones (or mark them so they can be filtered out), and record which embedding model produced each vector — mixing models silently breaks similarity.
+
+**Enforce permissions at retrieval time.** Filter by who is asking *before* chunks reach the prompt. Instructions to "not reveal" restricted text are not a security boundary.
+
+**Treat retrieved text as untrusted.** A document can contain text crafted to manipulate the model ("ignore your instructions and…"), a form of *prompt injection*. Keep retrieved content clearly separated from instructions, and don't let model output trigger sensitive actions without checks.
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Answers must come from your own or recent documents the model never saw in training.",
+    "You need citations so users can check where an answer came from.",
+    "Your knowledge changes often — updating an index is far cheaper than retraining a model.",
+  ]}
+  avoid={[
+    "The task needs reasoning over a whole corpus at once (“summarise every ticket this year”) rather than finding a few relevant passages.",
+    "The answer depends on exact structured data — use a database query instead of retrieving text about it.",
+    "The model must learn a new style or skill; that is a training or fine-tuning problem, not a retrieval one.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"RAG eliminates hallucinations."** It reduces them when retrieval works. The model can still misread the context, combine passages incorrectly, or answer from training data when the context is thin.
+
+**"A bigger context window removes the need for retrieval."** Stuffing everything in costs more, is slower, and models don't use all positions of a long context equally well. Retrieval still chooses what matters.
+
+**"A citation proves the answer is right."** It proves the answer is grounded in a retrieved passage — which may itself be outdated or wrong, as the simulation shows.
+
+**"RAG is just a vector database."** The vector index is one component. Chunking, filtering, reranking, prompt design and evaluation usually matter more.
+
+## Failure modes and debugging
+
+- **Right document, wrong chunk** — the answer is split across chunk boundaries. Revisit chunking, add overlap or include section titles in each chunk.
+- **Outdated or conflicting answers** — superseded documents are still indexed. Delete them, or add metadata and filter.
+- **"Not found" for things that are in the documents** — check what text was actually extracted and embedded; PDFs and tables often extract badly.
+- **Good retrieval, bad answers** — inspect the full prompt: instructions, ordering of chunks, and whether the context is being truncated.
+
+## Interview questions
+
+<InterviewQuestion question="Walk through the components of a RAG system and what each is responsible for.">
+
+Ingestion extracts text from source documents; chunking splits it into retrievable passages; an embedding model turns chunks and queries into vectors; a vector index stores them for nearest-neighbour search, with metadata for filtering; an optional reranker re-scores candidates more accurately; context construction selects the top passages and builds a prompt with instructions and citations; the LLM generates the answer; and an evaluation loop measures retrieval recall and answer faithfulness.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Your RAG chatbot gives confident, cited, but wrong answers. How do you debug it?">
+
+Separate retrieval from generation. Log the retrieved chunks for failing questions and check whether the correct passage was retrieved at all. If not, look at extraction, chunking, the embedding model, filters and whether outdated documents are outranking current ones. If the right passage was retrieved, examine the prompt: instructions, ordering and truncation. Build an evaluation set so fixes can be measured.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="How do you choose chunk size and top-k?">
+
+Start from the structure of your documents and the questions users ask, then measure. Smaller chunks give more precise matches but lose context; larger chunks keep context but dilute relevance and consume tokens. Higher k raises the chance of including the answer but adds noise, cost and latency. Evaluate recall at k and answer quality on a representative question set and tune from there.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="How do you stop a RAG system from leaking documents a user isn't allowed to see?">
+
+Store access-control metadata with every chunk and filter retrieval by the requesting user's permissions before anything reaches the prompt. Never rely on the model to withhold information it has been given. Also log retrievals, and treat retrieved content as untrusted to limit prompt-injection risks.
+
+</InterviewQuestion>

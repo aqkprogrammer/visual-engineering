@@ -1,0 +1,150 @@
+import { BTreeSimulation } from "@/components/visualizations/scenes/btree/btree-simulation";
+
+<Definition>
+
+A **database index** is a separate, sorted data structure that maps values in one or more columns to the rows that contain them, so the database can find matching rows without reading the whole table.
+
+</Definition>
+
+## The problem it solves
+
+A table's rows are stored in **pages** — fixed-size blocks, 8 KB by default in PostgreSQL — in roughly the order they were inserted, not sorted by any column. To answer `SELECT * FROM orders WHERE id = 48213`, a database with no index has only one option: read every page and check every row. That is a **sequential scan** (or *full table scan*), and its cost grows linearly with the size of the table.
+
+For a table of a few hundred rows that doesn't matter. For tens of millions of rows, it means reading gigabytes to return one row — on every request.
+
+## An everyday analogy
+
+<Analogy>
+
+A thick textbook has an index at the back. To find "photosynthesis" you don't read every page; you look it up in the alphabetical index, which tells you to turn to page 214.
+
+</Analogy>
+
+Where the analogy breaks down: a book's index is printed once. A database index must be updated every time a row is inserted, changed or deleted — which is where its cost hides.
+
+## See it in action
+
+<BTreeSimulation />
+
+Search for a few ids and compare **index pages read** with **full table scan reads**. Then insert ids and watch pages split — sometimes all the way up to the root, which makes the tree one level taller.
+
+## Step by step: an index lookup
+
+The default index type in PostgreSQL, and the most common in relational databases generally, is the **B-tree** — in practice a variant often called a **B+ tree**, in which leaf pages hold every key and internal pages hold only "signposts".
+
+<Steps>
+
+1. **Start at the root page.** It contains a few separator keys. Each separator says which child page covers which range of values.
+2. **Follow one pointer per level.** Comparing the search key with the separators picks exactly one child. Each step down discards all but a small fraction of the data.
+3. **Reach a leaf page.** Leaves hold the keys in sorted order, each with a pointer to the row's location in the table.
+4. **Fetch the row** from the table page the leaf points to.
+
+</Steps>
+
+Because each internal page can point to hundreds of children, the tree is very shallow. As an illustrative calculation: with about 300 entries per page, three levels reach about 27 million rows. A lookup reads one page per level plus the table page — around four reads — where a full scan of the same table might read a hundred thousand.
+
+Leaves at each level are linked to their neighbours, so a **range query** like `WHERE created_at BETWEEN … AND …` finds the first matching leaf and then simply walks along the linked leaves.
+
+## Under the hood: keeping the tree balanced
+
+Every leaf in a B-tree sits at the same depth, so every lookup costs the same number of page reads. The tree stays balanced by growing from the bottom up:
+
+- A new key goes into the leaf where it belongs, in sorted position.
+- If that leaf is full, it **splits** into two half-full pages, and a new separator for the right-hand page is added to the parent.
+- If the parent is full too, it splits as well. Splits can cascade upwards; when the root itself splits, a new root is created above it and the tree becomes one level taller.
+
+PostgreSQL's documentation notes that typically more than 99% of all B-tree pages are leaf pages — the internal levels are tiny, so they usually stay cached in memory.
+
+## Example: create an index and check it is used
+
+```sql
+CREATE INDEX orders_customer_id_idx ON orders (customer_id);
+
+EXPLAIN SELECT * FROM orders WHERE customer_id = 42;
+--  Index Scan using orders_customer_id_idx on orders  (cost=… rows=… width=…)
+--    Index Cond: (customer_id = 42)
+```
+
+`EXPLAIN` shows the plan the database chose. Before the index existed, the same query would show a `Seq Scan on orders` with a `Filter` instead. `EXPLAIN ANALYZE` also runs the query and reports actual times and row counts.
+
+## What an index costs
+
+- **Slower writes.** Every insert, every delete, and every update to an indexed column must also update each affected index — sometimes splitting pages. A table with ten indexes does roughly ten extra index writes per inserted row.
+- **Storage.** Indexes take disk and, ideally, memory. On wide composite indexes they can rival the table itself.
+- **Maintenance.** Indexes need to be kept healthy (for example, bloat from many updates and deletes) and they make some schema changes slower.
+
+So indexes are not free performance: each one is a bet that the reads it speeds up outweigh the writes it slows down.
+
+## Which queries can use an index
+
+A B-tree helps with equality and range comparisons (`=`, `<`, `<=`, `>`, `>=`, `BETWEEN`), and can return rows already sorted for `ORDER BY` on the indexed column.
+
+For a **multicolumn** index on `(customer_id, created_at)`, the order matters: it is most efficient when the query constrains the **leading** column. It serves `WHERE customer_id = 42 AND created_at > …` well, but generally not a query on `created_at` alone.
+
+An index usually can't help when the indexed column is wrapped in a function or expression (`WHERE lower(email) = …`) unless you create an index on that expression, or when a pattern starts with a wildcard (`LIKE '%son'`).
+
+A **covering index** contains every column a query needs, so the database can answer from the index alone — an *index-only scan* — without visiting the table at all.
+
+<Callout kind="note" title="The planner may ignore your index — on purpose">
+
+If a query matches a large fraction of the table — say, `WHERE status = 'active'` when 90% of rows are active — reading the table sequentially is cheaper than jumping between the index and scattered table pages. The query planner estimates this from table statistics and chooses the cheaper plan. An unused index is not necessarily a bug.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Columns used to look up or join a small number of rows: primary keys, foreign keys, user ids, email addresses.",
+    "Columns used in range filters or ORDER BY on large tables, especially with LIMIT.",
+    "Queries on a hot path where latency matters and the index fits in memory.",
+  ]}
+  avoid={[
+    "Write-heavy tables where the column is rarely queried — you pay on every write for no benefit.",
+    "Low-selectivity columns where most rows match, such as a boolean flag on its own.",
+    "Small tables that already fit in a page or two; a scan is as fast as the index.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"More indexes always make the database faster."** They make specific reads faster and every write slower, and they compete for memory.
+
+**"An index on (a, b) also speeds up queries on b."** Generally not efficiently: the index is sorted by `a` first. Queries filtering only on `b` usually need their own index.
+
+**"If an index exists, the database will use it."** The planner uses it only when it estimates it to be cheaper — and only when the query's form allows it.
+
+**"Primary keys are the only indexes I need."** Foreign keys and frequently filtered columns often need indexes too; many databases don't create them automatically for foreign keys.
+
+## Failure modes and debugging
+
+- **A query got slow as data grew.** Check `EXPLAIN` for a `Seq Scan` on a large table with a selective filter — a missing index.
+- **An index exists but isn't used.** Look for functions on the column, type mismatches between the column and the value, a leading wildcard in `LIKE`, or a multicolumn index whose leading column isn't constrained.
+- **Inserts slowed down.** Count the indexes on the table and look for indexes nobody queries — many databases report index usage statistics.
+- **Plans changed unexpectedly.** Statistics may be stale after large data changes; refresh them (in PostgreSQL, `ANALYZE`).
+
+## Interview questions
+
+<InterviewQuestion question="Why are B-trees the default index structure for databases, rather than hash tables or binary trees?">
+
+B-trees keep keys sorted, so one structure serves equality lookups, range queries and ordered results. Each node is a whole disk page holding hundreds of keys, so the tree is only a few levels deep even for huge tables, which minimises page reads. They stay balanced automatically under inserts and deletes. A hash index only supports equality, and a binary tree would be far deeper, with one page read per level.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="What does an index cost, and how do you decide whether to add one?">
+
+Every write to an indexed column must also update the index, indexes use storage and memory, and they add maintenance. Add one when a frequent or latency-sensitive query filters, joins or sorts on a selective column and `EXPLAIN` shows a sequential scan; measure the read improvement against the write overhead, and remove indexes that statistics show are unused.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="You have an index on (customer_id, created_at). Which of these queries can use it efficiently: filtering on customer_id, on created_at, or on both?">
+
+Filtering on `customer_id`, and on both `customer_id` and `created_at`, can use it efficiently because `customer_id` is the leading column; the index can also return each customer's rows already ordered by `created_at`. Filtering on `created_at` alone generally cannot use it efficiently, because entries are sorted by `customer_id` first.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Why might the database choose a sequential scan even though an index exists on the filtered column?">
+
+If the filter matches a large share of rows, scanning the table sequentially reads fewer pages overall than following the index to many scattered table pages. The planner estimates selectivity from statistics and picks the cheaper plan. Stale statistics can also mislead it, which `ANALYZE` fixes.
+
+</InterviewQuestion>

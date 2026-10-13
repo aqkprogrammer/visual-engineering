@@ -179,4 +179,136 @@ export default definePlayground([
       },
     ],
   },
+  {
+    slug: "btree-index",
+    title: "B+ tree index explorer",
+    summary:
+      "Search a table with and without an index, count the page reads, and insert keys to watch B+ tree pages split.",
+    domain: "computer-science",
+    lesson: "computer-science/database-indexes",
+    kind: "walkthrough",
+    tryThis: [
+      "Search for 55 and compare the index's page reads with a full table scan.",
+      "Search for 50, which isn't in the table: the index proves it's missing without touching the table at all.",
+      "Insert several keys one after another and watch leaf pages split, sometimes all the way up to a new root.",
+    ],
+    references: [
+      {
+        title: "Index Types",
+        url: "https://www.postgresql.org/docs/current/indexes-types.html",
+        publisher: "PostgreSQL",
+        kind: "official-docs",
+      },
+    ],
+  },
+  {
+    slug: "dns-resolution",
+    title: "DNS resolution, step by step",
+    summary:
+      "Follow a lookup from your browser through recursive, root, TLD and authoritative servers, then see how caching short-circuits repeat lookups.",
+    domain: "networking",
+    lesson: "networking/dns-resolution",
+    kind: "walkthrough",
+    tryThis: [
+      "Step through the first lookup and count the name servers the resolver contacts.",
+      "Switch to Repeat lookup: the answer comes straight from the resolver's cache.",
+      "Try Another name, same domain: the cached delegation lets the resolver skip the root and .com servers.",
+    ],
+    references: [
+      {
+        title: "RFC 1034: Domain Names — Concepts and Facilities",
+        url: "https://www.rfc-editor.org/rfc/rfc1034",
+        publisher: "IETF",
+        kind: "specification",
+      },
+    ],
+  },
+  {
+    slug: "rag-pipeline",
+    title: "RAG pipeline inspector",
+    summary:
+      "Inspect every stage of a retrieval-augmented generation pipeline and see how chunking, top-k and reranking decide whether the answer is right.",
+    domain: "ai",
+    lesson: "ai/how-rag-works",
+    kind: "walkthrough",
+    tryThis: [
+      "Ask the deadline question with whole-document chunks and top k = 1: an outdated policy wins and the answer is confidently wrong.",
+      "Turn on the reranker with the same settings and the answer becomes correct.",
+      "Ask about the gym membership: retrieval returns something, but the right answer is that it isn't covered.",
+    ],
+    references: [
+      {
+        title: "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+        url: "https://arxiv.org/abs/2005.11401",
+        publisher: "Lewis et al., 2020",
+        kind: "paper",
+      },
+    ],
+  },
+  {
+    slug: "docker-build-cache",
+    title: "Docker build cache simulator",
+    summary:
+      "Edit files and rebuild to see which Dockerfile steps hit the layer cache, why instruction order matters, and what gets pushed to a registry.",
+    domain: "containers",
+    lesson: "containers/docker-images-and-layers",
+    kind: "walkthrough",
+    tryThis: [
+      "With COPY . . first, edit src/server.js and rebuild: the slow dependency install runs again.",
+      "Switch to Dependencies first, rebuild, then edit src/server.js: only the final copy reruns.",
+      "Edit README.md with and without .dockerignore and compare.",
+    ],
+    references: [
+      {
+        title: "Build cache invalidation",
+        url: "https://docs.docker.com/build/cache/invalidation/",
+        publisher: "Docker",
+        kind: "official-docs",
+      },
+    ],
+  },
+  {
+    slug: "tokenizer",
+    title: "Byte-pair encoding explorer",
+    summary:
+      "Type any text and watch a toy BPE tokenizer split it into tokens, then change how many merges it has learned.",
+    domain: "ai",
+    lesson: "ai/tokenization",
+    kind: "explorer",
+    tryThis: [
+      "Drag the merges slider to 0 and back up to see whole words emerge from characters.",
+      "Type lowest, a word not in the training corpus, and see it built from learned pieces.",
+      "Type a word with unseen letters, like zebra, to see why real tokenizers work on bytes.",
+    ],
+    references: [
+      {
+        title: "Neural Machine Translation of Rare Words with Subword Units",
+        url: "https://arxiv.org/abs/1508.07909",
+        publisher: "Sennrich, Haddow and Birch, 2016",
+        kind: "paper",
+      },
+    ],
+  },
+  {
+    slug: "message-queue",
+    title: "Message queue simulator",
+    summary:
+      "Change producer rate, consumer count and downstream speed, and watch backlogs, message age, retries and the dead-letter queue respond.",
+    domain: "system-design",
+    lesson: "system-design/message-queues",
+    kind: "simulation",
+    tryThis: [
+      "Turn on Slow downstream and watch the backlog and the oldest message's age grow.",
+      "Add consumers to drain the backlog, then try a Spike with a bounded queue.",
+      "Set poison messages to 5% and follow them into the dead-letter queue.",
+    ],
+    references: [
+      {
+        title: "Using dead-letter queues in Amazon SQS",
+        url: "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html",
+        publisher: "Amazon Web Services",
+        kind: "official-docs",
+      },
+    ],
+  },
 ]);

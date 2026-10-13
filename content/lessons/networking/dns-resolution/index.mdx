@@ -1,0 +1,133 @@
+import { DnsWalkthrough } from "@/components/visualizations/scenes/dns/dns-walkthrough";
+
+<Definition>
+
+**DNS** (the Domain Name System) is the internet's distributed directory that turns human-friendly names like `shop.example.com` into the IP addresses computers use to connect. **Resolution** is the process of finding that answer.
+
+</Definition>
+
+## The problem it solves
+
+Computers connect to IP addresses such as `203.0.113.10`. People remember names. A single global lookup table would be impossible to run: billions of names, changing constantly, owned by millions of organisations, queried trillions of times a day.
+
+DNS solves this by splitting the namespace into a hierarchy and **delegating** each part to whoever owns it. The root knows who runs `.com`; the `.com` operators know who runs `example.com`; the owner of `example.com` knows the address of `shop.example.com`. Nobody needs to know everything — and heavy caching means most lookups never reach the top of the hierarchy at all.
+
+## An everyday analogy
+
+<Analogy>
+
+You want a colleague's desk phone number. You ask the office receptionist, who doesn't know it, so they call the company switchboard, who points them to the right department, whose administrator gives them the number. The receptionist writes it on a sticky note so the next person who asks gets the answer immediately.
+
+</Analogy>
+
+The receptionist is the recursive resolver, the switchboard and department are the root and TLD servers, and the administrator is the authoritative server. Where the analogy breaks down: the sticky note comes with an expiry time chosen by the department (the TTL), and the receptionist throws it away when that time is up, even if the number hasn't changed.
+
+## See it step by step
+
+<DnsWalkthrough />
+
+Compare the three scenarios. The first lookup contacts three name servers; the repeat is answered from cache; a different name in the same domain skips straight to the authoritative server.
+
+## Step by step: a first lookup
+
+<Steps>
+
+1. **The stub resolver.** The browser asks the operating system's built-in *stub resolver*, which checks its own cache and the hosts file.
+2. **The recursive resolver.** The stub sends the question to a *recursive resolver* — run by your ISP, your company, or a public DNS service — asking it to do the whole job.
+3. **The root.** With an empty cache, the resolver asks a root server. The root doesn't know the answer, but it returns a **referral**: the name servers responsible for `.com`. There are 13 named root server identities (a through m), run by 12 organisations across hundreds of server instances worldwide.
+4. **The TLD servers.** The resolver asks a `.com` top-level-domain server, which refers it to `example.com`'s own name servers, including their addresses (*glue records*).
+5. **The authoritative server.** The resolver asks `example.com`'s authoritative server, which returns the **answer**: an `A` record with the address and a **TTL** (time to live) saying how long it may be cached.
+6. **Back down the chain.** The resolver caches everything it learned — the referrals as well as the answer — and returns the address to the stub, which hands it to the browser.
+
+</Steps>
+
+The browser can now open a TCP connection to the address and start the TLS handshake.
+
+## Under the hood
+
+**Recursive versus iterative.** The stub makes one *recursive* query: "find me the answer". The resolver then makes *iterative* queries, following referrals one level at a time.
+
+**Records.** Common record types include `A` (IPv4 address), `AAAA` (IPv6 address), `CNAME` (an alias pointing to another name), `MX` (mail servers), `NS` (the name servers for a zone, used in delegation) and `TXT` (free-form text, often used to prove domain ownership).
+
+**Transport.** DNS traditionally uses UDP on port 53 for speed, and TCP when responses are too large for UDP; RFC 7766 requires general-purpose DNS implementations to support TCP. Classic DNS is unencrypted, so anyone on the path can see which names you look up. **DNS over HTTPS** (DoH, RFC 8484) and **DNS over TLS** encrypt the traffic between the stub and the resolver.
+
+**Negative caching.** "This name doesn't exist" (`NXDOMAIN`) is cached too, for a duration set by the zone's SOA record (RFC 2308). Querying for a name shortly before creating it can mean it appears to be missing for a while afterwards.
+
+<Callout kind="warning" title="“DNS propagation” is really cache expiry">
+
+When you change a record, nothing is pushed anywhere. Resolvers around the world keep serving the old answer until their cached copy's TTL runs out. Before a planned migration, lower the record's TTL well in advance — at least as long as the old TTL — so caches pick up the change quickly when you make it, then raise it again afterwards.
+
+</Callout>
+
+## Example: watch resolution from the command line
+
+```bash
+dig shop.example.com              # ask your configured resolver; shows the answer and remaining TTL
+dig +trace shop.example.com       # follow the delegation yourself: root → .com → example.com
+dig shop.example.com AAAA         # ask for a specific record type
+dig @203.0.113.53 shop.example.com   # ask a specific server directly
+```
+
+Running `dig` twice in a row against the same resolver usually shows the TTL counting down — the second answer came from cache.
+
+## In production
+
+DNS often doubles as a coarse traffic-steering tool: returning different addresses by location (GeoDNS), weighting answers to shift traffic gradually, or failing over to a standby region when health checks fail. All of these are bounded by caching — clients may keep using an old answer until its TTL expires — so DNS-based failover is never instant.
+
+Because so much depends on it, DNS is also a common single point of failure. Teams typically use a managed DNS provider with anycast networks, sometimes two providers at once, and monitor resolution of their critical names from several regions.
+
+## Trade-offs: choosing a TTL
+
+<TradeOffs
+  use={[
+    "Long TTLs (hours) for records that rarely change: fewer queries, faster lookups for users, and resilience if your DNS provider has a brief outage.",
+    "Short TTLs (seconds to minutes) ahead of planned changes or for records used in DNS-based failover.",
+  ]}
+  avoid={[
+    "Very short TTLs permanently — every lookup goes further up the chain, adding latency and load.",
+    "Relying on DNS changes for instant failover; some clients and intermediate caches hold answers longer than you would like.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"DNS changes take 48 hours to propagate."** Changes are visible as soon as cached copies expire, which depends on the TTL you set. The old folklore came from long TTLs.
+
+**"The root servers handle every lookup."** Thanks to caching of referrals, the root is consulted rarely; most lookups are answered from a resolver's cache.
+
+**"There are only 13 root servers."** There are 13 named root server *identities*, but each is served by many instances around the world.
+
+**"HTTPS hides the sites I visit from my network."** Classic DNS queries are unencrypted, and even with encrypted DNS the TLS ClientHello can reveal the site name unless Encrypted Client Hello is used.
+
+## Failure modes and debugging
+
+- **Works for some users, not others** — different resolvers have cached different answers. Compare `dig` against several resolvers and check the TTLs.
+- **New record "doesn't exist"** — a negative answer was cached before the record was created. Wait for the negative TTL, or query the authoritative server directly to confirm the record itself is correct.
+- **Delegation broken** — the domain's `NS` records at the registry don't match the servers that actually host the zone. `dig +trace` shows where the chain breaks.
+- **Intermittent slowness** — one of several listed name servers is unresponsive and resolvers occasionally try it first.
+
+## Interview questions
+
+<InterviewQuestion question="Walk through what happens when you type a URL into a browser, from the DNS point of view.">
+
+The browser asks the OS stub resolver, which checks its cache and then asks a recursive resolver. If the resolver has nothing cached, it queries a root server and gets a referral to the TLD servers, queries those and gets a referral to the domain's authoritative servers, and queries one of them for the record. It caches the referrals and the answer according to their TTLs and returns the address to the stub, after which the browser connects.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Why does lowering a DNS TTL before a migration help, and why must it be done in advance?">
+
+Resolvers keep a cached answer until its TTL expires. If you lower the TTL from, say, an hour to a minute at least an hour before the change, every cache will have refreshed and picked up the short TTL by the time you switch, so the new address is seen within about a minute. Lowering it at the moment of the change doesn't help, because caches still hold the old answer with the old, long TTL.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="What is the difference between a recursive resolver and an authoritative name server?">
+
+An authoritative server holds the actual records for the zones it is responsible for and answers only about those. A recursive resolver holds no zones of its own; it answers clients by querying authoritative servers on their behalf, following referrals down from the root, and caches the results.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Why isn't DNS-based failover instant?">
+
+Clients and resolvers cache the old answer until its TTL expires, some clients or intermediate caches don't honour very low TTLs, and applications may keep existing connections open. Failover time is therefore at least the TTL plus detection time, which is why it is usually combined with load balancers or anycast for faster recovery.
+
+</InterviewQuestion>

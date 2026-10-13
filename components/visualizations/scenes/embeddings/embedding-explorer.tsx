@@ -1,7 +1,6 @@
 "use client";
 
-import { FlaskConical } from "lucide-react";
-import { useId, useState } from "react";
+import { useState } from "react";
 import {
   angleBetween,
   ITEMS,
@@ -12,6 +11,7 @@ import {
 } from "@/lib/simulation/models/embeddings";
 import { cn } from "@/lib/utils/cn";
 import { SegmentedControl } from "../../player/controls";
+import { ExplorerFrame } from "../../player/explorer-frame";
 
 const W = 760;
 const H = 420;
@@ -43,7 +43,6 @@ const format = (metric: Metric, value: number) =>
   metric === "euclidean" ? value.toFixed(2) : value.toFixed(3);
 
 export function EmbeddingExplorer() {
-  const id = useId();
   const [queryWord, setQueryWord] = useState("cat");
   const [metric, setMetric] = useState<Metric>("cosine");
   const [k, setK] = useState(3);
@@ -58,20 +57,7 @@ export function EmbeddingExplorer() {
     .join(", ")}.`;
 
   return (
-    <section
-      aria-labelledby={`${id}-title`}
-      className="not-prose relative my-10 overflow-hidden rounded-xl border border-border bg-bg"
-    >
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <h3 id={`${id}-title`} className="text-sm font-semibold">
-          Embedding similarity explorer
-        </h3>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-data/60 px-2.5 py-0.5 font-mono text-[11px] text-fg-muted">
-          <FlaskConical aria-hidden className="size-3.5" />
-          Teaching model
-        </span>
-      </header>
-
+    <ExplorerFrame title="Embedding similarity explorer" assumptions={EMBEDDING_ASSUMPTIONS}>
       <div className="relative bg-blueprint" style={{ aspectRatio: `${W} / ${H}` }}>
         <svg
           viewBox={`0 0 ${W} ${H}`}
@@ -261,18 +247,7 @@ export function EmbeddingExplorer() {
           </tbody>
         </table>
       </div>
-
-      <details className="border-t border-border px-4 py-3 text-sm">
-        <summary className="cursor-pointer font-mono text-[11px] tracking-wide text-fg-subtle uppercase">
-          Assumptions
-        </summary>
-        <ul className="mt-2 list-disc space-y-1.5 pl-4 text-fg-muted">
-          {EMBEDDING_ASSUMPTIONS.map((a) => (
-            <li key={a}>{a}</li>
-          ))}
-        </ul>
-      </details>
-    </section>
+    </ExplorerFrame>
   );
 }
 

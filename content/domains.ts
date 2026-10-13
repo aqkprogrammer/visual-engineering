@@ -69,12 +69,11 @@ export default defineDomains([
         title: "Messaging & Async",
         summary: "Queues, streams and the trade-offs between synchronous and asynchronous work.",
         plannedTopics: [
-          "Message queues and event streaming",
+          "Event streaming (logs versus queues)",
           "Kafka fundamentals",
           "RabbitMQ fundamentals",
           "Synchronous versus asynchronous communication",
           "Event-driven architecture",
-          "Backpressure",
         ],
       },
       {
@@ -217,7 +216,6 @@ export default defineDomains([
         summary:
           "How text becomes numbers, and how transformers turn those numbers into predictions.",
         plannedTopics: [
-          "Tokens and tokenization",
           "Attention mechanisms",
           "Transformers",
           "Large language models",
@@ -235,7 +233,6 @@ export default defineDomains([
         title: "Retrieval & RAG",
         summary: "Grounding model answers in your own documents.",
         plannedTopics: [
-          "Retrieval-augmented generation (RAG)",
           "Document ingestion and chunking",
           "Embedding pipelines",
           "Vector databases",
@@ -310,8 +307,6 @@ export default defineDomains([
           "Virtual machines versus containers",
           "Container isolation",
           "Docker architecture",
-          "Images and layers",
-          "Dockerfiles, build contexts and build cache",
           "Multi-stage builds",
           "Container registries",
           "Volumes and persistent storage",
@@ -481,7 +476,7 @@ export default defineDomains([
         id: "naming",
         title: "Naming",
         summary: "Turning names into addresses.",
-        plannedTopics: ["DNS resolution"],
+        plannedTopics: [],
       },
       {
         id: "web-protocols",
@@ -569,12 +564,7 @@ export default defineDomains([
         id: "databases",
         title: "Database Internals",
         summary: "Transactions, guarantees and the structures that make lookups fast.",
-        plannedTopics: [
-          "Database transactions",
-          "ACID properties",
-          "Indexes",
-          "Database isolation levels",
-        ],
+        plannedTopics: ["Database transactions", "ACID properties", "Database isolation levels"],
       },
       {
         id: "engineering-practice",

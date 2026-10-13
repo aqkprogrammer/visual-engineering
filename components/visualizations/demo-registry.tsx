@@ -24,6 +24,25 @@ const EmbeddingExplorer = dynamic(() =>
   import("./scenes/embeddings/embedding-explorer").then((m) => m.EmbeddingExplorer),
 );
 
+const BTreeSimulation = dynamic(() =>
+  import("./scenes/btree/btree-simulation").then((m) => m.BTreeSimulation),
+);
+const DnsWalkthrough = dynamic(() =>
+  import("./scenes/dns/dns-walkthrough").then((m) => m.DnsWalkthrough),
+);
+const RagWalkthrough = dynamic(() =>
+  import("./scenes/rag/rag-walkthrough").then((m) => m.RagWalkthrough),
+);
+const DockerSimulation = dynamic(() =>
+  import("./scenes/docker/docker-simulation").then((m) => m.DockerSimulation),
+);
+const TokenizerExplorer = dynamic(() =>
+  import("./scenes/tokenizer/tokenizer-explorer").then((m) => m.TokenizerExplorer),
+);
+const QueueSimulation = dynamic(() =>
+  import("./scenes/queue/queue-simulation").then((m) => m.QueueSimulation),
+);
+
 export const DEMO_SLUGS = [
   "load-balancer",
   "tls-handshake",
@@ -31,6 +50,12 @@ export const DEMO_SLUGS = [
   "cache",
   "rate-limiter",
   "embeddings",
+  "btree-index",
+  "dns-resolution",
+  "rag-pipeline",
+  "docker-build-cache",
+  "tokenizer",
+  "message-queue",
 ] as const;
 
 export function hasDemo(slug: string): boolean {
@@ -51,6 +76,18 @@ export function PlaygroundDemoView({ slug }: { slug: string }) {
       return <RateLimiterSimulation />;
     case "embeddings":
       return <EmbeddingExplorer />;
+    case "btree-index":
+      return <BTreeSimulation />;
+    case "dns-resolution":
+      return <DnsWalkthrough />;
+    case "rag-pipeline":
+      return <RagWalkthrough />;
+    case "docker-build-cache":
+      return <DockerSimulation />;
+    case "tokenizer":
+      return <TokenizerExplorer />;
+    case "message-queue":
+      return <QueueSimulation />;
     default:
       return null;
   }

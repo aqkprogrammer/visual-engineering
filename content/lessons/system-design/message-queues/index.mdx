@@ -1,0 +1,151 @@
+import { QueueSimulation } from "@/components/visualizations/scenes/queue/queue-simulation";
+
+<Definition>
+
+A **message queue** is a buffer that holds units of work — messages — sent by **producers** until **consumers** are ready to process them, so the two sides don't have to work at the same pace or even be running at the same time.
+
+</Definition>
+
+## The problem it solves
+
+When a user places an order, many things should happen: charge the card, send a confirmation email, update inventory, notify the warehouse, record analytics. Doing all of that inside the web request makes the user wait for the slowest step, and if the email service is down, the order fails — even though email could have been sent later.
+
+A queue lets the web request do only what must happen immediately, put a message like "order 1234 placed" on a queue, and respond. Separate consumers pick the work up and process it at their own pace. Producers and consumers are **decoupled**: they scale, deploy and fail independently, and a burst of orders becomes a temporary backlog instead of an outage.
+
+## An everyday analogy
+
+<Analogy>
+
+A restaurant's order rail. Waiters clip order tickets to the rail as fast as customers order; cooks take tickets from the other end as fast as they can cook. A sudden rush means a longer row of tickets, not waiters standing in the kitchen waiting.
+
+</Analogy>
+
+Where the analogy breaks down: the rail has a fixed length, so a real restaurant notices quickly when it's overwhelmed. A software queue can often keep growing for hours, silently, while every new order waits longer and longer — which is why queues need to be watched and sometimes deliberately limited.
+
+## See it in action
+
+<QueueSimulation />
+
+Things to try:
+
+- Press Play at **Normal** rate: the queue stays nearly empty because three consumers can handle 15 messages per second.
+- Turn on **Slow downstream**. Capacity drops below the arrival rate, and the backlog and the age of the oldest message climb steadily.
+- Add **consumers** to drain it — then try a **Spike** with a **bounded queue** and watch producers get rejected instead of the backlog growing without limit.
+- Set **poison messages** to 5% and watch them retry, then land in the **dead-letter queue**.
+
+## Step by step: one message's journey
+
+<Steps>
+
+1. **Publish.** A producer sends a message to the queue, which stores it durably and confirms receipt.
+2. **Deliver.** A consumer receives the message. The queue doesn't delete it yet; it hides it from other consumers or marks it as in progress.
+3. **Process.** The consumer does the work: sends the email, updates the database.
+4. **Acknowledge.** Only after the work succeeds does the consumer acknowledge the message, and the queue deletes it.
+5. **Or retry.** If the consumer crashes or doesn't acknowledge in time, the message becomes available again and another attempt is made. In Amazon SQS this window is the **visibility timeout**, 30 seconds by default.
+6. **Give up safely.** A message that keeps failing — malformed data, a bug — is moved to a **dead-letter queue** after a set number of attempts (SQS calls this `maxReceiveCount`), so it stops blocking healthy work and can be inspected.
+
+</Steps>
+
+## Under the hood
+
+**At-least-once delivery.** Because messages are only deleted after acknowledgement, a consumer that finishes the work but crashes before acknowledging will see the message again. Most queues therefore guarantee *at least once* delivery, and SQS's documentation notes there is no absolute guarantee a message won't be delivered more than once. Consumers must be **idempotent**: processing the same message twice must have the same effect as processing it once, for example by recording processed message ids.
+
+**Throughput and backlog.** A queue is stable only if, over time, consumers process messages at least as fast as producers send them. If arrivals exceed processing capacity even slightly, the backlog grows without limit — and so does the time each new message waits. Little's Law from queueing theory makes this concrete: the average number of messages in the system equals the arrival rate multiplied by the average time each spends there.
+
+**Prefetch and fairness.** Consumers usually receive several messages at a time to reduce round trips. RabbitMQ's *prefetch count* limits how many unacknowledged messages each consumer may hold, which stops one consumer from hoarding a pile of work while others sit idle.
+
+**Queues versus logs.** In a classic queue, each message is consumed once and then deleted. Event streaming systems such as Apache Kafka keep an ordered, durable **log**: consumers track their own position in it, several independent consumer groups can read the same events, and events can be replayed. The choice depends on whether you are distributing *work* or sharing a *history of events*.
+
+## Backpressure
+
+**Backpressure** is any mechanism by which a system that is overwhelmed pushes back on the work arriving, instead of accepting it and failing later. With a queue, the options are:
+
+- **Scale consumers** to raise processing capacity — if the bottleneck is the consumers themselves, not a shared database behind them.
+- **Bound the queue** and reject or slow down producers when it is full, so the overload is visible immediately and upstream systems can back off.
+- **Shed or defer low-priority work** — for example, analytics events — to protect what matters.
+- **Expire messages** that would be useless by the time they are processed, such as a one-time login code.
+
+<Callout kind="warning" title="Unbounded queues hide problems">
+
+A queue that grows without limit doesn't remove overload; it converts it into delay. Messages processed an hour late may be worse than useless, and a huge backlog can take hours to drain after the cause is fixed. Watch the **age of the oldest message**, not just the queue length.
+
+</Callout>
+
+## Example: an idempotent consumer
+
+```ts
+async function handle(message: { id: string; orderId: string }) {
+  // Skip work that was already done — the same message may be delivered more than once.
+  if (await db.processedMessages.exists(message.id)) return;
+
+  await db.transaction(async (tx) => {
+    await tx.orders.markEmailSent(message.orderId);
+    await tx.processedMessages.insert(message.id);
+  });
+  await email.sendOrderConfirmation(message.orderId);
+}
+// Acknowledge only after handle() completes; on an exception, let the message be retried.
+```
+
+## In production
+
+Teams alert on the **age of the oldest message** (SQS exposes it as `ApproximateAgeOfOldestMessage`) and on dead-letter queue depth, autoscale consumers on queue depth or age, and make sure that scaling consumers doesn't simply move the bottleneck to a shared database. Every dead-letter queue needs an owner and a process to inspect, fix and **redrive** its messages.
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Work that doesn't need to finish before you reply to the user: emails, notifications, image processing, reports.",
+    "Smoothing bursts so downstream systems see a steady load.",
+    "Decoupling services so one being slow or down doesn't take the others with it.",
+  ]}
+  avoid={[
+    "The caller needs the result immediately to continue — a synchronous call is simpler and easier to reason about.",
+    "Strict global ordering of all work matters and you haven't designed for it; most queues only order within limited scopes.",
+    "You can't make consumers idempotent — at-least-once delivery will eventually cause duplicates.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"A queue makes the system faster."** It makes the *producer* respond faster. Total processing capacity is unchanged; the work just happens later.
+
+**"Messages are delivered exactly once."** Most queues deliver at least once. Exactly-once *effects* come from idempotent consumers, not from the queue alone.
+
+**"An empty queue means everything is fine."** Check the dead-letter queue: failing messages may be leaving the main queue quickly by being moved aside.
+
+**"Adding consumers always drains a backlog."** Only if consumers are the bottleneck. If they all wait on the same slow database, more consumers just add load to it.
+
+## Failure modes and debugging
+
+- **Steadily growing backlog** — arrival rate exceeds processing capacity. Compare messages in per second with messages processed per second, and look for a slow dependency.
+- **Duplicate side effects** (two emails, double charges) — retries after a timeout or crash with a non-idempotent consumer.
+- **Messages processed twice in parallel** — processing takes longer than the visibility timeout, so the message reappears while still being worked on. Increase the timeout or extend it while working.
+- **Poison message blocking a consumer** — one malformed message fails forever. Configure a dead-letter queue with a sensible maximum number of attempts.
+- **Retry storms** — failed messages retried immediately add load to a struggling dependency. Retry with backoff.
+
+## Interview questions
+
+<InterviewQuestion question="Why must queue consumers be idempotent?">
+
+Most queues deliver messages at least once: if a consumer processes a message but crashes, times out or loses its connection before acknowledging, the message is delivered again. An idempotent consumer — for example one that records processed message ids in the same transaction as its effects — makes duplicates harmless.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Your queue backlog keeps growing. How do you diagnose and fix it?">
+
+Compare the arrival rate with the processing rate, and watch the age of the oldest message. If consumers are the bottleneck, scale them out. If they're waiting on a slow dependency, fix or protect that dependency, because more consumers would only add load. Check the dead-letter queue and error rates for messages that fail repeatedly. For overload, apply backpressure — bound the queue, slow producers, or shed low-priority work.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="What is a dead-letter queue and when is a message moved there?">
+
+A separate queue for messages that couldn't be processed after a configured number of delivery attempts (maxReceiveCount in Amazon SQS). It stops a poison message from being retried forever and blocking other work, and lets engineers inspect, fix and redrive the failed messages.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="When would you choose an event log like Kafka over a work queue?">
+
+When several independent consumers need to read the same events, when you need ordering within a key (such as per customer), or when you need to replay history — for example to rebuild a projection or recover from a bug. A work queue is simpler when each task should be done once by one worker and then discarded.
+
+</InterviewQuestion>
