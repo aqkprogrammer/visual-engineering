@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSearchIndex } from "@/lib/search/build";
-import { prepare, search } from "@/lib/search/search";
+import { SEARCH_KINDS, prepare, search } from "@/lib/search/search";
 
 /** Real queries against the real index: guards both the content and the ranking rules. */
 describe("search over the real catalog", () => {
@@ -8,10 +8,10 @@ describe("search over the real catalog", () => {
   const prepared = prepare(docs);
   const top = (query: string) => search(prepared, query)[0]?.doc;
 
-  it("indexes every lesson, path, demo and glossary term once", () => {
+  it("indexes every lesson, path, demo, incident, question and glossary term once", () => {
     const hrefs = docs.map((d) => d.href);
     expect(new Set(hrefs).size).toBe(hrefs.length);
-    expect(new Set(docs.map((d) => d.kind))).toEqual(new Set(["lesson", "path", "demo", "term"]));
+    expect(new Set(docs.map((d) => d.kind))).toEqual(new Set(SEARCH_KINDS));
   });
 
   it.each([
@@ -24,6 +24,8 @@ describe("search over the real catalog", () => {
     ["idempotent", "/glossary/#idempotency"],
     ["bpe", "/glossary/#byte-pair-encoding"],
     ["web request", "/paths/how-a-web-request-is-served"],
+    ["stampede", "/glossary/#cache-stampede"],
+    ["node failure", "/incidents/pods-missing-after-node-failure"],
   ])("“%s” ranks %s first", (query, href) => {
     expect(top(query)?.href).toBe(href);
   });

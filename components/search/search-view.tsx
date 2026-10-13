@@ -1,6 +1,14 @@
 "use client";
 
-import { BookOpen, Search as SearchIcon, PlayCircle, Route, Text } from "lucide-react";
+import {
+  BookOpen,
+  MessageSquareText,
+  PlayCircle,
+  Route,
+  Search as SearchIcon,
+  Siren,
+  Text,
+} from "lucide-react";
 import Link from "next/link";
 import { useId, useMemo, useSyncExternalStore } from "react";
 import {
@@ -16,6 +24,8 @@ const KIND_LABEL: Record<SearchKind, string> = {
   lesson: "Lesson",
   path: "Learning path",
   demo: "Playground",
+  incident: "Incident lab",
+  question: "Interview question",
   term: "Glossary",
 };
 
@@ -23,6 +33,8 @@ const KIND_ICON: Record<SearchKind, typeof BookOpen> = {
   lesson: BookOpen,
   path: Route,
   demo: PlayCircle,
+  incident: Siren,
+  question: MessageSquareText,
   term: Text,
 };
 
@@ -63,7 +75,7 @@ export function SearchView({ docs }: { docs: SearchDoc[] }) {
     <div className="space-y-8">
       <form role="search" onSubmit={(event) => event.preventDefault()} className="relative">
         <label htmlFor={inputId} className="sr-only">
-          Search lessons, paths, playground demos and glossary
+          Search lessons, paths, demos, incidents, interview questions and glossary
         </label>
         <SearchIcon
           aria-hidden
@@ -84,7 +96,7 @@ export function SearchView({ docs }: { docs: SearchDoc[] }) {
 
       <p aria-live="polite" className="text-sm text-fg-muted">
         {trimmed === ""
-          ? `${docs.length} lessons, paths, demos and terms to search.`
+          ? `${docs.length} lessons, paths, demos, incidents, questions and terms to search.`
           : results.length === 0
             ? `No results for “${trimmed}”.`
             : `${results.length} result${results.length === 1 ? "" : "s"} for “${trimmed}”.`}

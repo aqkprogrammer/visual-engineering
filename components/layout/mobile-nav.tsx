@@ -33,7 +33,7 @@ export function MobileNav() {
   }, [open]);
 
   return (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       <button
         ref={buttonRef}
         type="button"
@@ -66,6 +66,16 @@ export function MobileNav() {
               </Link>
             </li>
           ))}
+          <li>
+            <Link
+              href="/about"
+              onClick={() => setOpen(false)}
+              aria-current={pathname.startsWith("/about") ? "page" : undefined}
+              className="block rounded-md px-3 py-2.5 text-fg hover:bg-surface-2 aria-[current=page]:bg-surface"
+            >
+              About
+            </Link>
+          </li>
           <li>
             <a
               href={site.repoUrl}

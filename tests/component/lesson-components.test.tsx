@@ -4,7 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { DifficultyBadge } from "@/components/lessons/lesson-meta";
-import { Analogy, Callout, InterviewQuestion, TradeOffs } from "@/components/lessons/mdx-blocks";
+import { InterviewCard } from "@/components/interview/interview-card";
+import { Analogy, Callout, TradeOffs } from "@/components/lessons/mdx-blocks";
+import { interviewItemSchema } from "@/lib/content/schema";
 import { TableOfContents } from "@/components/lessons/table-of-contents";
 import { LoadBalancerDiagram } from "@/components/visualizations/static/load-balancer-diagram";
 
@@ -47,17 +49,30 @@ describe("lesson blocks", () => {
     expect(callout).toHaveTextContent("Illustrative numbers");
   });
 
-  it("hides interview answers until the reader asks for them", async () => {
+  it("hides interview answers and the rubric until the reader asks for them", async () => {
     const user = userEvent.setup();
-    render(
-      <InterviewQuestion question="Why use a load balancer?">
-        Because servers fail.
-      </InterviewQuestion>,
-    );
+    const item = interviewItemSchema.parse({
+      id: "why-load-balance",
+      question: "Why use a load balancer?",
+      level: "junior",
+      kind: "concept",
+      answer:
+        "Because servers fail, and one server can't handle all the traffic. Use `nginx` or a managed one.",
+      rubric: {
+        core: ["Spreads traffic across servers", "Routes around failed servers"],
+        redFlags: ["Says a single server is enough"],
+      },
+    });
+    render(<InterviewCard item={item} />);
     const details = screen.getByText("Why use a load balancer?").closest("details");
     expect(details).not.toHaveAttribute("open");
+    expect(screen.getByText("Junior")).toBeInTheDocument();
     await user.click(screen.getByText("Why use a load balancer?"));
     expect(details).toHaveAttribute("open");
+    expect(screen.getByText("nginx").tagName).toBe("CODE");
+    expect(screen.getByText("Every good answer covers")).toBeVisible();
+    expect(screen.getByText("Says a single server is enough")).toBeVisible();
+    expect(screen.queryByText("Signs of a strong answer")).toBeNull();
   });
 
   it("renders trade-offs as two labelled lists", () => {

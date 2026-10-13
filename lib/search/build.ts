@@ -2,6 +2,8 @@ import "server-only";
 import {
   getDomain,
   getGlossary,
+  getIncidents,
+  getInterviewEntries,
   getLearningPaths,
   getLessons,
   getLessonsByRef,
@@ -65,5 +67,27 @@ export function buildSearchIndex(): SearchDoc[] {
     body: "",
   }));
 
-  return [...lessons, ...paths, ...demos, ...terms];
+  const incidents: SearchDoc[] = getIncidents().map((incident) => ({
+    kind: "incident",
+    title: incident.title,
+    href: `/incidents/${incident.slug}`,
+    summary: incident.summary,
+    context: getDomain(incident.lesson.split("/")[0] ?? "")?.title ?? "",
+    aliases: [],
+    keywords: incident.clues.map((c) => c.title),
+    body: incident.briefing.join(" "),
+  }));
+
+  const questions: SearchDoc[] = getInterviewEntries().map(({ item, lesson }) => ({
+    kind: "question",
+    title: item.question,
+    href: `/interview/#${item.id}`,
+    summary: item.answer,
+    context: lesson.domainTitle,
+    aliases: [],
+    keywords: [lesson.title],
+    body: "",
+  }));
+
+  return [...lessons, ...paths, ...demos, ...incidents, ...questions, ...terms];
 }

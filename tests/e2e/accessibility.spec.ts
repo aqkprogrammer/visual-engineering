@@ -36,6 +36,13 @@ const PAGES = [
   "/glossary",
   "/search",
   "/search/?q=queue",
+  "/interview",
+  "/interview/#cache-stampede",
+  "/incidents",
+  "/incidents/orders-arriving-late",
+  "/incidents/errors-after-a-crash",
+  "/incidents/cache-collapse-at-night",
+  "/incidents/pods-missing-after-node-failure",
   "/about",
   "/missing-page",
 ];

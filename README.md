@@ -191,7 +191,8 @@ flowchart LR
 - [x] **Phase 2 — Simulation engine.** Deterministic engine and shared player (play, pause, step, scrub, speed, event log, keyboard shortcuts, reduced motion); load balancer, TLS 1.3 and Kubernetes self-healing demos
 - [x] **Phase 3 — First 12 lessons** across system design, AI, containers, networking and computer science, each with an interactive demo and a knowledge check
 - [x] **Phase 4a — Discovery.** Search, four learning paths, a 58-term glossary, and progress saved in your browser
-- [ ] **Phase 4b — Practice.** Interview hub, incident and debugging lab, system design sandbox
+- [x] **Phase 4b — Practice.** 49 interview questions with published rubrics and self-grading; an incident lab with evidence from real simulation runs
+- [ ] **Phase 4c — System design sandbox.** Compose clients, balancers, caches, queues and databases and watch the bottlenecks
 - [ ] **Phase 5 — Quality.** Accessibility audit, performance budgets, contributor guide
 - [ ] **Later.** System design simulator, incident lab, interview arena, AI engineering playground
 
@@ -302,8 +303,8 @@ Then open http://localhost:3000.
    });
    ```
 
-3. Write `index.mdx`. `<Definition>`, `<Analogy>`, `<Callout kind="note|warning|illustrative">`, `<Steps>`, `<TradeOffs>`, `<InterviewQuestion>` and `<Demo slug="…" />` (any playground demo, lazy-loaded) are available without imports. Leave a blank line inside block tags so their content is parsed as Markdown.
-4. Add `quiz.ts` with 3–8 questions (`defineQuiz`) — required before a lesson is published. Each question has exactly one correct option and an explanation for every option.
+3. Write `index.mdx`. `<Definition>`, `<Analogy>`, `<Callout kind="note|warning|illustrative">`, `<Steps>`, `<TradeOffs>` and `<Demo slug="…" />` (any playground demo, lazy-loaded) are available without imports. Leave a blank line inside block tags so their content is parsed as Markdown.
+4. Add `quiz.ts` (3–8 questions, `defineQuiz`) and `interview.ts` (3–8 questions, `defineInterview`) — both required before a lesson is published. Quiz questions have exactly one correct option and an explanation for every option; interview questions have a level, a model answer and a rubric of core points, strong signals and red flags.
 5. Run `pnpm content` — it reports every problem at once: unknown modules, broken prerequisite links, cycles, links to drafts, unknown demos.
 
 Drafts are visible in `pnpm dev` only. Reading time and the table of contents are generated for you.
