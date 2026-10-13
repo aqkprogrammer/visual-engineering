@@ -11,10 +11,12 @@ import {
   domainSchema,
   lessonMetaSchema,
   playgroundDemoSchema,
+  quizSchema,
   type Domain,
   type Lesson,
   type LessonMeta,
   type PlaygroundDemo,
+  type QuizQuestion,
 } from "./schema";
 import { lessonRef, validateCatalog, type ContentIssue } from "./validate";
 
@@ -92,6 +94,23 @@ export async function loadCatalog(contentDir = CONTENT_DIR): Promise<LoadedCatal
         continue;
       }
 
+      let quiz: QuizQuestion[] = [];
+      const quizPath = path.join(dir, "quiz.ts");
+      if (await exists(quizPath)) {
+        const quizModule = (await import(pathToFileURL(quizPath).href)) as { default: unknown };
+        const parsedQuiz = quizSchema.safeParse(quizModule.default);
+        if (parsedQuiz.success) {
+          quiz = parsedQuiz.data;
+          if (new Set(quiz.map((q) => q.id)).size !== quiz.length) {
+            issues.push({ where: `${where}/quiz.ts`, message: "duplicate question ids" });
+          }
+        } else {
+          issues.push({ where: `${where}/quiz.ts`, message: formatZodError(parsedQuiz.error) });
+        }
+      } else if (meta.status === "published") {
+        issues.push({ where, message: "published lessons need a knowledge check (quiz.ts)" });
+      }
+
       const analysis = analyzeMdx(await readFile(bodyPath, "utf8"));
       if (analysis.wordCount < 300 && meta.status === "published") {
         issues.push({
@@ -104,6 +123,7 @@ export async function loadCatalog(contentDir = CONTENT_DIR): Promise<LoadedCatal
       lessons.push({
         ...meta,
         id: lessonRef(meta),
+        quiz,
         readingMinutes: analysis.readingMinutes,
         wordCount: analysis.wordCount,
         headings: analysis.headings,
