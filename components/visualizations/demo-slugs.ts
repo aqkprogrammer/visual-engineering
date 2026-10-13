@@ -16,6 +16,9 @@ export const DEMO_SLUGS = [
   "availability-zones",
   "deployment-strategies",
   "autoscaling",
+  "service-calls",
+  "event-sourcing",
+  "hexagonal-architecture",
 ] as const;
 
 export type DemoSlug = (typeof DEMO_SLUGS)[number];

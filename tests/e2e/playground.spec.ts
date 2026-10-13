@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 const player = (page: Page) =>
   page
     .getByRole("region", {
-      name: /simulation|handshake|self-healing|explorer|index|resolution|pipeline|cache|zones|strategies|autoscaling/i,
+      name: /simulation|handshake|self-healing|explorer|index|resolution|pipeline|cache|zones|strategies|autoscaling|microservices|event sourcing/i,
     })
     .first();
 const caption = (page: Page) => player(page).locator("p[aria-live]");
@@ -31,6 +31,9 @@ test("playground lists every demo", async ({ page }) => {
     "Regions and Availability Zones",
     "Deployment strategies",
     "Autoscaling",
+    "Monolith versus microservices",
+    "Event sourcing and CQRS",
+    "Hexagonal architecture explorer",
   ]) {
     await expect(page.getByRole("link", { name: new RegExp(name) })).toBeVisible();
   }
@@ -261,4 +264,41 @@ test("autoscaling: without a scale-in window, bursty traffic keeps failing", asy
   await page.getByRole("group", { name: "Scale-in window" }).getByText("None").click();
   await seek(page, 40);
   await expect(player(page)).toContainText("Overloaded");
+});
+
+test("service calls: a crashed optional service is survivable only with a fallback", async ({
+  page,
+}) => {
+  await page.goto("/playground/service-calls");
+  await seek(page, 2);
+  await page.getByRole("button", { name: "Crash recommendations service" }).click();
+  await seek(page, 5);
+  await expect(caption(page)).toContainText("0% of requests succeeded");
+
+  await page.getByText("Fallback for recommendations", { exact: true }).click();
+  await seek(page, 2);
+  await page.getByRole("button", { name: "Crash recommendations service" }).click();
+  await seek(page, 5);
+  await expect(caption(page)).toContainText("without recommendations");
+});
+
+test("event sourcing: a stopped projector leaves the balance view behind", async ({ page }) => {
+  await page.goto("/playground/event-sourcing");
+  await seek(page, 5);
+  await page.getByRole("button", { name: "Stop the projector" }).click();
+  await seek(page, 10);
+  await expect(caption(page)).toContainText("behind");
+  await page.getByRole("button", { name: "Restart the projector" }).click();
+  await seek(page, 25);
+  await expect(caption(page)).toContainText("up to date");
+});
+
+test("hexagonal explorer: swapping the database adds only an adapter", async ({ page }) => {
+  await page.goto("/playground/hexagonal-architecture");
+  const table = page.getByRole("region", { name: "Impact of this change in each architecture" });
+  await expect(table.getByRole("row", { name: /hexagonal/i })).toContainText("no");
+  await page.getByText("Layered", { exact: true }).click();
+  await expect(page.getByText("ORM entities (shared model)").locator("..")).toContainText("edited");
+  await page.getByLabel("Change a discount rule").check();
+  await expect(table.getByRole("row", { name: /layered/i })).toContainText("yes");
 });

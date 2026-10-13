@@ -52,6 +52,17 @@ const DeploymentsSimulation = dynamic(() =>
 const AutoscalingSimulation = dynamic(() =>
   import("./scenes/autoscaling/autoscaling-simulation").then((m) => m.AutoscalingSimulation),
 );
+const ServiceCallsSimulation = dynamic(() =>
+  import("./scenes/service-calls/service-calls-simulation").then((m) => m.ServiceCallsSimulation),
+);
+const EventSourcingSimulation = dynamic(() =>
+  import("./scenes/event-sourcing/event-sourcing-simulation").then(
+    (m) => m.EventSourcingSimulation,
+  ),
+);
+const HexagonalExplorer = dynamic(() =>
+  import("./scenes/hexagonal/hexagonal-explorer").then((m) => m.HexagonalExplorer),
+);
 const SandboxSimulation = dynamic(() =>
   import("./scenes/sandbox/sandbox-simulation").then((m) => m.SandboxSimulation),
 );
@@ -93,5 +104,11 @@ export function Demo({ slug }: { slug: DemoSlug }) {
       return <DeploymentsSimulation />;
     case "autoscaling":
       return <AutoscalingSimulation />;
+    case "service-calls":
+      return <ServiceCallsSimulation />;
+    case "event-sourcing":
+      return <EventSourcingSimulation />;
+    case "hexagonal-architecture":
+      return <HexagonalExplorer />;
   }
 }
