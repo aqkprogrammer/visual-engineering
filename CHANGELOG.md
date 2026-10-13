@@ -8,6 +8,8 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 - **Three cloud lessons**, each with a new simulation: Regions and Availability Zones (fail a zone, a region or the control plane, and see what static stability buys), blue-green and canary deployments (ship a buggy release four ways and count the failed requests), and autoscaling (target tracking against ramps, spikes and bursts).
 - A **Running applications in the cloud** learning path, and 10 glossary terms.
+- **Three software architecture lessons**: monoliths and microservices (watch failures and tail latency compound across service calls, then add timeouts and fallbacks), hexagonal architecture (an explorer comparing what five changes touch in a layered and a hexagonal design), and event sourcing and CQRS (an event log with read models that lag, catch up, rebuild and appear from history).
+- A **Software architecture foundations** learning path, and 11 glossary terms.
 
 ## [1.0.0] — 2026-10-13
 

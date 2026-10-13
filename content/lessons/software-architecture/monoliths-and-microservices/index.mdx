@@ -1,0 +1,118 @@
+<Definition>
+
+A **monolith** is an application built and deployed as one unit, whose parts call each other inside one process. **Microservices** split an application into small services, each deployed independently and organised around a business capability, that talk to each other over the network.
+
+</Definition>
+
+## The problem it solves
+
+As a product and its team grow, a single codebase can become a bottleneck. Every change ships with everyone else's changes, one slow test suite holds everyone up, and a part that needs ten times more capacity drags the whole application along when it scales.
+
+Microservices answer that by drawing hard boundaries: a team owns a service, deploys it when it's ready, scales it on its own, and can choose the technology that suits it. Martin Fowler and James Lewis describe them as suites of independently deployable services, each running in its own process and communicating through lightweight mechanisms such as HTTP.
+
+The price is that calls which used to be function calls become network calls, and the network is slower and less reliable than memory.
+
+## An everyday analogy
+
+<Analogy>
+
+A small restaurant has one kitchen where the cooks shout to each other across the room. A food court has separate stalls, each with its own staff, menu and opening hours. The stalls can change their menus independently — but a meal that needs dishes from five stalls depends on all five being open and quick.
+
+</Analogy>
+
+Where the analogy breaks down: a customer can see that a stall is closed and walk to another. A service calling another service has to be programmed to notice and decide what to do, or it simply waits.
+
+## See it in action
+
+<Demo slug="service-calls" />
+
+Things to try:
+
+- Compare **3**, **5** and **10** services. Each remote call has its own small chance of failing and of being slow, and those chances multiply.
+- Switch the calls to **In parallel**. The slowest answer decides, so ten parallel calls are slow about as often as ten in a row.
+- Crash the **recommendations service**, then turn on the **fallback**: requests succeed without recommendations. Now crash a module in the **Monolith**: everything stops.
+- Slow down service 2 and turn on **timeouts**. Slow responses turn into fast errors — timeouts protect latency, not success.
+
+## Step by step: one request, two architectures
+
+<Steps>
+
+1. **A request arrives.** In the monolith, one process handles it. With microservices, a front-end service receives it.
+2. **Work is delegated.** The monolith calls functions in other modules: nanoseconds, no network. The front end calls other services over the network: a few milliseconds each, plus serialisation.
+3. **Each hop can fail.** A remote call can time out, find the service down or get an error. Every call is another chance; ten calls that each succeed 99.9% of the time all succeed only about 99.0% of the time (0.999¹⁰).
+4. **Each hop can be slow.** If one call in a hundred is slow, a request that needs ten calls hits at least one slow call almost one time in ten (1 − 0.99¹⁰).
+5. **Failures spread or stay contained.** A crashing module can take the whole monolith down. A failing service only breaks the requests that depend on it — if callers time out and have a fallback.
+
+</Steps>
+
+## Under the hood
+
+**Compounding is the core trade-off.** Jeffrey Dean and Luiz André Barroso's "The Tail at Scale" gives the classic example: if a server answers slowly one time in a hundred, a request that must collect answers from a hundred such servers is slow 63% of the time. Rare problems in each part become common problems for the whole. Smaller numbers of calls behave the same way, just less dramatically — which the demo shows.
+
+**Data belongs to services.** Each microservice usually owns its data, sometimes in different kinds of database. A query that joins customers and orders inside one database becomes calls to two services, and a change that spans both can no longer use one transaction. Teams accept eventual consistency and use compensating actions instead.
+
+**Designing for failure.** Every remote call needs a timeout, a decision about retries (with backoff, and only for safe-to-repeat operations), and a plan for when the dependency is unavailable: a fallback, a cached answer or a degraded response. Circuit breakers stop calling a dependency that is clearly failing, so callers fail fast instead of piling up.
+
+**Monolith first.** Fowler observes that successful microservice systems usually started as a monolith that grew too big and was broken up, while systems built as microservices from the start often ran into serious trouble. The reason is boundaries: they are hard to get right at the start, and moving functionality between services is much harder than moving it between modules.
+
+## Example: a timeout and a fallback
+
+```ts
+async function getRecommendations(userId: string): Promise<Product[]> {
+  try {
+    const res = await fetch(`${RECS_URL}/users/${userId}`, {
+      signal: AbortSignal.timeout(100), // don't let a slow dependency hold the page
+    });
+    if (!res.ok) throw new Error(`recommendations returned ${res.status}`);
+    return await res.json();
+  } catch {
+    return []; // optional feature: render the page without it
+  }
+}
+```
+
+## In production
+
+**Observe across services.** A slow request is now spread over many services, so teams rely on distributed tracing, which follows one request through every hop, plus per-service latency and error metrics.
+
+**Contracts and versioning.** Services deploy independently only if their APIs stay compatible: additive changes, versioned endpoints, and contract tests between consumers and providers.
+
+**The organisation matters.** Microservices pay off when separate teams own separate services. A small team running twenty services gets the operational cost without the independence.
+
+<Callout kind="warning" title="The distributed monolith">
+
+Services that must be deployed together, share a database, or call each other synchronously for every request have the costs of microservices and the coupling of a monolith. If you can't deploy one service without the others, the boundaries are in the wrong place.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Several teams need to deploy and scale their parts of a large system independently.",
+    "Parts of the system have very different load, reliability or technology needs.",
+    "Domain boundaries are well understood and stable.",
+  ]}
+  avoid={[
+    "A small team or a new product whose boundaries are still being discovered — start with a well-structured monolith.",
+    "Workflows that need strong consistency across many entities in one transaction.",
+    "Without investment in automation, monitoring and tracing: operating many services by hand is painful.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Microservices make a system faster."** Each network hop adds latency and a chance of failure. They can make parts scale independently, which is different.
+
+**"Microservices are more reliable."** They can contain failures, but only with timeouts, fallbacks and careful design. Without them, a request depends on every service in its path.
+
+**"A monolith means a big ball of mud."** A modular monolith with clear internal boundaries can be well structured, and is often the easiest place to discover where service boundaries belong.
+
+**"Splitting the code into services splits the work."** If services share a database or must deploy together, the coupling is still there.
+
+## Failure modes and debugging
+
+- **Latency that grows with every new feature** — more synchronous calls per request. Count hops in a trace, parallelise independent calls, or cache.
+- **One service's outage takes everything down** — callers without timeouts or fallbacks wait and pile up. Add timeouts, circuit breakers and degraded responses.
+- **Retry storms** — every layer retrying a failing dependency multiplies the load on it. Retry at one layer, with backoff and jitter.
+- **Releases need coordinating across services** — a distributed monolith. Revisit boundaries and make API changes backward-compatible.

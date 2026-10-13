@@ -590,4 +590,98 @@ export default defineGlossary([
     lesson: "cloud/autoscaling",
     related: ["autoscaling", "target-tracking"],
   },
+
+  // Software architecture
+  {
+    id: "monolith",
+    term: "Monolith",
+    definition:
+      "An application built and deployed as a single unit, whose parts call each other inside one process. A modular monolith keeps clear internal boundaries.",
+    lesson: "software-architecture/monoliths-and-microservices",
+    related: ["microservices"],
+  },
+  {
+    id: "microservices",
+    term: "Microservices",
+    definition:
+      "An architecture of small, independently deployable services, each organised around a business capability and communicating over the network.",
+    lesson: "software-architecture/monoliths-and-microservices",
+    related: ["monolith", "tail-latency"],
+  },
+  {
+    id: "tail-latency",
+    term: "Tail latency",
+    aliases: ["p99 latency"],
+    definition:
+      "The response time of the slowest requests, such as the 99th percentile. When a request depends on many calls, rare slow calls make the tail dominate.",
+    lesson: "software-architecture/monoliths-and-microservices",
+    related: ["microservices"],
+  },
+  {
+    id: "hexagonal-architecture",
+    term: "Hexagonal architecture",
+    aliases: ["Ports and adapters"],
+    definition:
+      "Organising an application so business logic sits in a core that talks to the outside world only through interfaces it defines (ports), implemented by technology-specific adapters.",
+    lesson: "software-architecture/hexagonal-architecture",
+    related: ["port", "adapter"],
+  },
+  {
+    id: "port",
+    term: "Port",
+    definition:
+      "In hexagonal architecture, an interface the application defines in business terms for talking to the outside world, such as a repository or a notifier.",
+    lesson: "software-architecture/hexagonal-architecture",
+    related: ["adapter", "hexagonal-architecture"],
+  },
+  {
+    id: "adapter",
+    term: "Adapter",
+    definition:
+      "In hexagonal architecture, code that connects a port to a specific technology — a database, an email service, an HTTP framework or a test double.",
+    lesson: "software-architecture/hexagonal-architecture",
+    related: ["port", "hexagonal-architecture"],
+  },
+  {
+    id: "event-sourcing",
+    term: "Event sourcing",
+    definition:
+      "Storing every change to an object as an immutable event in an append-only log, and deriving its current state by replaying those events.",
+    lesson: "software-architecture/event-sourcing-and-cqrs",
+    related: ["cqrs", "projection", "compensating-event"],
+  },
+  {
+    id: "cqrs",
+    term: "CQRS",
+    aliases: ["Command Query Responsibility Segregation"],
+    definition:
+      "Using one model to handle changes (commands) and separate models to answer queries. Often combined with event sourcing, but independent of it.",
+    lesson: "software-architecture/event-sourcing-and-cqrs",
+    related: ["event-sourcing", "projection"],
+  },
+  {
+    id: "projection",
+    term: "Projection",
+    aliases: ["Read model", "Materialized view"],
+    definition:
+      "A read-optimised view built by applying events in order, such as a balance or a report. It lags the event log slightly: it is eventually consistent.",
+    lesson: "software-architecture/event-sourcing-and-cqrs",
+    related: ["event-sourcing", "eventual-consistency"],
+  },
+  {
+    id: "compensating-event",
+    term: "Compensating event",
+    definition:
+      "A new event that reverses or corrects the effect of an earlier one, used because events in an event-sourced system are never edited or deleted.",
+    lesson: "software-architecture/event-sourcing-and-cqrs",
+    related: ["event-sourcing"],
+  },
+  {
+    id: "eventual-consistency",
+    term: "Eventual consistency",
+    definition:
+      "A guarantee that, once updates stop, every copy or view of the data will converge to the same value — but reads may briefly return older data in the meantime.",
+    lesson: "software-architecture/event-sourcing-and-cqrs",
+    related: ["projection", "cqrs"],
+  },
 ]);
