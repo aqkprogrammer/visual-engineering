@@ -195,7 +195,7 @@ flowchart LR
 - [x] **Phase 4b — Practice.** 49 interview questions with published rubrics and self-grading; an incident lab with evidence from real simulation runs
 - [x] **Phase 4c — System design sandbox.** Build a backend from servers, a cache, replicas and a write queue, load-test it, and meet four challenges
 - [x] **Phase 5 — Quality.** Page-weight and Lighthouse budgets in CI, keyboard-only and privacy tests, readable diagrams on phones, contributor and authoring guides
-- [ ] **Phase 6 — Release 1.0.** Release checklist, full-history secret scan, link check, changelog, tagged release
+- [x] **Phase 6 — Release 1.0.** Release checklist, full-history secret scan, link check, changelog — [v1.0.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.0.0)
 - [ ] **Later.** Software architecture and cloud lessons, shareable scenario links, progress export, AI engineering playground
 
 ## ⚠️ Known limitations
