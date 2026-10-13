@@ -207,7 +207,11 @@ async function playgroundSection(): Promise<string> {
   const { playground, domains } = await loadCatalog();
   const rows = playground.map((demo) => {
     const domain = domains.find((d) => d.id === demo.domain)?.title ?? demo.domain;
-    const kind = demo.kind === "simulation" ? "🧪 Simulation" : "👣 Walkthrough";
+    const kind = {
+      simulation: "🧪 Simulation",
+      walkthrough: "👣 Walkthrough",
+      explorer: "🧭 Explorer",
+    }[demo.kind];
     return `| [**${demo.title}**](${site.liveUrl}/playground/${demo.slug}/) | ${kind} · ${domain} | ${demo.summary} |`;
   });
   return ["| Demo | Type | What you can do |", "|---|---|---|", ...rows].join("\n");

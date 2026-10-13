@@ -41,6 +41,7 @@ export default definePlayground([
     summary:
       "Walk through every message of a TLS 1.3 handshake, see what each side knows at each moment, and compare it with what an eavesdropper can read.",
     domain: "networking",
+    lesson: "networking/tls-handshake",
     kind: "walkthrough",
     tryThis: [
       "Step through slowly and watch the two ‘knows’ panels: both sides end up with the same shared secret, yet it never crosses the network.",
@@ -68,6 +69,7 @@ export default definePlayground([
     summary:
       "Crash containers, delete pods and take down a node, then watch the kubelet, ReplicaSet, scheduler and node controller each play their part.",
     domain: "containers",
+    lesson: "containers/kubernetes-self-healing",
     kind: "simulation",
     tryThis: [
       "Crash a container. The same pod restarts in place — watch RESTARTS increase — and it leaves the Service's endpoints until its readiness probe passes again.",
@@ -93,6 +95,86 @@ export default definePlayground([
         title: "Taints and Tolerations",
         url: "https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/",
         publisher: "Kubernetes",
+        kind: "official-docs",
+      },
+    ],
+  },
+  {
+    slug: "cache",
+    title: "Cache simulator",
+    summary:
+      "Watch hits, misses and evictions as you change the eviction policy, capacity, access pattern and expiry — then write to the database and catch a stale read.",
+    domain: "system-design",
+    lesson: "system-design/caching",
+    kind: "simulation",
+    tryThis: [
+      "Switch to Sequential scan with LRU: eight keys cycling through four slots means every single request misses.",
+      "Turn off Invalidate on write, press Play, then write a new version of A. The cache keeps serving the old value until A is evicted.",
+      "With invalidation still off, set a TTL of 10 requests and repeat: the staleness now has an upper bound.",
+      "Under Hot keys, compare LRU and LFU at capacity 2 and 4, and watch the hit ratio.",
+    ],
+    references: [
+      {
+        title: "Key eviction",
+        url: "https://redis.io/docs/latest/develop/reference/eviction/",
+        publisher: "Redis",
+        kind: "official-docs",
+      },
+      {
+        title: "Caching strategies (Amazon ElastiCache)",
+        url: "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Strategies.html",
+        publisher: "Amazon Web Services",
+        kind: "official-docs",
+      },
+    ],
+  },
+  {
+    slug: "rate-limiter",
+    title: "Rate limiter simulator",
+    summary:
+      "Compare token bucket, fixed window, sliding log and sliding window counter on the same traffic, and see a fixed window let twice the limit through.",
+    domain: "system-design",
+    lesson: "system-design/rate-limiting",
+    kind: "simulation",
+    tryThis: [
+      "Choose Fixed window with Window-edge bursts and watch the peak in any one second reach twice the limit.",
+      "Keep that traffic and switch to Sliding log: the peak never exceeds the limit.",
+      "Choose Token bucket with Bursty traffic: a full bucket absorbs a burst, then the limiter settles to the refill rate.",
+      "Try Sliding counter on the same bursts and compare it with the exact sliding log.",
+    ],
+    references: [
+      {
+        title: "How we built rate limiting capable of scaling to millions of domains",
+        url: "https://blog.cloudflare.com/counting-things-a-lot-of-different-things/",
+        publisher: "Cloudflare",
+        kind: "article",
+      },
+      {
+        title: "Throttle requests to your REST APIs in API Gateway",
+        url: "https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-request-throttling.html",
+        publisher: "Amazon Web Services",
+        kind: "official-docs",
+      },
+    ],
+  },
+  {
+    slug: "embeddings",
+    title: "Embedding similarity explorer",
+    summary:
+      "Pick a word in a toy embedding space and compare how cosine similarity, dot product and Euclidean distance rank its nearest neighbours.",
+    domain: "ai",
+    lesson: "ai/embeddings",
+    kind: "explorer",
+    tryThis: [
+      "Pick cat and switch from Cosine to Dot product: the deliberately long animals vector jumps to the top.",
+      "Pick any fruit: its nearest neighbours are other fruit, while vehicles point in a different direction.",
+      "Switch to Euclidean and notice that a vector can point the same way yet be far away.",
+    ],
+    references: [
+      {
+        title: "Embeddings (Machine Learning Crash Course)",
+        url: "https://developers.google.com/machine-learning/crash-course/embeddings",
+        publisher: "Google",
         kind: "official-docs",
       },
     ],
