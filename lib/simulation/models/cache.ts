@@ -72,7 +72,22 @@ export type CacheAction =
   | { type: "write"; key: Key }
   | { type: "flush" };
 
-const clone = <T>(value: T): T => structuredClone(value);
+/**
+ * Copies exactly what a step may change: entries, database versions, totals and config. History
+ * items are never modified once recorded, so they are shared. Much cheaper than structuredClone,
+ * which mattered: frames are precomputed while the page hydrates.
+ */
+function clone(state: CacheState): CacheState {
+  return {
+    ...state,
+    config: { ...state.config },
+    entries: state.entries.map((e) => ({ ...e })),
+    db: { ...state.db },
+    current: state.current && { ...state.current },
+    history: [...state.history],
+    totals: { ...state.totals },
+  };
+}
 
 function nextKey(s: CacheState, rng: Rng): Key {
   switch (s.config.pattern) {
