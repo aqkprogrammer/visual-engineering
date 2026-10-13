@@ -12,6 +12,8 @@
   "scripts": {
     "content": "tsx scripts/content.ts",
     "readme": "tsx scripts/readme.ts",
+    "budget": "tsx scripts/budget.ts",
+    "lighthouse": "tsx scripts/lighthouse.ts",
     "dev": "pnpm content && next dev",
     "build": "pnpm content && next build",
     "preview": "serve out --listen 3000",
@@ -22,7 +24,7 @@
     "test": "pnpm content && vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm readme --check && pnpm build"
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm readme --check && pnpm build && pnpm budget"
   },
   "dependencies": {
     "@mdx-js/loader": "3.1.1",
@@ -54,10 +56,12 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "6.1.2",
+    "chrome-launcher": "1.2.2",
     "eslint": "10.12.0",
     "eslint-config-next": "16.4.0",
     "github-slugger": "2.0.0",
     "jsdom": "30.1.2",
+    "lighthouse": "13.5.0",
     "mdast-util-to-string": "4.0.0",
     "prettier": "3.9.10",
     "prettier-plugin-tailwindcss": "0.8.1",
