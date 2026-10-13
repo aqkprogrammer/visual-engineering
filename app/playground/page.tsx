@@ -7,7 +7,7 @@ import { alternatesFor } from "@/lib/seo";
 export const metadata: Metadata = {
   title: "Playground",
   description:
-    "Interactive simulations and step-by-step walkthroughs you can play, change and break: load balancing, the TLS 1.3 handshake and Kubernetes self-healing.",
+    "Interactive simulations, walkthroughs and explorers you can play, change and break — load balancing, TLS, Kubernetes, caching, queues, RAG and more.",
   alternates: alternatesFor("/playground"),
 };
 

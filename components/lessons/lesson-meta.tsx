@@ -1,5 +1,6 @@
 import { CalendarCheck, Clock } from "lucide-react";
 import Link from "next/link";
+import { CompletionBadge } from "@/components/progress/completion-badge";
 import type { Difficulty, Lesson } from "@/lib/content/schema";
 import { cn } from "@/lib/utils/cn";
 
@@ -77,6 +78,7 @@ export function LessonListItem({ lesson }: { lesson: Lesson }) {
         <span className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-subtle">
           <DifficultyBadge difficulty={lesson.difficulty} />
           <span>{lesson.readingMinutes} min read</span>
+          <CompletionBadge lessonId={lesson.id} />
         </span>
       </Link>
     </li>

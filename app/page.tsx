@@ -2,7 +2,13 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { LessonListItem } from "@/components/lessons/lesson-meta";
 import { LoadBalancerDiagram } from "@/components/visualizations/static/load-balancer-diagram";
-import { getDomainLessons, getDomains, getLessons } from "@/lib/content/catalog";
+import {
+  getDomainLessons,
+  getDomains,
+  getLearningPaths,
+  getLessons,
+  getPathLessons,
+} from "@/lib/content/catalog";
 import { site } from "@/lib/site";
 
 const METHOD = [
@@ -18,6 +24,7 @@ export default function HomePage() {
   const domains = getDomains();
   const lessons = getLessons();
   const firstLesson = lessons[0];
+  const paths = getLearningPaths();
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -79,6 +86,35 @@ export default function HomePage() {
           ))}
         </ol>
       </section>
+
+      {paths.length > 0 && (
+        <section aria-labelledby="paths" className="border-t border-border py-14">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <h2 id="paths" className="text-2xl font-semibold tracking-tight">
+              Learning paths
+            </h2>
+            <Link href="/paths" className="text-sm text-accent hover:underline">
+              All paths
+            </Link>
+          </div>
+          <ul className="mt-8 grid gap-4 md:grid-cols-2">
+            {paths.map((path) => (
+              <li key={path.slug}>
+                <Link
+                  href={`/paths/${path.slug}`}
+                  className="group block h-full rounded-xl border border-border p-6 transition-colors hover:border-border-strong hover:bg-surface"
+                >
+                  <span className="font-medium group-hover:text-accent">{path.title}</span>
+                  <span className="mt-2 block text-sm text-fg-muted">{path.summary}</span>
+                  <span className="mt-4 block font-mono text-xs text-fg-subtle">
+                    {getPathLessons(path).length} lessons
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section aria-labelledby="domains" className="border-t border-border py-14">
         <div className="flex flex-wrap items-end justify-between gap-4">

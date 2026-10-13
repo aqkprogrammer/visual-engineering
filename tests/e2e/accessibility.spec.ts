@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const PAGES = [
   "/",
@@ -31,9 +31,40 @@ const PAGES = [
   "/playground/docker-build-cache",
   "/playground/tokenizer",
   "/playground/message-queue",
+  "/paths",
+  "/paths/how-a-web-request-is-served",
+  "/glossary",
+  "/search",
+  "/search/?q=queue",
   "/about",
   "/missing-page",
 ];
+
+/** Pages that look different once the visitor has progress saved in this browser. */
+const PROGRESS_PAGES = ["/paths", "/paths/system-design-foundations", "/system-design/caching"];
+const SAVED_PROGRESS = JSON.stringify({
+  version: 1,
+  lessons: {
+    "system-design/load-balancing": { completedAt: "2026-10-13T09:00:00.000Z" },
+    "system-design/caching": {
+      completedAt: "2026-10-13T09:00:00.000Z",
+      quiz: { best: 4, last: 3, total: 5, at: "2026-10-13T09:00:00.000Z" },
+    },
+  },
+});
+
+async function auditPage(page: Page) {
+  // Open collapsed interview answers so their contents are audited too.
+  await page.evaluate(() => document.querySelectorAll("details").forEach((d) => (d.open = true)));
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  return results.violations.map((v) => ({
+    id: v.id,
+    impact: v.impact,
+    targets: v.nodes.slice(0, 3).map((n) => n.target.join(" ")),
+  }));
+}
 
 for (const theme of ["dark", "light"] as const) {
   test.describe(`axe (${theme} theme)`, () => {
@@ -43,21 +74,19 @@ for (const theme of ["dark", "light"] as const) {
       test(`${path} has no WCAG A/AA violations`, async ({ page }) => {
         await page.goto(path);
         await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
-        // Open collapsed interview answers so their contents are audited too.
-        await page.evaluate(() =>
-          document.querySelectorAll("details").forEach((d) => (d.open = true)),
-        );
+        expect(await auditPage(page)).toEqual([]);
+      });
+    }
 
-        const results = await new AxeBuilder({ page })
-          .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-          .analyze();
-
-        const summary = results.violations.map((v) => ({
-          id: v.id,
-          impact: v.impact,
-          targets: v.nodes.slice(0, 3).map((n) => n.target.join(" ")),
-        }));
-        expect(summary).toEqual([]);
+    for (const path of PROGRESS_PAGES) {
+      test(`${path} with saved progress has no WCAG A/AA violations`, async ({ page }) => {
+        await page.addInitScript((value) => {
+          window.localStorage.setItem("ve:progress", value);
+        }, SAVED_PROGRESS);
+        await page.goto(path);
+        await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+        await expect(page.getByText("Completed").first()).toBeVisible();
+        expect(await auditPage(page)).toEqual([]);
       });
     }
   });

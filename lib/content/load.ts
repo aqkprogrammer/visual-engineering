@@ -9,16 +9,26 @@ import { z } from "zod";
 import { analyzeMdx } from "./mdx-text";
 import {
   domainSchema,
+  glossaryTermSchema,
+  learningPathSchema,
   lessonMetaSchema,
   playgroundDemoSchema,
   quizSchema,
   type Domain,
+  type GlossaryTerm,
+  type LearningPath,
   type Lesson,
   type LessonMeta,
   type PlaygroundDemo,
   type QuizQuestion,
 } from "./schema";
-import { lessonRef, validateCatalog, type ContentIssue } from "./validate";
+import {
+  lessonRef,
+  validateCatalog,
+  validateGlossary,
+  validateLearningPaths,
+  type ContentIssue,
+} from "./validate";
 
 export const CONTENT_DIR = fileURLToPath(new URL("../../content", import.meta.url));
 
@@ -26,11 +36,26 @@ export type LoadedCatalog = {
   domains: Domain[];
   lessons: (Lesson & { plainText: string; sourcePath: string })[];
   playground: PlaygroundDemo[];
+  paths: LearningPath[];
+  glossary: GlossaryTerm[];
   issues: ContentIssue[];
 };
 
 function formatZodError(error: z.ZodError): string {
   return error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`).join("; ");
+}
+
+/** Imports a content module's default export and validates it; issues are collected, not thrown. */
+async function loadList<T>(
+  file: string,
+  schema: z.ZodType<T>,
+  issues: ContentIssue[],
+): Promise<T[]> {
+  const mod = (await import(pathToFileURL(file).href)) as { default: unknown };
+  const parsed = z.array(schema).safeParse(mod.default);
+  if (parsed.success) return parsed.data;
+  issues.push({ where: `content/${path.basename(file)}`, message: formatZodError(parsed.error) });
+  return [];
 }
 
 async function exists(file: string): Promise<boolean> {
@@ -65,6 +90,7 @@ export async function loadCatalog(contentDir = CONTENT_DIR): Promise<LoadedCatal
   const domains = parsedDomains.success ? parsedDomains.data : [];
 
   const metas: LessonMeta[] = [];
+  const demoUses: { where: string; slug: string }[] = [];
   const lessons: LoadedCatalog["lessons"] = [];
 
   for (const domainDir of await subdirectories(lessonsDir)) {
@@ -111,7 +137,21 @@ export async function loadCatalog(contentDir = CONTENT_DIR): Promise<LoadedCatal
         issues.push({ where, message: "published lessons need a knowledge check (quiz.ts)" });
       }
 
-      const analysis = analyzeMdx(await readFile(bodyPath, "utf8"));
+      const source = await readFile(bodyPath, "utf8");
+      if (/from\s+["']@\/components\/visualizations\/scenes\//.test(source)) {
+        issues.push({
+          where: `${where}/index.mdx`,
+          message: 'embed demos with <Demo slug="…" /> instead of importing a scene directly',
+        });
+      }
+      demoUses.push(
+        ...[...source.matchAll(/<Demo\s+slug="([^"]*)"/g)].map((m) => ({
+          where: `${where}/index.mdx`,
+          slug: m[1] ?? "",
+        })),
+      );
+
+      const analysis = analyzeMdx(source);
       if (analysis.wordCount < 300 && meta.status === "published") {
         issues.push({
           where,
@@ -157,5 +197,20 @@ export async function loadCatalog(contentDir = CONTENT_DIR): Promise<LoadedCatal
     }
   }
 
-  return { domains, lessons, playground, issues };
+  for (const use of demoUses) {
+    if (!seen.has(use.slug)) {
+      issues.push({
+        where: use.where,
+        message: `unknown demo "${use.slug}" (see content/playground.ts)`,
+      });
+    }
+  }
+
+  const paths = await loadList(path.join(contentDir, "paths.ts"), learningPathSchema, issues);
+  issues.push(...validateLearningPaths(paths, metas));
+
+  const glossary = await loadList(path.join(contentDir, "glossary.ts"), glossaryTermSchema, issues);
+  issues.push(...validateGlossary(glossary, metas));
+
+  return { domains, lessons, playground, paths, glossary, issues };
 }

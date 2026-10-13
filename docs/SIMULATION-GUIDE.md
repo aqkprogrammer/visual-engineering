@@ -83,7 +83,7 @@ Use the controls in `components/visualizations/player/controls.tsx` (`SegmentedC
 ## 5. Publish it
 
 - Add an entry to `content/playground.ts` (title, summary, "try this" prompts, references), then add the component to `components/visualizations/demo-registry.tsx`. A test fails if the two lists disagree.
-- To embed it in a lesson, add the component to `mdx-components.tsx` and use it in the MDX.
+- To embed it in a lesson, write `<Demo slug="your-slug" />` in the MDX. Don't import the scene directly: `Demo` lazy-loads each demo in its own chunk, while a direct import would add it to every lesson page's bundle. `pnpm content` rejects direct scene imports and unknown slugs.
 - Run `pnpm readme` to update the README's playground table.
 
 ## The player gives you, for free

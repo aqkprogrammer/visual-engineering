@@ -1,5 +1,3 @@
-import { TlsHandshakeWalkthrough } from "@/components/visualizations/scenes/tls/tls-walkthrough";
-
 <Definition>
 
 **TLS** (Transport Layer Security) is the protocol that encrypts and authenticates connections such as HTTPS. Its **handshake** is the opening exchange in which the client and server agree on secret keys and the client checks that it is really talking to the server it asked for.
@@ -30,7 +28,7 @@ The paint mixing stands for the key exchange, and the passport for the certifica
 
 ## See it step by step
 
-<TlsHandshakeWalkthrough />
+<Demo slug="tls-handshake" />
 
 Switch the view to **Eavesdropper on the network** to see how little an observer learns once the first two messages have passed.
 
