@@ -1,7 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const player = (page: Page) =>
-  page.getByRole("region", { name: /simulation|handshake|self-healing|explorer/i }).first();
+  page
+    .getByRole("region", {
+      name: /simulation|handshake|self-healing|explorer|index|resolution|pipeline|cache/i,
+    })
+    .first();
 const caption = (page: Page) => player(page).locator("p[aria-live]");
 
 /** Move the timeline the way a user dragging the slider would. */
@@ -161,4 +165,63 @@ test("lessons end with a working knowledge check", async ({ page }) => {
   await first.getByRole("button", { name: "Check answer" }).click();
   await expect(first.getByRole("status")).toBeVisible();
   await expect(quiz).toContainText(/of 4 correct/);
+});
+
+test("B+ tree: a lookup reads far fewer pages than a scan, and inserts can split pages", async ({
+  page,
+}) => {
+  await page.goto("/playground/btree-index");
+  await seek(page, 10);
+  await expect(caption(page)).toContainText("Total: 3 index pages + 1 heap page = 4 reads");
+  await page.getByRole("button", { name: "Insert" }).click();
+  await seek(page, 10);
+  await expect(caption(page)).toContainText("13");
+});
+
+test("DNS: a repeat lookup is answered from the resolver's cache", async ({ page }) => {
+  await page.goto("/playground/dns-resolution");
+  await page.getByText("Repeat lookup", { exact: true }).click();
+  await seek(page, 2);
+  await expect(caption(page)).toContainText("Cache hit");
+});
+
+test("RAG: whole-document chunks with top-k 1 retrieve the outdated policy", async ({ page }) => {
+  await page.goto("/playground/rag-pipeline");
+  await page.getByRole("combobox", { name: "Question" }).selectOption("deadline");
+  await page.getByText("Whole documents", { exact: true }).click();
+  await page.getByRole("group", { name: "Top k" }).getByText("1", { exact: true }).click();
+  await seek(page, 10);
+  await expect(caption(page)).toContainText("Grounded in an outdated source — wrong");
+  await page.getByText("Reranker", { exact: true }).click();
+  await seek(page, 10);
+  await expect(caption(page)).toContainText("Correct and grounded");
+});
+
+test("Docker: editing source code reruns the dependency install when everything is copied first", async ({
+  page,
+}) => {
+  await page.goto("/playground/docker-build-cache");
+  await page.getByRole("button", { name: "Edit src/server.js" }).click();
+  await page.getByRole("button", { name: /docker build/ }).click();
+  await seek(page, 4);
+  await expect(caption(page)).toContainText("BUILT RUN npm ci");
+});
+
+test("tokenizer: fewer merges means more tokens", async ({ page }) => {
+  await page.goto("/playground/tokenizer");
+  const summary = page.getByText(/tokens · \d+ words/);
+  await expect(summary).toContainText("10 tokens");
+  await page.getByRole("slider").fill("0");
+  await expect(summary).toContainText("20 tokens");
+});
+
+test("message queue: a slow downstream grows the backlog", async ({ page }) => {
+  await page.goto("/playground/message-queue");
+  await seek(page, 50);
+  await page.getByText("Slow downstream", { exact: true }).click();
+  await seek(page, 250);
+  const waiting = player(page)
+    .getByText("Waiting", { exact: true })
+    .locator("xpath=following-sibling::dd");
+  expect(Number(await waiting.textContent())).toBeGreaterThan(50);
 });

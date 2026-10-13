@@ -142,6 +142,13 @@ test.describe("keyboard and preferences", () => {
       "/playground/embeddings",
       "/system-design/caching",
       "/ai/embeddings",
+      "/playground/btree-index",
+      "/playground/dns-resolution",
+      "/playground/rag-pipeline",
+      "/playground/docker-build-cache",
+      "/playground/tokenizer",
+      "/playground/message-queue",
+      "/ai/how-rag-works",
       "/about",
     ]) {
       await page.goto(path);
