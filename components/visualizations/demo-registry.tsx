@@ -14,7 +14,24 @@ const KubernetesSimulation = dynamic(() =>
   import("./scenes/kubernetes/kubernetes-simulation").then((m) => m.KubernetesSimulation),
 );
 
-export const DEMO_SLUGS = ["load-balancer", "tls-handshake", "kubernetes-self-healing"] as const;
+const CacheSimulation = dynamic(() =>
+  import("./scenes/cache/cache-simulation").then((m) => m.CacheSimulation),
+);
+const RateLimiterSimulation = dynamic(() =>
+  import("./scenes/rate-limiter/rate-limiter-simulation").then((m) => m.RateLimiterSimulation),
+);
+const EmbeddingExplorer = dynamic(() =>
+  import("./scenes/embeddings/embedding-explorer").then((m) => m.EmbeddingExplorer),
+);
+
+export const DEMO_SLUGS = [
+  "load-balancer",
+  "tls-handshake",
+  "kubernetes-self-healing",
+  "cache",
+  "rate-limiter",
+  "embeddings",
+] as const;
 
 export function hasDemo(slug: string): boolean {
   return (DEMO_SLUGS as readonly string[]).includes(slug);
@@ -28,6 +45,12 @@ export function PlaygroundDemoView({ slug }: { slug: string }) {
       return <TlsHandshakeWalkthrough />;
     case "kubernetes-self-healing":
       return <KubernetesSimulation />;
+    case "cache":
+      return <CacheSimulation />;
+    case "rate-limiter":
+      return <RateLimiterSimulation />;
+    case "embeddings":
+      return <EmbeddingExplorer />;
     default:
       return null;
   }

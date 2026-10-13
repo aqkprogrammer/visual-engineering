@@ -62,6 +62,9 @@ Every demo runs on the same deterministic simulation engine: play, pause, step, 
 | [**Load balancer simulator**](https://aqkprogrammer.github.io/visual-engineering/playground/load-balancer/) | 🧪 Simulation · System Design | Send traffic through a load balancer, crash servers, switch routing algorithms and watch health checks, queues and tail latency respond. |
 | [**TLS 1.3 handshake, step by step**](https://aqkprogrammer.github.io/visual-engineering/playground/tls-handshake/) | 👣 Walkthrough · Networking & Web | Walk through every message of a TLS 1.3 handshake, see what each side knows at each moment, and compare it with what an eavesdropper can read. |
 | [**Kubernetes self-healing**](https://aqkprogrammer.github.io/visual-engineering/playground/kubernetes-self-healing/) | 🧪 Simulation · Containers & Kubernetes | Crash containers, delete pods and take down a node, then watch the kubelet, ReplicaSet, scheduler and node controller each play their part. |
+| [**Cache simulator**](https://aqkprogrammer.github.io/visual-engineering/playground/cache/) | 🧪 Simulation · System Design | Watch hits, misses and evictions as you change the eviction policy, capacity, access pattern and expiry — then write to the database and catch a stale read. |
+| [**Rate limiter simulator**](https://aqkprogrammer.github.io/visual-engineering/playground/rate-limiter/) | 🧪 Simulation · System Design | Compare token bucket, fixed window, sliding log and sliding window counter on the same traffic, and see a fixed window let twice the limit through. |
+| [**Embedding similarity explorer**](https://aqkprogrammer.github.io/visual-engineering/playground/embeddings/) | 🧭 Explorer · AI Engineering | Pick a word in a toy embedding space and compare how cosine similarity, dot product and Euclidean distance rank its nearest neighbours. |
 <!-- playground:end -->
 
 ## 🎓 How every lesson teaches
@@ -78,16 +81,16 @@ flowchart LR
 ## 🧭 Curriculum
 
 <!-- curriculum:start -->
-**1 live lesson** · 7 domains · 43 modules · 220 planned topics. Expand a domain to see what's inside.
+**6 live lessons** · 7 domains · 43 modules · 214 planned topics. Expand a domain to see what's inside.
 
 <details open>
-<summary><b>System Design</b> — How large systems stay fast, available and correct under real traffic. <sub>🟢 1 live · 48 planned</sub></summary>
+<summary><b>System Design</b> — How large systems stay fast, available and correct under real traffic. <sub>🟢 3 live · 46 planned</sub></summary>
 
 | Module | Live lessons | Planned topics |
 |---|---|---|
 | **Foundations** | — | System design fundamentals · Functional and non-functional requirements · Scalability and performance · Availability, reliability, durability and consistency · Horizontal versus vertical scaling |
-| **Traffic & Edge** | [How load balancing works](https://aqkprogrammer.github.io/visual-engineering/system-design/load-balancing/) | Reverse proxies · API gateways · CDN and edge computing · Rate limiting |
-| **Data at Scale** | — | Caching, invalidation and eviction · Database indexing and query optimization · SQL versus NoSQL · Replication and partitioning · Sharding · Consistent hashing |
+| **Traffic & Edge** | [How load balancing works](https://aqkprogrammer.github.io/visual-engineering/system-design/load-balancing/)<br>[How rate limiting works](https://aqkprogrammer.github.io/visual-engineering/system-design/rate-limiting/) | Reverse proxies · API gateways · CDN and edge computing |
+| **Data at Scale** | [Caching: hits, eviction and stale data](https://aqkprogrammer.github.io/visual-engineering/system-design/caching/) | Database indexing and query optimization · SQL versus NoSQL · Replication and partitioning · Sharding · Consistent hashing |
 | **Consistency & Coordination** | — | CAP theorem · PACELC · Eventual consistency · Distributed transactions · Saga pattern · Idempotency · Distributed locking |
 | **Messaging & Async** | — | Message queues and event streaming · Kafka fundamentals · RabbitMQ fundamentals · Synchronous versus asynchronous communication · Event-driven architecture · Backpressure |
 | **Resilience** | — | Circuit breakers, retries, timeouts and bulkheads · High availability · Disaster recovery · Observability |
@@ -107,13 +110,13 @@ flowchart LR
 | **Evolving Systems** | — | Refactoring and technical debt · Strangler migration pattern · Architecture decision records |
 
 </details>
-<details>
-<summary><b>AI Engineering</b> — From tokens and embeddings to retrieval, agents and production LLM systems. <sub>⚪ in progress · 37 planned</sub></summary>
+<details open>
+<summary><b>AI Engineering</b> — From tokens and embeddings to retrieval, agents and production LLM systems. <sub>🟢 1 live · 35 planned</sub></summary>
 
 | Module | Live lessons | Planned topics |
 |---|---|---|
 | **Foundations** | — | AI, ML, deep learning and generative AI · Supervised, unsupervised and reinforcement learning · Neural networks · Training versus inference |
-| **Language Models** | — | Tokens and tokenization · Embeddings · Vector similarity and cosine similarity · Attention mechanisms · Transformers · Large language models · Pretraining, fine-tuning and inference |
+| **Language Models** | [Embeddings and vector similarity](https://aqkprogrammer.github.io/visual-engineering/ai/embeddings/) | Tokens and tokenization · Attention mechanisms · Transformers · Large language models · Pretraining, fine-tuning and inference |
 | **Building with LLMs** | — | Prompt engineering · Structured outputs · Function and tool calling |
 | **Retrieval & RAG** | — | Retrieval-augmented generation (RAG) · Document ingestion and chunking · Embedding pipelines · Vector databases · Hybrid retrieval and reranking · RAG evaluation |
 | **Agents** | — | AI agents and agentic workflows · Planning, memory, tools and execution · Model Context Protocol (MCP) · Multi-agent systems |
@@ -122,15 +125,15 @@ flowchart LR
 | **Multimodal AI** | — | Multimodal AI · Computer vision · Speech recognition and text-to-speech |
 
 </details>
-<details>
-<summary><b>Containers & Kubernetes</b> — Packaging software and keeping it running across a fleet of machines. <sub>⚪ in progress · 36 planned</sub></summary>
+<details open>
+<summary><b>Containers & Kubernetes</b> — Packaging software and keeping it running across a fleet of machines. <sub>🟢 1 live · 35 planned</sub></summary>
 
 | Module | Live lessons | Planned topics |
 |---|---|---|
 | **Containers & Docker** | — | Virtual machines versus containers · Container isolation · Docker architecture · Images and layers · Dockerfiles, build contexts and build cache · Multi-stage builds · Container registries · Volumes and persistent storage · Container networking · Compose · Environment variables and secrets · Image optimization · Container security |
 | **Kubernetes Core** | — | Kubernetes architecture · Control plane and worker nodes · Pods · Deployments and ReplicaSets · Services · Ingress and Gateway API concepts · ConfigMaps and Secrets · Namespaces · Labels and selectors |
 | **Workloads & Storage** | — | StatefulSets · DaemonSets · Jobs and CronJobs · Persistent volumes and claims |
-| **Kubernetes Operations** | — | Resource requests and limits · Health checks and probes · Horizontal Pod Autoscaler · Scheduling · Rolling deployments and rollbacks · Self-healing · Service discovery · Network policies · Helm · Troubleshooting common Kubernetes failures |
+| **Kubernetes Operations** | [How Kubernetes heals itself](https://aqkprogrammer.github.io/visual-engineering/containers/kubernetes-self-healing/) | Resource requests and limits · Health checks and probes · Horizontal Pod Autoscaler · Scheduling · Rolling deployments and rollbacks · Service discovery · Network policies · Helm · Troubleshooting common Kubernetes failures |
 
 </details>
 <details>
@@ -147,14 +150,14 @@ flowchart LR
 | **Operations & Cost** | — | Autoscaling · Backups and disaster recovery · CloudWatch · Metrics, logs, traces and alerting · SLI, SLO and SLA · Cost optimization · FinOps fundamentals |
 
 </details>
-<details>
-<summary><b>Networking & Web</b> — What actually happens between typing a URL and seeing a page. <sub>⚪ in progress · 20 planned</sub></summary>
+<details open>
+<summary><b>Networking & Web</b> — What actually happens between typing a URL and seeing a page. <sub>🟢 1 live · 19 planned</sub></summary>
 
 | Module | Live lessons | Planned topics |
 |---|---|---|
 | **Internet Basics** | — | How the internet works · IP addressing and ports · Packet routing · TCP versus UDP · Network latency |
 | **Naming** | — | DNS resolution |
-| **Web Protocols** | — | HTTP and HTTPS · TLS handshake · HTTP/1.1, HTTP/2 and HTTP/3 · Browser request lifecycle · WebSockets · Connection pooling |
+| **Web Protocols** | [How the TLS 1.3 handshake works](https://aqkprogrammer.github.io/visual-engineering/networking/tls-handshake/) | HTTP and HTTPS · HTTP/1.1, HTTP/2 and HTTP/3 · Browser request lifecycle · WebSockets · Connection pooling |
 | **Web Identity** | — | Cookies and sessions · JWT · OAuth 2.0 and OpenID Connect · CORS |
 | **Edge & Network Security** | — | Reverse proxy versus forward proxy · CDN · Firewalls · Zero-trust networking |
 
@@ -179,7 +182,7 @@ flowchart LR
 - [x] **Phase 0 — Plan.** Requirements, taxonomy, architecture, design direction → [`docs/PLAN.md`](docs/PLAN.md)
 - [x] **Phase 1 — Foundation.** Static site, design system, content pipeline, first lesson, tests, CI, GitHub Pages
 - [x] **Phase 2 — Simulation engine.** Deterministic engine and shared player (play, pause, step, scrub, speed, event log, keyboard shortcuts, reduced motion); load balancer, TLS 1.3 and Kubernetes self-healing demos
-- [ ] **Phase 3 — First 12 lessons** across system design, AI, containers, networking and CS
+- [ ] **Phase 3 — First 12 lessons** across system design, AI, containers, networking and CS — 6 published with knowledge checks; content checkpoint before the next 6
 - [ ] **Phase 4 — Platform.** Search, learning paths, glossary, quizzes, interview hub, local progress
 - [ ] **Phase 5 — Quality.** Accessibility audit, performance budgets, contributor guide
 - [ ] **Later.** System design simulator, incident lab, interview arena, AI engineering playground

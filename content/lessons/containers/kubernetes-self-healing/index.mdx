@@ -1,0 +1,194 @@
+import { KubernetesSimulation } from "@/components/visualizations/scenes/kubernetes/kubernetes-simulation";
+
+<Definition>
+
+**Self-healing** in Kubernetes is the cluster continuously comparing what is running with what you asked for, and acting to close the gap — restarting crashed containers, replacing lost pods and routing traffic only to pods that are ready.
+
+</Definition>
+
+## The problem it solves
+
+Software fails in many ways: a process hits a bug and exits, a memory leak gets a container killed, a deploy goes wrong, a whole machine loses power. On a single server, recovering means someone (or some script) noticing and restarting things by hand.
+
+Kubernetes changes the question you ask. Instead of *"start three copies of my app on these machines"* you declare *"there should always be three ready copies of my app"*. A set of independent control loops then work forever to make that true. Nothing is restarted because a human ran a command; things are restarted because reality drifted from the declared state.
+
+## An everyday analogy
+
+<Analogy>
+
+A restaurant manager is told: "always have three cooks on the line". When a cook steps out, the manager doesn't wait for instructions — they call in a replacement. When a cook is unwell but still standing at the stove, the head waiter stops sending them orders until they recover.
+
+</Analogy>
+
+The analogy captures *declared state plus continuous correction*. Where it breaks down: in Kubernetes no single "manager" does everything. Several separate components each watch one part of the problem, and — as the simulation shows — some of them only find out about a failure after a delay.
+
+## See it in action
+
+<KubernetesSimulation />
+
+Try crashing a container, then deleting a pod, then failing a node. Watch which component reacts in the event log, and how long each recovery takes.
+
+## Who does what
+
+A **Deployment** named `web` declares the pod template and the desired replica count. It manages a **ReplicaSet**, which owns the actual **pods**. A **Service** gives clients one stable address and sends traffic to the pods that are ready. Four parts of the system take part in healing:
+
+| Component | Watches | Acts by |
+|---|---|---|
+| **kubelet** (one per node) | Containers on its node and their probes | Restarting failed containers *in the same pod* |
+| **ReplicaSet controller** | Number of pods owned by the ReplicaSet | Creating or deleting pods to match the desired count |
+| **Scheduler** | Pods with no node assigned | Binding each to a suitable node |
+| **Node lifecycle controller** | Heartbeats from each node | Marking silent nodes NotReady and evicting their pods |
+
+Meanwhile the **EndpointSlice controller** keeps each Service's list of endpoints in sync with which pods are Ready.
+
+## Step by step: three kinds of failure
+
+### A container crashes
+
+<Steps>
+
+1. The process in the container exits. The **kubelet** on that node sees it immediately.
+2. The pod stays where it is, with the same name. Because Deployments use `restartPolicy: Always`, the kubelet restarts the container after a back-off delay and increments `RESTARTS`.
+3. Until the restarted container passes its readiness probe, the pod is not Ready, so the Service stops sending it traffic.
+4. If it keeps crashing, the delay grows: 10 s, 20 s, 40 s and so on, capped at 5 minutes. While waiting, the pod shows **CrashLoopBackOff**. After 10 minutes of running without problems, the back-off resets.
+
+</Steps>
+
+### A pod is deleted
+
+<Steps>
+
+1. The pod is marked for deletion and starts terminating, with a grace period of 30 seconds by default for the app to shut down cleanly.
+2. The **ReplicaSet controller** no longer counts a terminating pod, sees two pods instead of three, and creates a new one — with a new name.
+3. The **scheduler** binds the new pod to a node, the kubelet there pulls the image and starts it, and once its readiness probe passes it joins the Service.
+
+</Steps>
+
+### A node dies
+
+<Steps>
+
+1. The machine loses power. Its kubelet stops sending heartbeats — but nothing else knows yet. The Service may keep routing to its pods, and those requests fail.
+2. After the node-monitor grace period, the **node lifecycle controller** marks the node NotReady. Its pods stop being Ready and leave the Service.
+3. Pods on the node are still *bound* to it. By default every pod tolerates a NotReady or unreachable node for **300 seconds** before being evicted, in case the problem is a brief network blip.
+4. After that, the pods are evicted. The ReplicaSet creates replacements and the scheduler places them on healthy nodes.
+5. The evicted pods stay listed as Terminating until the node comes back or someone force-deletes them, because the API server cannot reach that node's kubelet to confirm they've stopped.
+
+</Steps>
+
+<Callout kind="illustrative" title="Recovery is not instant">
+
+With default settings, replacing pods from a dead node takes several minutes: the time to detect the node as NotReady plus the 300-second toleration, plus scheduling and startup. The simulation compresses these into a few steps but quotes the real defaults. If that is too slow for a workload, run enough replicas across nodes that losing one node doesn't matter — or tune tolerations deliberately.
+
+</Callout>
+
+## Probes: how Kubernetes knows what "healthy" means
+
+A container that is running is not necessarily working. **Probes** let you tell Kubernetes how to check:
+
+- **Readiness probe** — *can this pod take traffic right now?* If it fails, the pod is removed from the Service's endpoints. Nothing is restarted.
+- **Liveness probe** — *is this container stuck beyond repair?* If it fails more times than its threshold, the kubelet restarts the container.
+- **Startup probe** — *has a slow-starting app finished starting?* Liveness and readiness checks wait until it succeeds, so a slow boot isn't mistaken for a hang.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: registry.example.com/web:1.4.2
+          ports:
+            - containerPort: 8080
+          readinessProbe:          # gate traffic
+            httpGet:
+              path: /ready
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:           # restart if truly stuck
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+```
+
+A good readiness endpoint checks what the pod needs to serve requests. A good liveness endpoint is deliberately narrow: it should fail only when restarting would actually help, such as a deadlocked process.
+
+## What Kubernetes guarantees — and what it doesn't
+
+**It does** keep reconciling towards your declared state for as long as the control plane is running, restart failed containers on healthy nodes, replace lost pods when there is capacity, and route Service traffic only to Ready pods.
+
+**It does not:**
+
+- Make failover instant. Detection and eviction take time, as described above.
+- Preserve files written inside a container. A restarted container starts from a fresh writable layer; an `emptyDir` volume survives container restarts but not pod deletion. Durable data needs persistent volumes or an external store.
+- Know whether your app is *correct*. "Ready" means the readiness probe passed — nothing more.
+- Create capacity. If no node has room, replacement pods stay Pending.
+- Protect a single replica. With `replicas: 1`, any restart or replacement is an outage.
+
+## In production
+
+Teams typically run at least two or three replicas spread across nodes and availability zones, add **PodDisruptionBudgets** so planned maintenance such as draining a node never takes down too many replicas at once, and alert on **restart counts** and **CrashLoopBackOff**, because a pod restarting quietly every few minutes is a bug that self-healing is hiding, not fixing.
+
+## Common misconceptions
+
+**"A crashed container gets a new pod."** It is restarted in place by the kubelet. A new pod is only created when the pod itself is deleted or evicted.
+
+**"Kubernetes moves pods off a failed node within seconds."** By default pods wait 300 seconds after the node is detected as NotReady before eviction.
+
+**"A liveness probe should check the database."** If the database blips, every pod fails liveness and gets restarted at once, turning a short dependency problem into a full outage. Dependency checks belong, if anywhere, in readiness.
+
+**"Self-healing means I don't need replicas."** Healing a single replica still means downtime while it restarts or is replaced.
+
+## Failure modes and debugging
+
+```bash
+kubectl get pods -o wide                 # status, restarts, node
+kubectl describe pod <name>              # events: probe failures, back-off, scheduling
+kubectl logs <name> --previous           # logs from the container that crashed
+kubectl get events --sort-by=.metadata.creationTimestamp
+```
+
+- **CrashLoopBackOff** — the app keeps exiting. Read the *previous* container's logs; the current one may not have started yet.
+- **Ready 0/1 but Running** — the readiness probe is failing. `describe` shows why.
+- **Restarts climbing with no errors in the logs** — often a liveness probe that is too strict or too slow, or the container being killed for exceeding its memory limit (`OOMKilled` in `describe`).
+- **Pods stuck Pending** — no node has enough resources or none matches the pod's constraints.
+- **Pods stuck Terminating** — often on a node that has become unreachable.
+
+## Interview questions
+
+<InterviewQuestion question="What is the difference between a liveness probe and a readiness probe?">
+
+A readiness probe decides whether a pod should receive traffic; failing it removes the pod from Service endpoints without restarting anything. A liveness probe decides whether a container is beyond recovery; failing it past the threshold makes the kubelet restart the container. Readiness handles temporary inability to serve, liveness handles stuck processes.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="A node loses power. Walk through what happens to the pods that were running on it.">
+
+The kubelet stops reporting, and after the node-monitor grace period the node lifecycle controller marks the node NotReady and its pods not Ready, removing them from Services. Pods tolerate the NotReady/unreachable taints for 300 seconds by default; after that they are evicted. The ReplicaSet controller then sees too few pods and creates replacements, which the scheduler places on healthy nodes. The old pods remain Terminating until the node returns or they are force-deleted.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Why might adding a database check to a liveness probe cause an outage?">
+
+If the database becomes briefly unavailable, every pod's liveness probe fails at the same time, so the kubelet restarts all of them together. The service loses all capacity and the restart storm can add load just as the database recovers. Liveness should only fail when restarting the container itself would fix the problem.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="What does CrashLoopBackOff mean, and how do you investigate it?">
+
+The container keeps exiting and the kubelet is waiting out an exponentially growing delay — 10 s, 20 s, 40 s, up to 5 minutes — before restarting it again. Investigate with `kubectl logs --previous` to see the crashed container's output and `kubectl describe pod` for exit codes, OOM kills and probe failures.
+
+</InterviewQuestion>

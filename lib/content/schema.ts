@@ -88,6 +88,7 @@ export type Heading = z.infer<typeof headingSchema>;
 /** A lesson after build-time processing (reading time + headings derived from the MDX body). */
 export type Lesson = LessonMeta & {
   id: LessonRef;
+  quiz: QuizQuestion[];
   readingMinutes: number;
   wordCount: number;
   headings: Heading[];
@@ -101,7 +102,7 @@ export const playgroundDemoSchema = z.object({
   domain: domainIdSchema,
   /** The lesson that explains this demo, if one is published. */
   lesson: lessonRefSchema.optional(),
-  kind: z.enum(["simulation", "walkthrough"]),
+  kind: z.enum(["simulation", "walkthrough", "explorer"]),
   tryThis: z.array(z.string().min(20)).min(2),
   references: z.array(referenceSchema).min(1),
 });
@@ -109,6 +110,35 @@ export type PlaygroundDemo = z.infer<typeof playgroundDemoSchema>;
 
 export function definePlayground(demos: z.input<typeof playgroundDemoSchema>[]) {
   return demos;
+}
+
+export const quizOptionSchema = z.object({
+  id: z.string().regex(/^[a-e]$/, "option ids are a–e"),
+  text: z.string().min(1),
+  correct: z.boolean().default(false),
+  /** Why this option is right or wrong — shown after answering, for every option. */
+  explanation: z.string().min(15),
+});
+
+export const quizQuestionSchema = z
+  .object({
+    id: slugSchema,
+    prompt: z.string().min(10),
+    options: z.array(quizOptionSchema).min(2).max(5),
+  })
+  .refine((q) => q.options.filter((o) => o.correct).length === 1, {
+    message: "each question needs exactly one correct option",
+  })
+  .refine((q) => new Set(q.options.map((o) => o.id)).size === q.options.length, {
+    message: "option ids must be unique",
+  });
+export type QuizQuestion = z.output<typeof quizQuestionSchema>;
+
+export const quizSchema = z.array(quizQuestionSchema).min(3).max(8);
+
+/** Typed identity helper for lesson `quiz.ts` files. */
+export function defineQuiz(questions: z.input<typeof quizSchema>) {
+  return questions;
 }
 
 /** Typed identity helper for lesson `meta.ts` files. */

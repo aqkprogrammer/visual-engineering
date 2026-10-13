@@ -71,7 +71,7 @@ test.describe("core journeys", () => {
   test("planned topics are labelled and not linked", async ({ page }) => {
     await page.goto("/ai");
     await expect(page.getByRole("heading", { name: /Planned topics/ }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "Embeddings" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Transformers" })).toHaveCount(0);
   });
 });
 
@@ -137,6 +137,11 @@ test.describe("keyboard and preferences", () => {
       "/playground/load-balancer",
       "/playground/tls-handshake",
       "/playground/kubernetes-self-healing",
+      "/playground/cache",
+      "/playground/rate-limiter",
+      "/playground/embeddings",
+      "/system-design/caching",
+      "/ai/embeddings",
       "/about",
     ]) {
       await page.goto(path);

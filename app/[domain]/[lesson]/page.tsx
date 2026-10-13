@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { alternatesFor } from "@/lib/seo";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { KnowledgeCheck } from "@/components/lessons/knowledge-check";
 import { LessonPager, References, RelatedLessons } from "@/components/lessons/lesson-footer";
 import { LessonMetaRow } from "@/components/lessons/lesson-meta";
 import { TableOfContents } from "@/components/lessons/table-of-contents";
@@ -85,6 +86,12 @@ export default async function LessonPage({ params }: PageProps<"/[domain]/[lesso
         <div className="prose-ve mt-10">
           <Body />
         </div>
+
+        {lesson.quiz.length > 0 && (
+          <div className="max-w-[70ch]">
+            <KnowledgeCheck questions={lesson.quiz} />
+          </div>
+        )}
 
         <div className="mt-16 max-w-[70ch] space-y-14 border-t border-border pt-10">
           <References references={lesson.references} />

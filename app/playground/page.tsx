@@ -1,4 +1,4 @@
-import { ArrowRight, FlaskConical, Footprints } from "lucide-react";
+import { ArrowRight, Compass, FlaskConical, Footprints } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getDomain, getPlaygroundDemos } from "@/lib/content/catalog";
@@ -25,7 +25,9 @@ export default function PlaygroundPage() {
       </header>
       <ul className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {demos.map((demo) => {
-          const Icon = demo.kind === "simulation" ? FlaskConical : Footprints;
+          const Icon = { simulation: FlaskConical, walkthrough: Footprints, explorer: Compass }[
+            demo.kind
+          ];
           return (
             <li key={demo.slug}>
               <Link
@@ -34,8 +36,12 @@ export default function PlaygroundPage() {
               >
                 <span className="inline-flex items-center gap-1.5 font-mono text-xs text-fg-subtle">
                   <Icon aria-hidden className="size-3.5" />
-                  {demo.kind === "simulation" ? "Simulation" : "Walkthrough"} ·{" "}
-                  {getDomain(demo.domain)?.title}
+                  {
+                    { simulation: "Simulation", walkthrough: "Walkthrough", explorer: "Explorer" }[
+                      demo.kind
+                    ]
+                  }{" "}
+                  · {getDomain(demo.domain)?.title}
                 </span>
                 <span className="mt-3 text-lg font-medium group-hover:text-accent">
                   {demo.title}

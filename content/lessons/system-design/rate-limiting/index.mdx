@@ -1,0 +1,171 @@
+import { RateLimiterSimulation } from "@/components/visualizations/scenes/rate-limiter/rate-limiter-simulation";
+
+<Definition>
+
+**Rate limiting** caps how many requests a client may make in a period of time, rejecting (or delaying) the excess so that no single client can overload a service or use more than its fair share.
+
+</Definition>
+
+## The problem it solves
+
+A service has finite capacity. Without limits, one misbehaving client — a buggy retry loop, a scraper, a script someone forgot to stop, or an attacker guessing passwords — can consume enough of it to slow down or break the service for everyone else.
+
+Rate limiting turns "unlimited and fragile" into an explicit contract: *each API key may make 10 requests per second*. Requests within the contract are served; the excess gets a fast, cheap rejection instead of competing for resources. It protects availability, enforces fairness between customers, slows brute-force attacks, and keeps costs predictable.
+
+## An everyday analogy
+
+<Analogy>
+
+A nightclub with a capacity limit lets people in at a steady pace. A small queue can form at the door, and when the room is full, new arrivals are told to come back later rather than being let in to make the crowd dangerous for everyone inside.
+
+</Analogy>
+
+Where the analogy breaks down: the club is limiting *how many people are inside at once*. Most rate limiters limit *how many arrive per unit of time*, which is a different quantity — capping concurrent requests is a related but separate technique.
+
+## See it in action
+
+<RateLimiterSimulation />
+
+Things to try:
+
+- Choose **Fixed window** with **Window-edge bursts**. Two bursts land either side of a window boundary, both are fully accepted, and the "peak in any one second" reaches twice the limit.
+- Keep the same traffic and switch to **Sliding log**. The peak never exceeds the limit.
+- Choose **Token bucket** with **Bursty** traffic. A full bucket absorbs a burst at once, then the limiter settles to the refill rate.
+
+## Step by step: deciding on one request
+
+<Steps>
+
+1. A request arrives and the limiter works out **which bucket it belongs to** — the *key*: an API key, a user id, an IP address, or a combination with the endpoint.
+2. It looks up that key's current state: tokens left, or requests counted in the current window.
+3. If the request fits within the limit, the state is updated and the request continues to the service.
+4. Otherwise the limiter answers immediately with **429 Too Many Requests** — the status code defined for this in RFC 6585 — ideally with a `Retry-After` header saying when to try again.
+
+</Steps>
+
+```http
+HTTP/1.1 429 Too Many Requests
+Retry-After: 2
+Content-Type: application/json
+
+{"error": "rate_limited", "message": "Limit is 10 requests per second per API key."}
+```
+
+## The algorithms
+
+**Token bucket.** Each key has a bucket holding up to *capacity* tokens, refilled at a steady *rate*. Each request spends a token; an empty bucket means rejection. It permits short bursts up to the bucket size while enforcing the average rate over time. AWS API Gateway, for example, describes its throttling in exactly these terms: a rate at which tokens are added and a burst equal to the bucket's capacity.
+
+```ts
+class TokenBucket {
+  private tokens: number;
+  private last: number;
+
+  constructor(private capacity: number, private refillPerSecond: number, now = Date.now()) {
+    this.tokens = capacity;
+    this.last = now;
+  }
+
+  tryTake(now = Date.now()): boolean {
+    const elapsed = (now - this.last) / 1000;
+    this.tokens = Math.min(this.capacity, this.tokens + elapsed * this.refillPerSecond);
+    this.last = now;
+    if (this.tokens < 1) return false;
+    this.tokens -= 1;
+    return true;
+  }
+}
+```
+
+**Leaky bucket.** Requests join a queue that drains at a fixed rate; if the queue is full, new requests are rejected. It smooths traffic into a steady output. nginx's `limit_req` module is documented as using the leaky bucket method, with a `burst` queue and an optional `nodelay` to serve queued requests immediately.
+
+**Fixed window counter.** Count requests per key in fixed intervals — say 10:00:00 to 10:00:01 — and reset the counter at each boundary. It is the simplest and cheapest: one counter per key. Its weakness is the boundary: a client can use its full allowance at the very end of one window and again at the start of the next, getting **twice the limit** through in a very short time.
+
+**Sliding window log.** Store a timestamp for every accepted request and count those within the last second. It enforces the limit exactly over any window, but memory grows with the limit and the number of keys.
+
+**Sliding window counter.** Keep only the current and previous window counts and estimate the rolling rate as *previous count × the fraction of the previous window still inside the last second + current count*. It assumes the previous window's requests were evenly spread. Cloudflare reported that across 400 million requests this approximation wrongly allowed or limited only 0.003% of them, at the memory cost of two counters per key.
+
+<Callout kind="illustrative" title="Same limit, different promises">
+
+"10 requests per second" means different things to each algorithm. A sliding log promises no more than 10 in *any* one-second span. A fixed window promises 10 per *calendar* second, so up to 20 can arrive across a boundary. A token bucket with a capacity of 10 promises an average of 10 per second but allows bursts of up to 10 at once on top of the refill. Choose the algorithm whose promise matches what you are protecting.
+
+</Callout>
+
+## In production
+
+**Where to enforce.** Limits are usually applied at the edge — an API gateway, load balancer, CDN or reverse proxy — so rejected requests cost as little as possible. Finer-grained business limits (for example, "five password resets per hour per account") often live in the application, where the necessary context exists.
+
+```nginx
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+
+server {
+    location /api/ {
+        limit_req zone=api burst=20 nodelay;
+        limit_req_status 429;   # nginx answers 503 by default
+    }
+}
+```
+
+**Across many servers.** With a fleet of instances, each keeping its own counters, a client spreading requests across them gets the limit multiplied by the number of instances. Shared counters in a fast store such as Redis fix this; Redis's `INCR` documentation includes a rate-limiter pattern. Make the read-and-update atomic — with a single command, a transaction or a server-side script — or concurrent requests will race past the limit.
+
+**Choosing the key.** Per-IP limits are easy but unfair to many users behind one corporate network address, and weak against attackers with many addresses. Per-API-key or per-user limits are fairer for authenticated traffic. Many systems layer several limits: per user, per endpoint, and a global ceiling.
+
+**Being a good client.** Clients should treat 429 as a signal to slow down: honour `Retry-After`, and otherwise retry with exponential backoff and random jitter so that many clients don't retry in lockstep.
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "A public or multi-tenant API where one client could degrade service for others.",
+    "Expensive or abuse-prone operations: logins, password resets, sending messages, search.",
+    "Downstream dependencies — including paid third-party APIs — with their own quotas.",
+  ]}
+  avoid={[
+    "As your only protection against overload: limits are per client, so many well-behaved clients together can still exceed capacity. Pair them with load shedding.",
+    "Internal batch work that should be smoothed with a queue rather than rejected and retried.",
+    "With limits set by guesswork — measure real usage first, or you'll reject legitimate customers.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"A fixed window of 10 per second never lets more than 10 through in a second."** It can let up to 20 through across a window boundary, as the simulation shows.
+
+**"Rate limiting stops DDoS attacks."** Per-client limits help against a few noisy clients, but a large distributed attack comes from many sources each staying under the limit. That needs network-level and edge defences.
+
+**"429 and 503 mean the same thing."** 429 says *you* are sending too much; 503 says the *service* is unavailable. Clients should react differently — and note that some servers, like nginx by default, return 503 for rate limits unless configured otherwise.
+
+**"Rate limiting and load shedding are the same."** Rate limiting enforces per-client fairness against a configured budget; load shedding drops work when the *server* is overloaded, regardless of who sent it. Robust services use both.
+
+## Failure modes and debugging
+
+- **Limits multiplied by instance count** — counters kept per server instead of shared.
+- **Races in shared counters** — separate "read count" and "increment" steps let concurrent requests slip through. Use atomic operations.
+- **Retry storms** — clients that retry 429s immediately turn a limit into a traffic amplifier. Check that clients back off with jitter.
+- **The limiter becomes the outage** — if the shared counter store is down, decide deliberately whether to *fail open* (allow traffic, risk overload) or *fail closed* (reject everything, guaranteed outage). Most user-facing APIs fail open with an alert.
+- **Wrong key** — every user behind one proxy shares an IP-based limit. Make sure you limit on the real client identifier, and only trust forwarded-for headers set by your own proxies.
+
+## Interview questions
+
+<InterviewQuestion question="Compare the token bucket and fixed window algorithms.">
+
+A fixed window counts requests per key in fixed intervals and resets at each boundary. It is cheap, but a client can send its full quota at the end of one window and again at the start of the next, briefly getting twice the limit. A token bucket refills tokens continuously up to a capacity and spends one per request, so it enforces an average rate while allowing controlled bursts up to the bucket size. Token buckets give smoother, more predictable behaviour; fixed windows are simpler to implement in a shared store.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="How would you rate limit an API served by 50 instances behind a load balancer?">
+
+Keep counters in a shared low-latency store such as Redis, keyed by client and window or bucket, and update them atomically (a single command, a transaction or a server-side script). Apply coarse limits at the gateway to reject excess traffic cheaply, decide on fail-open versus fail-closed if the store is unavailable, and return 429 with Retry-After. For very high volumes, a sliding window counter keeps memory to two counters per key.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="What should a client do when it receives a 429?">
+
+Stop sending immediately, wait for the Retry-After duration if one is given, and otherwise retry with exponential backoff plus random jitter, up to a maximum number of attempts. It should never retry instantly in a tight loop, and should surface persistent limiting to the caller rather than hiding it.
+
+</InterviewQuestion>
+
+<InterviewQuestion question="Why isn't rate limiting enough to protect a service from overload?">
+
+Limits are per client. If many clients each stay within their limits, their combined traffic can still exceed the service's capacity, and a distributed attack can spread across many identities. You also need capacity planning, autoscaling, load shedding or admission control based on the server's own health, and edge protections.
+
+</InterviewQuestion>
