@@ -12,6 +12,7 @@ export const DEMO_SLUGS = [
   "docker-build-cache",
   "tokenizer",
   "message-queue",
+  "system-design-sandbox",
 ] as const;
 
 export type DemoSlug = (typeof DEMO_SLUGS)[number];

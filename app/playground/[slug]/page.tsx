@@ -31,6 +31,7 @@ export default async function PlaygroundDemoPage({ params }: PageProps<"/playgro
   const demo = getPlaygroundDemo((await params).slug);
   if (!demo || !hasDemo(demo.slug)) notFound();
   const [lesson] = demo.lesson ? getLessonsByRef([demo.lesson]) : [];
+  const related = getLessonsByRef(demo.related);
 
   return (
     <div className="mx-auto max-w-5xl px-4 pt-8 sm:px-6">
@@ -69,7 +70,25 @@ export default async function PlaygroundDemoPage({ params }: PageProps<"/playgro
             ))}
           </ol>
         </section>
-        <References references={demo.references} />
+        <div className="space-y-12">
+          {related.length > 0 && (
+            <section aria-labelledby="related-lessons" className="space-y-3">
+              <h2 id="related-lessons" className="text-xl font-semibold">
+                Related lessons
+              </h2>
+              <ul className="space-y-2 text-sm">
+                {related.map((l) => (
+                  <li key={l.id}>
+                    <Link href={`/${l.id}`} className="text-accent hover:underline">
+                      {l.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          <References references={demo.references} />
+        </div>
       </div>
     </div>
   );

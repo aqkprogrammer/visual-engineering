@@ -253,8 +253,10 @@ export async function loadCatalog(contentDir = CONTENT_DIR): Promise<LoadedCatal
     const where = `playground:${demo.slug}`;
     if (seen.has(demo.slug)) issues.push({ where, message: "duplicate playground slug" });
     seen.add(demo.slug);
-    if (demo.lesson && !published.has(demo.lesson)) {
-      issues.push({ where, message: `lesson "${demo.lesson}" is not a published lesson` });
+    for (const ref of [...(demo.lesson ? [demo.lesson] : []), ...demo.related]) {
+      if (!published.has(ref)) {
+        issues.push({ where, message: `lesson "${ref}" is not a published lesson` });
+      }
     }
   }
 
