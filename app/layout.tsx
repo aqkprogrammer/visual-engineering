@@ -14,11 +14,14 @@ const plexSans = IBM_Plex_Sans({
   display: "swap",
 });
 
+// Only for small labels and numbers: not preloaded, so it never competes with the page's
+// critical resources; it swaps in when ready.
 const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-plex-mono",
   display: "swap",
+  preload: false,
 });
 
 const siteUrl = absoluteUrl("/");

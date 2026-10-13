@@ -10,7 +10,7 @@ import {
   Text,
 } from "lucide-react";
 import Link from "next/link";
-import { useId, useMemo, useSyncExternalStore } from "react";
+import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import {
   highlight,
   prepare,
@@ -19,6 +19,7 @@ import {
   type SearchKind,
   type SearchResult,
 } from "@/lib/search/search";
+import { getBasePath } from "@/lib/site";
 
 const KIND_LABEL: Record<SearchKind, string> = {
   lesson: "Lesson",
@@ -64,8 +65,38 @@ function writeQuery(query: string) {
   for (const listener of queryListeners) listener();
 }
 
-export function SearchView({ docs }: { docs: SearchDoc[] }) {
+type IndexState =
+  { status: "loading" } | { status: "ready"; docs: SearchDoc[] } | { status: "error" };
+
+/** Fetches the static search index once the page has rendered. */
+function useSearchIndex(initial?: SearchDoc[]): IndexState {
+  const [state, setState] = useState<IndexState>(
+    initial ? { status: "ready", docs: initial } : { status: "loading" },
+  );
+  useEffect(() => {
+    if (initial) return;
+    let cancelled = false;
+    fetch(`${getBasePath()}/search-index.json`)
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<SearchDoc[]>;
+      })
+      .then((docs) => !cancelled && setState({ status: "ready", docs }))
+      .catch(() => !cancelled && setState({ status: "error" }));
+    return () => {
+      cancelled = true;
+    };
+  }, [initial]);
+  return state;
+}
+
+const NO_DOCS: SearchDoc[] = [];
+
+/** `docs` is for tests; on the site the index is fetched from /search-index.json. */
+export function SearchView({ docs: initialDocs }: { docs?: SearchDoc[] }) {
   const query = useSyncExternalStore(subscribeQuery, readQuery, () => "");
+  const index = useSearchIndex(initialDocs);
+  const docs = index.status === "ready" ? index.docs : NO_DOCS;
   const prepared = useMemo(() => prepare(docs), [docs]);
   const results = useMemo(() => search(prepared, query), [prepared, query]);
   const inputId = useId();
@@ -95,45 +126,52 @@ export function SearchView({ docs }: { docs: SearchDoc[] }) {
       </form>
 
       <p aria-live="polite" className="text-sm text-fg-muted">
-        {trimmed === ""
-          ? `${docs.length} lessons, paths, demos, incidents, questions and terms to search.`
-          : results.length === 0
-            ? `No results for “${trimmed}”.`
-            : `${results.length} result${results.length === 1 ? "" : "s"} for “${trimmed}”.`}
+        {index.status === "loading"
+          ? "Loading the search index…"
+          : index.status === "error"
+            ? "Search couldn’t load. Check your connection and reload the page."
+            : trimmed === ""
+              ? `${docs.length} lessons, paths, demos, incidents, questions and terms to search.`
+              : results.length === 0
+                ? `No results for “${trimmed}”.`
+                : `${results.length} result${results.length === 1 ? "" : "s"} for “${trimmed}”.`}
       </p>
 
-      {trimmed === "" ? (
-        <div className="space-y-3">
-          <p className="text-sm font-medium">Try searching for</p>
-          <ul className="flex flex-wrap gap-2">
-            {SUGGESTIONS.map((suggestion) => (
-              <li key={suggestion}>
-                <button
-                  type="button"
-                  onClick={() => writeQuery(suggestion)}
-                  className="rounded-full border border-border-strong px-3 py-1 text-sm hover:bg-surface"
-                >
-                  {suggestion}
-                </button>
-              </li>
+      {/* Reserve the suggestions' height so nothing jumps when the index arrives. */}
+      <div className="min-h-20">
+        {index.status !== "ready" ? null : trimmed === "" ? (
+          <div className="space-y-3">
+            <p className="text-sm font-medium">Try searching for</p>
+            <ul className="flex flex-wrap gap-2">
+              {SUGGESTIONS.map((suggestion) => (
+                <li key={suggestion}>
+                  <button
+                    type="button"
+                    onClick={() => writeQuery(suggestion)}
+                    className="rounded-full border border-border-strong px-3 py-1 text-sm hover:bg-surface"
+                  >
+                    {suggestion}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : results.length === 0 ? (
+          <p className="text-sm text-fg-muted">
+            Check the spelling, try fewer words, or{" "}
+            <Link href="/explore" className="text-accent underline underline-offset-2">
+              browse all topics
+            </Link>
+            .
+          </p>
+        ) : (
+          <ol className="space-y-3">
+            {results.map((result) => (
+              <ResultItem key={result.doc.href} result={result} query={trimmed} />
             ))}
-          </ul>
-        </div>
-      ) : results.length === 0 ? (
-        <p className="text-sm text-fg-muted">
-          Check the spelling, try fewer words, or{" "}
-          <Link href="/explore" className="text-accent underline underline-offset-2">
-            browse all topics
-          </Link>
-          .
-        </p>
-      ) : (
-        <ol className="space-y-3">
-          {results.map((result) => (
-            <ResultItem key={result.doc.href} result={result} query={trimmed} />
-          ))}
-        </ol>
-      )}
+          </ol>
+        )}
+      </div>
     </div>
   );
 }
