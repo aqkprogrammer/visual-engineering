@@ -3,15 +3,17 @@ import { alternatesFor } from "@/lib/seo";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { KnowledgeCheck } from "@/components/lessons/knowledge-check";
-import { KeyTerms, LessonPaths } from "@/components/lessons/lesson-context";
+import { KeyTerms, LessonIncidents, LessonPaths } from "@/components/lessons/lesson-context";
 import { LessonPager, References, RelatedLessons } from "@/components/lessons/lesson-footer";
 import { LessonMetaRow } from "@/components/lessons/lesson-meta";
 import { TableOfContents } from "@/components/lessons/table-of-contents";
+import { InterviewSection } from "@/components/interview/interview-section";
 import { LessonCompletion } from "@/components/progress/lesson-completion";
 import {
   getAdjacentLessons,
   getDomain,
   getLesson,
+  getLessonIncidents,
   getLessonPaths,
   getLessons,
   getLessonsByRef,
@@ -52,6 +54,7 @@ export default async function LessonPage({ params }: PageProps<"/[domain]/[lesso
   const { previous, next } = getAdjacentLessons(lesson);
   const pathPositions = getLessonPaths(lesson);
   const terms = getLessonTerms(lesson);
+  const incidents = getLessonIncidents(lesson);
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-14">
@@ -93,6 +96,10 @@ export default async function LessonPage({ params }: PageProps<"/[domain]/[lesso
           <Body />
         </div>
 
+        <div className="max-w-[70ch]">
+          <InterviewSection items={lesson.interview} />
+        </div>
+
         {lesson.quiz.length > 0 && (
           <div className="max-w-[70ch]">
             <KnowledgeCheck questions={lesson.quiz} lessonId={lesson.id} />
@@ -105,6 +112,7 @@ export default async function LessonPage({ params }: PageProps<"/[domain]/[lesso
 
         <div className="mt-16 max-w-[70ch] space-y-14 border-t border-border pt-10">
           <LessonPaths positions={pathPositions} />
+          <LessonIncidents incidents={incidents} />
           <KeyTerms terms={terms} />
           <References references={lesson.references} />
           <RelatedLessons title="Related lessons" lessons={related} />

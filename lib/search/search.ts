@@ -8,7 +8,7 @@
  * most, then keywords, then the summary, then the body.
  */
 
-export const SEARCH_KINDS = ["lesson", "path", "demo", "term"] as const;
+export const SEARCH_KINDS = ["lesson", "path", "demo", "incident", "term", "question"] as const;
 export type SearchKind = (typeof SEARCH_KINDS)[number];
 
 export type SearchDoc = {
@@ -30,7 +30,15 @@ export type SearchResult = { doc: SearchDoc; score: number };
 
 const WEIGHTS = { title: 10, keywords: 5, summary: 3, body: 1 } as const;
 const QUALITY = { exact: 1, prefix: 0.6, typo: 0.35 } as const;
-const KIND_ORDER: Record<SearchKind, number> = { lesson: 0, path: 1, demo: 2, term: 3 };
+/** Tie-breaks: explanations first, then definitions, then practice questions. */
+const KIND_ORDER: Record<SearchKind, number> = {
+  lesson: 0,
+  path: 1,
+  demo: 2,
+  incident: 3,
+  term: 4,
+  question: 5,
+};
 
 const STOPWORDS = new Set([
   "a",
@@ -150,14 +158,14 @@ function matchQuality(term: string, tokens: Tokens): number {
 }
 
 type Field = keyof typeof WEIGHTS;
-/** `titleKey` is the title as stems ("cach hit evict"), for whole-phrase matches. */
-export type PreparedDoc = { doc: SearchDoc; fields: Record<Field, Tokens>; titleKey: string };
+/** `titleKeys` are the title and aliases as stems ("cach hit evict"), for whole-phrase matches. */
+export type PreparedDoc = { doc: SearchDoc; fields: Record<Field, Tokens>; titleKeys: string[] };
 
 /** Tokenize once, up front, so each keystroke only compares strings. */
 export function prepare(docs: SearchDoc[]): PreparedDoc[] {
   return docs.map((doc) => ({
     doc,
-    titleKey: tokenize(doc.title).stems.join(" "),
+    titleKeys: [doc.title, ...doc.aliases].map((t) => tokenize(t).stems.join(" ")),
     fields: {
       title: tokenize([doc.title, ...doc.aliases].join(" ")),
       keywords: tokenize([doc.context, ...doc.keywords].join(" ")),
@@ -188,7 +196,9 @@ export function search(prepared: PreparedDoc[], query: string, limit = 30): Sear
       score += best;
     }
     if (!matchedAll) continue;
-    if (phrase.length > 0 && entry.titleKey.includes(phrase)) score += WEIGHTS.title;
+    if (phrase.length > 0 && entry.titleKeys.some((key) => key.includes(phrase))) {
+      score += WEIGHTS.title;
+    }
     results.push({ doc: entry.doc, score });
   }
 

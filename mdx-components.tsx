@@ -1,12 +1,5 @@
 import type { MDXComponents } from "mdx/types";
-import {
-  Analogy,
-  Callout,
-  Definition,
-  InterviewQuestion,
-  Steps,
-  TradeOffs,
-} from "@/components/lessons/mdx-blocks";
+import { Analogy, Callout, Definition, Steps, TradeOffs } from "@/components/lessons/mdx-blocks";
 import { Demo } from "@/components/visualizations/demo-registry";
 import { LoadBalancerDiagram } from "@/components/visualizations/static/load-balancer-diagram";
 
@@ -22,7 +15,6 @@ const components = {
   Callout,
   Definition,
   Demo,
-  InterviewQuestion,
   Steps,
   TradeOffs,
   LoadBalancerDiagram,

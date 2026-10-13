@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import {
   getDomains,
+  getIncidents,
   getLearningPaths,
   getLessons,
   getPlaygroundDemos,
@@ -21,6 +22,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: url("/playground") },
     { url: url("/paths") },
     { url: url("/glossary") },
+    { url: url("/interview") },
+    { url: url("/incidents") },
+    ...getIncidents().map((i) => ({ url: url(`/incidents/${i.slug}`) })),
     ...getLearningPaths().map((p) => ({ url: url(`/paths/${p.slug}`) })),
     ...getPlaygroundDemos().map((d) => ({ url: url(`/playground/${d.slug}`) })),
     ...getDomains().map((d) => ({ url: url(`/${d.id}`) })),

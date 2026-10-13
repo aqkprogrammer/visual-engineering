@@ -2,6 +2,7 @@ import {
   RESERVED_SEGMENTS,
   type Domain,
   type GlossaryTerm,
+  type Incident,
   type LearningPath,
   type LessonMeta,
   type LessonRef,
@@ -208,6 +209,49 @@ export function validateGlossary(terms: GlossaryTerm[], lessons: LessonMeta[]): 
         issues.push({ where, message: `related term "${related}" does not exist` });
       }
     }
+  }
+  return issues;
+}
+
+/**
+ * Incidents must link to a published lesson and an existing demo, and every chart or log clue must
+ * name evidence that the incident's simulation run actually produces.
+ */
+export function validateIncidents(
+  incidents: Incident[],
+  lessons: LessonMeta[],
+  demoSlugs: ReadonlySet<string>,
+  evidence: Record<string, { charts: Record<string, unknown>; logs: Record<string, unknown> }>,
+): ContentIssue[] {
+  const issues: ContentIssue[] = [];
+  const published = new Set(lessons.filter((l) => l.status === "published").map(lessonRef));
+  const slugs = new Set<string>();
+
+  for (const incident of incidents) {
+    const where = `incident:${incident.slug}`;
+    if (slugs.has(incident.slug)) issues.push({ where, message: "duplicate incident slug" });
+    slugs.add(incident.slug);
+    if (!published.has(incident.lesson)) {
+      issues.push({ where, message: `lesson "${incident.lesson}" is not a published lesson` });
+    }
+    if (!demoSlugs.has(incident.demo)) {
+      issues.push({ where, message: `unknown demo "${incident.demo}"` });
+    }
+    const found = evidence[incident.slug];
+    if (!found) {
+      issues.push({ where, message: "no evidence builder in lib/incidents/evidence.ts" });
+      continue;
+    }
+    for (const clue of incident.clues) {
+      if (clue.kind === "chart" && !(clue.ref in found.charts)) {
+        issues.push({ where, message: `unknown chart "${clue.ref}"` });
+      }
+      if (clue.kind === "log" && !(clue.ref in found.logs)) {
+        issues.push({ where, message: `unknown log "${clue.ref}"` });
+      }
+    }
+    const ids = incident.questions.map((q) => q.id);
+    if (new Set(ids).size !== ids.length) issues.push({ where, message: "duplicate question ids" });
   }
   return issues;
 }

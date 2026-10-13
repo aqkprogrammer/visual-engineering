@@ -25,14 +25,14 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="hidden rounded-md px-2.5 py-1.5 text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg md:inline-block"
+              className="hidden rounded-md px-2.5 py-1.5 text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg lg:inline-block"
             >
               {item.label}
             </Link>
           ))}
           <a
             href={site.repoUrl}
-            className="hidden items-center gap-1 rounded-md px-2.5 py-1.5 text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg md:inline-flex"
+            className="hidden items-center gap-1 rounded-md px-2.5 py-1.5 text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg lg:inline-flex"
           >
             GitHub
             <ArrowUpRight aria-hidden className="size-3.5" />

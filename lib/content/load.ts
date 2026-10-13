@@ -6,16 +6,22 @@ import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { z } from "zod";
-import { analyzeMdx } from "./mdx-text";
+import { INCIDENT_EVIDENCE } from "../incidents/evidence";
+import { INTERVIEW_HEADING_ID } from "./headings";
+import { analyzeMdx, readingMinutesFor } from "./mdx-text";
 import {
   domainSchema,
   glossaryTermSchema,
+  incidentSchema,
+  interviewSchema,
   learningPathSchema,
   lessonMetaSchema,
   playgroundDemoSchema,
   quizSchema,
   type Domain,
   type GlossaryTerm,
+  type Incident,
+  type InterviewItem,
   type LearningPath,
   type Lesson,
   type LessonMeta,
@@ -26,6 +32,7 @@ import {
   lessonRef,
   validateCatalog,
   validateGlossary,
+  validateIncidents,
   validateLearningPaths,
   type ContentIssue,
 } from "./validate";
@@ -38,6 +45,7 @@ export type LoadedCatalog = {
   playground: PlaygroundDemo[];
   paths: LearningPath[];
   glossary: GlossaryTerm[];
+  incidents: Incident[];
   issues: ContentIssue[];
 };
 
@@ -91,6 +99,7 @@ export async function loadCatalog(contentDir = CONTENT_DIR): Promise<LoadedCatal
 
   const metas: LessonMeta[] = [];
   const demoUses: { where: string; slug: string }[] = [];
+  const interviewIds = new Map<string, string>();
   const lessons: LoadedCatalog["lessons"] = [];
 
   for (const domainDir of await subdirectories(lessonsDir)) {
@@ -137,7 +146,43 @@ export async function loadCatalog(contentDir = CONTENT_DIR): Promise<LoadedCatal
         issues.push({ where, message: "published lessons need a knowledge check (quiz.ts)" });
       }
 
+      let interview: InterviewItem[] = [];
+      const interviewPath = path.join(dir, "interview.ts");
+      if (await exists(interviewPath)) {
+        const mod = (await import(pathToFileURL(interviewPath).href)) as { default: unknown };
+        const parsedInterview = interviewSchema.safeParse(mod.default);
+        if (parsedInterview.success) {
+          interview = parsedInterview.data;
+          for (const item of interview) {
+            const owner = interviewIds.get(item.id);
+            if (owner) {
+              issues.push({
+                where: `${where}/interview.ts`,
+                message: `question id "${item.id}" is already used in ${owner}`,
+              });
+            }
+            interviewIds.set(item.id, where);
+          }
+        } else {
+          issues.push({
+            where: `${where}/interview.ts`,
+            message: formatZodError(parsedInterview.error),
+          });
+        }
+      } else if (meta.status === "published") {
+        issues.push({
+          where,
+          message: "published lessons need interview questions (interview.ts)",
+        });
+      }
+
       const source = await readFile(bodyPath, "utf8");
+      if (/<InterviewQuestion\b/.test(source)) {
+        issues.push({
+          where: `${where}/index.mdx`,
+          message: "interview questions belong in interview.ts, not in the MDX body",
+        });
+      }
       if (/from\s+["']@\/components\/visualizations\/scenes\//.test(source)) {
         issues.push({
           where: `${where}/index.mdx`,
@@ -159,14 +204,30 @@ export async function loadCatalog(contentDir = CONTENT_DIR): Promise<LoadedCatal
         });
       }
 
+      // Interview answers are rendered on the lesson page after the MDX body, so they count
+      // towards reading time and appear in the table of contents.
+      const interviewWords = interview
+        .map((i) => `${i.question} ${i.answer}`)
+        .join(" ")
+        .split(/\s+/)
+        .filter(Boolean).length;
+      const wordCount = analysis.wordCount + interviewWords;
+
       metas.push(meta);
       lessons.push({
         ...meta,
         id: lessonRef(meta),
         quiz,
-        readingMinutes: analysis.readingMinutes,
-        wordCount: analysis.wordCount,
-        headings: analysis.headings,
+        interview,
+        readingMinutes: readingMinutesFor(wordCount),
+        wordCount,
+        headings:
+          interview.length > 0
+            ? [
+                ...analysis.headings,
+                { depth: 2, text: "Interview questions", id: INTERVIEW_HEADING_ID },
+              ]
+            : analysis.headings,
         plainText: analysis.plainText,
         sourcePath: path.relative(contentDir, dir),
       });
@@ -212,5 +273,11 @@ export async function loadCatalog(contentDir = CONTENT_DIR): Promise<LoadedCatal
   const glossary = await loadList(path.join(contentDir, "glossary.ts"), glossaryTermSchema, issues);
   issues.push(...validateGlossary(glossary, metas));
 
-  return { domains, lessons, playground, paths, glossary, issues };
+  const incidents = await loadList(path.join(contentDir, "incidents.ts"), incidentSchema, issues);
+  const evidence = Object.fromEntries(
+    Object.entries(INCIDENT_EVIDENCE).map(([slug, build]) => [slug, build()]),
+  );
+  issues.push(...validateIncidents(incidents, metas, seen, evidence));
+
+  return { domains, lessons, playground, paths, glossary, incidents, issues };
 }

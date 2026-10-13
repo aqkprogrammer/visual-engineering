@@ -29,6 +29,12 @@ export function SiteFooter() {
           <Link href="/playground" className="hover:text-fg">
             Playground
           </Link>
+          <Link href="/interview" className="hover:text-fg">
+            Interview questions
+          </Link>
+          <Link href="/incidents" className="hover:text-fg">
+            Incident lab
+          </Link>
           <Link href="/glossary" className="hover:text-fg">
             Glossary
           </Link>

@@ -24,16 +24,18 @@ This describes what is implemented today. Planned components are marked as such;
 
 ## Content pipeline
 
-| Step                     | Code                                               | Notes                                                                                                                                                     |
-| ------------------------ | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Schemas                  | `lib/content/schema.ts`                            | Domains, modules, lessons, references. `defineLesson` / `defineDomains` give authors type checking.                                                       |
-| Discovery and validation | `lib/content/load.ts`, `lib/content/validate.ts`   | Every issue reported at once; exits non-zero in CI.                                                                                                       |
-| Knowledge checks         | `content/lessons/*/quiz.ts`, `lib/content/quiz.ts` | Required for published lessons; exactly one correct option per question, with an explanation for every option. Options render in a stable seeded shuffle. |
-| MDX analysis             | `lib/content/mdx-text.ts`                          | Word count, reading time, h2/h3 headings with `github-slugger` ids (identical to `rehype-slug`).                                                          |
-| Learning paths, glossary | `content/paths.ts`, `content/glossary.ts`          | Steps must be published lessons that come after their prerequisites; glossary ids, names and aliases are unique and every link resolves.                  |
-| Demos in lessons         | `<Demo slug="…" />` from `mdx-components.tsx`      | Lazy-loads one demo per chunk. `pnpm content` rejects unknown slugs and direct scene imports, which would bundle the scene into every lesson page.        |
-| Generated registry       | `scripts/content.ts` → `content/.generated/`       | Git-ignored; regenerated before `dev`, `build`, `test` and `typecheck`. `registry.ts` holds the data; `bodies.ts` holds the MDX loaders (see below).      |
-| Runtime queries          | `lib/content/catalog.ts`, `lib/content/bodies.ts`  | `server-only`; curriculum ordering, previous/next, related lessons, paths, glossary. Drafts are visible only in development.                              |
+| Step                     | Code                                                | Notes                                                                                                                                                     |
+| ------------------------ | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Schemas                  | `lib/content/schema.ts`                             | Domains, modules, lessons, references. `defineLesson` / `defineDomains` give authors type checking.                                                       |
+| Discovery and validation | `lib/content/load.ts`, `lib/content/validate.ts`    | Every issue reported at once; exits non-zero in CI.                                                                                                       |
+| Knowledge checks         | `content/lessons/*/quiz.ts`, `lib/content/quiz.ts`  | Required for published lessons; exactly one correct option per question, with an explanation for every option. Options render in a stable seeded shuffle. |
+| MDX analysis             | `lib/content/mdx-text.ts`                           | Word count, reading time, h2/h3 headings with `github-slugger` ids (identical to `rehype-slug`).                                                          |
+| Interview questions      | `content/lessons/*/interview.ts`                    | Required for published lessons. Level, kind, model answer and rubric; ids are globally unique (anchors on `/interview`). Rendered after the MDX body.     |
+| Incidents                | `content/incidents.ts`, `lib/incidents/evidence.ts` | Story and questions are content; charts and logs come from simulation runs. Every clue `ref` must exist in the run's output.                              |
+| Learning paths, glossary | `content/paths.ts`, `content/glossary.ts`           | Steps must be published lessons that come after their prerequisites; glossary ids, names and aliases are unique and every link resolves.                  |
+| Demos in lessons         | `<Demo slug="…" />` from `mdx-components.tsx`       | Lazy-loads one demo per chunk. `pnpm content` rejects unknown slugs and direct scene imports, which would bundle the scene into every lesson page.        |
+| Generated registry       | `scripts/content.ts` → `content/.generated/`        | Git-ignored; regenerated before `dev`, `build`, `test` and `typecheck`. `registry.ts` holds the data; `bodies.ts` holds the MDX loaders (see below).      |
+| Runtime queries          | `lib/content/catalog.ts`, `lib/content/bodies.ts`   | `server-only`; curriculum ordering, previous/next, related lessons, paths, glossary. Drafts are visible only in development.                              |
 
 **Why lesson bodies are separate.** Any route whose server code imports a lesson's MDX gets that lesson's client components in its bundle. Only the lesson page imports `lib/content/bodies.ts`; everything else reads metadata from `catalog.ts`.
 
@@ -48,18 +50,20 @@ This describes what is implemented today. Planned components are marked as such;
 
 All routes are prerendered. Dynamic segments set `dynamicParams = false`, so unknown paths fall through to `app/not-found.tsx` (served as `404.html` with a 404 status).
 
-| Route                         | Source                                                                                        |
-| ----------------------------- | --------------------------------------------------------------------------------------------- |
-| `/`                           | `app/page.tsx`                                                                                |
-| `/explore`                    | `app/explore/page.tsx`                                                                        |
-| `/[domain]`                   | `app/[domain]/page.tsx` — the domain intro, its modules, published lessons and planned topics |
-| `/[domain]/[lesson]`          | `app/[domain]/[lesson]/page.tsx`                                                              |
-| `/paths`, `/paths/[slug]`     | `app/paths/` — learning paths with progress                                                   |
-| `/glossary`                   | `app/glossary/page.tsx` — one anchor per term, e.g. `/glossary/#idempotency`                  |
-| `/search`                     | `app/search/page.tsx` — the query lives in `?q=`                                              |
-| `/playground/[slug]`          | `app/playground/[slug]/page.tsx`                                                              |
-| `/about`                      | `app/about/page.tsx`                                                                          |
-| `/sitemap.xml`, `/robots.txt` | `force-static`; the sitemap is empty until `NEXT_PUBLIC_SITE_URL` is set                      |
+| Route                             | Source                                                                                        |
+| --------------------------------- | --------------------------------------------------------------------------------------------- |
+| `/`                               | `app/page.tsx`                                                                                |
+| `/explore`                        | `app/explore/page.tsx`                                                                        |
+| `/[domain]`                       | `app/[domain]/page.tsx` — the domain intro, its modules, published lessons and planned topics |
+| `/[domain]/[lesson]`              | `app/[domain]/[lesson]/page.tsx`                                                              |
+| `/paths`, `/paths/[slug]`         | `app/paths/` — learning paths with progress                                                   |
+| `/glossary`                       | `app/glossary/page.tsx` — one anchor per term, e.g. `/glossary/#idempotency`                  |
+| `/search`                         | `app/search/page.tsx` — the query lives in `?q=`                                              |
+| `/interview`                      | `app/interview/page.tsx` — every question, filters, and self-graded practice                  |
+| `/incidents`, `/incidents/[slug]` | `app/incidents/` — briefing, evidence charts and logs, diagnosis, postmortem                  |
+| `/playground/[slug]`              | `app/playground/[slug]/page.tsx`                                                              |
+| `/about`                          | `app/about/page.tsx`                                                                          |
+| `/sitemap.xml`, `/robots.txt`     | `force-static`; the sitemap is empty until `NEXT_PUBLIC_SITE_URL` is set                      |
 
 Domain ids share the top-level URL namespace with static routes, so `RESERVED_SEGMENTS` in the schema is enforced by validation.
 
@@ -116,4 +120,4 @@ How to add one: [SIMULATION-GUIDE.md](SIMULATION-GUIDE.md).
 
 ## Not yet built
 
-Shareable scenario URLs, phone-specific scene layouts, the interview hub, incident lab and system design sandbox (Phase 4b), a `⌘K` search palette, progress export/import, Lighthouse budgets in CI and the contributor guide (Phase 5).
+Shareable scenario URLs, phone-specific scene layouts, the system design sandbox (Phase 4c), a `⌘K` search palette, progress export/import, Lighthouse budgets in CI and the contributor guide (Phase 5).

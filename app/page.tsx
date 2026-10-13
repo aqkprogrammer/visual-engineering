@@ -1,10 +1,12 @@
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight, MessageSquareText, Siren } from "lucide-react";
 import Link from "next/link";
 import { LessonListItem } from "@/components/lessons/lesson-meta";
 import { LoadBalancerDiagram } from "@/components/visualizations/static/load-balancer-diagram";
 import {
   getDomainLessons,
   getDomains,
+  getIncidents,
+  getInterviewEntries,
   getLearningPaths,
   getLessons,
   getPathLessons,
@@ -115,6 +117,40 @@ export default function HomePage() {
           </ul>
         </section>
       )}
+
+      <section aria-labelledby="practise" className="border-t border-border py-14">
+        <h2 id="practise" className="text-2xl font-semibold tracking-tight">
+          Practise
+        </h2>
+        <ul className="mt-8 grid gap-4 md:grid-cols-2">
+          <li>
+            <Link
+              href="/incidents"
+              className="group flex h-full flex-col gap-2 rounded-xl border border-border p-6 transition-colors hover:border-border-strong hover:bg-surface"
+            >
+              <Siren aria-hidden className="size-5 text-fg-subtle" />
+              <span className="font-medium group-hover:text-accent">Incident lab</span>
+              <span className="text-sm text-fg-muted">
+                {getIncidents().length} production incidents to debug from charts and logs produced
+                by real simulations. Diagnose, fix, then read the postmortem.
+              </span>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/interview"
+              className="group flex h-full flex-col gap-2 rounded-xl border border-border p-6 transition-colors hover:border-border-strong hover:bg-surface"
+            >
+              <MessageSquareText aria-hidden className="size-5 text-fg-subtle" />
+              <span className="font-medium group-hover:text-accent">Interview questions</span>
+              <span className="text-sm text-fg-muted">
+                {getInterviewEntries().length} questions with model answers and a published rubric,
+                so you can grade yourself the way an interviewer would.
+              </span>
+            </Link>
+          </li>
+        </ul>
+      </section>
 
       <section aria-labelledby="domains" className="border-t border-border py-14">
         <div className="flex flex-wrap items-end justify-between gap-4">

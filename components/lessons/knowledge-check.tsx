@@ -15,9 +15,13 @@ import { cn } from "@/lib/utils/cn";
 export function KnowledgeCheck({
   questions,
   lessonId,
+  title = "Check your understanding",
+  intro = "Pick an answer, then check it. Every option explains why it is right or wrong.",
 }: {
   questions: QuizQuestion[];
   lessonId?: string;
+  title?: string;
+  intro?: string;
 }) {
   const [selected, setSelected] = useState<QuizAnswers>({});
   const [submitted, setSubmitted] = useState<QuizAnswers>({});
@@ -29,11 +33,9 @@ export function KnowledgeCheck({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 id={headingId} className="text-xl font-semibold">
-            Check your understanding
+            {title}
           </h2>
-          <p className="mt-1 text-sm text-fg-muted">
-            Pick an answer, then check it. Every option explains why it is right or wrong.
-          </p>
+          <p className="mt-1 text-sm text-fg-muted">{intro}</p>
         </div>
         <p aria-live="polite" className="font-mono text-sm text-fg-muted">
           {result.answered === 0

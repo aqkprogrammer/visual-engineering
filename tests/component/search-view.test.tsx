@@ -36,7 +36,9 @@ describe("SearchView", () => {
   it("shows suggestions, then results with a live count, and keeps the query in the URL", async () => {
     const user = userEvent.setup();
     render(<SearchView docs={docs} />);
-    expect(screen.getByText("2 lessons, paths, demos and terms to search.")).toBeInTheDocument();
+    expect(
+      screen.getByText("2 lessons, paths, demos, incidents, questions and terms to search."),
+    ).toBeInTheDocument();
 
     await user.type(screen.getByRole("searchbox"), "queue");
     expect(screen.getByText("2 results for “queue”.")).toBeInTheDocument();

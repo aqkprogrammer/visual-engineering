@@ -2,6 +2,7 @@ import "server-only";
 import {
   domains as allDomains,
   glossary as allTerms,
+  incidents as allIncidents,
   lessons as allLessons,
   paths as allPaths,
   playground as allDemos,
@@ -10,6 +11,8 @@ import type {
   Domain,
   DomainId,
   GlossaryTerm,
+  Incident,
+  InterviewItem,
   LearningPath,
   Lesson,
   LessonRef,
@@ -134,4 +137,37 @@ export function getGlossary(): GlossaryTerm[] {
 /** Terms whose in-depth explanation is this lesson. */
 export function getLessonTerms(lesson: Lesson): GlossaryTerm[] {
   return sortedTerms.filter((t) => t.lesson === lesson.id);
+}
+
+export type InterviewEntry = {
+  item: InterviewItem;
+  lesson: { id: LessonRef; title: string; domain: DomainId; domainTitle: string };
+};
+
+/** Every interview question with the lesson it comes from, in curriculum order. */
+export function getInterviewEntries(): InterviewEntry[] {
+  return orderedLessons.flatMap((lesson) =>
+    lesson.interview.map((item) => ({
+      item,
+      lesson: {
+        id: lesson.id,
+        title: lesson.title,
+        domain: lesson.domain,
+        domainTitle: getDomain(lesson.domain)?.title ?? lesson.domain,
+      },
+    })),
+  );
+}
+
+export function getIncidents(): Incident[] {
+  return allIncidents;
+}
+
+export function getIncident(slug: string): Incident | undefined {
+  return allIncidents.find((i) => i.slug === slug);
+}
+
+/** Incidents whose root cause this lesson explains. */
+export function getLessonIncidents(lesson: Lesson): Incident[] {
+  return allIncidents.filter((i) => i.lesson === lesson.id);
 }

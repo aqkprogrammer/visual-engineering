@@ -43,7 +43,7 @@ describe("analyzeMdx", () => {
 
   it("counts prose inside JSX children and string props", () => {
     const result = analyzeMdx(
-      '<InterviewQuestion question="Why balance load?">\nBecause servers fail.\n</InterviewQuestion>',
+      '<Callout title="Why balance load?">\nBecause servers fail.\n</Callout>',
     );
     expect(result.wordCount).toBe(6);
   });
