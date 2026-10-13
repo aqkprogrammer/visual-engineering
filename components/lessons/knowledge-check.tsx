@@ -2,15 +2,23 @@
 
 import { CircleCheck, CircleX, RotateCcw } from "lucide-react";
 import { useId, useState } from "react";
+import { updateProgress } from "@/components/progress/progress-store";
 import { displayOrder, gradeQuiz, type QuizAnswers } from "@/lib/content/quiz";
 import type { QuizQuestion } from "@/lib/content/schema";
+import { recordQuiz } from "@/lib/progress/progress";
 import { cn } from "@/lib/utils/cn";
 
 /**
- * Knowledge check: answer, then see why every option is right or wrong. Nothing is stored or sent
- * anywhere; it is practice, not an exam.
+ * Knowledge check: answer, then see why every option is right or wrong. It is practice, not an
+ * exam. With a `lessonId`, a finished attempt's score is saved to progress in this browser only.
  */
-export function KnowledgeCheck({ questions }: { questions: QuizQuestion[] }) {
+export function KnowledgeCheck({
+  questions,
+  lessonId,
+}: {
+  questions: QuizQuestion[];
+  lessonId?: string;
+}) {
   const [selected, setSelected] = useState<QuizAnswers>({});
   const [submitted, setSubmitted] = useState<QuizAnswers>({});
   const result = gradeQuiz(questions, submitted);
@@ -43,7 +51,16 @@ export function KnowledgeCheck({ questions }: { questions: QuizQuestion[] }) {
               selected={selected[question.id]}
               submitted={submitted[question.id]}
               onSelect={(option) => setSelected((s) => ({ ...s, [question.id]: option }))}
-              onSubmit={() => setSubmitted((s) => ({ ...s, [question.id]: selected[question.id] }))}
+              onSubmit={() => {
+                const next = { ...submitted, [question.id]: selected[question.id] };
+                setSubmitted(next);
+                const attempt = gradeQuiz(questions, next);
+                if (lessonId && attempt.answered === attempt.total) {
+                  updateProgress((p) =>
+                    recordQuiz(p, lessonId, attempt.correct, attempt.total, new Date()),
+                  );
+                }
+              }}
               onReset={() => {
                 setSubmitted((s) => ({ ...s, [question.id]: undefined }));
                 setSelected((s) => ({ ...s, [question.id]: undefined }));

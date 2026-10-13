@@ -1,4 +1,4 @@
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Search } from "lucide-react";
 import Link from "next/link";
 import { site } from "@/lib/site";
 import { LogoMark } from "./logo";
@@ -25,18 +25,25 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="hidden rounded-md px-2.5 py-1.5 text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg sm:inline-block"
+              className="hidden rounded-md px-2.5 py-1.5 text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg md:inline-block"
             >
               {item.label}
             </Link>
           ))}
           <a
             href={site.repoUrl}
-            className="hidden items-center gap-1 rounded-md px-2.5 py-1.5 text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg sm:inline-flex"
+            className="hidden items-center gap-1 rounded-md px-2.5 py-1.5 text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg md:inline-flex"
           >
             GitHub
             <ArrowUpRight aria-hidden className="size-3.5" />
           </a>
+          <Link
+            href="/search"
+            className="inline-flex size-9 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
+          >
+            <Search aria-hidden className="size-[18px]" strokeWidth={1.75} />
+            <span className="sr-only">Search</span>
+          </Link>
           <ThemeToggle />
           <MobileNav />
         </nav>

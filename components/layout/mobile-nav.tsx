@@ -33,7 +33,7 @@ export function MobileNav() {
   }, [open]);
 
   return (
-    <div className="sm:hidden">
+    <div className="md:hidden">
       <button
         ref={buttonRef}
         type="button"
