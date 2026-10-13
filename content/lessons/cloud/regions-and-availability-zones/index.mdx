@@ -1,0 +1,117 @@
+<Definition>
+
+A **region** is a geographic area where a cloud provider runs its infrastructure, isolated from its other regions. An **Availability Zone** (AZ) is one of several separate locations inside a region — one or more data centres with their own power, cooling and networking — close enough to each other for fast connections, but far enough apart that one disaster shouldn't hit two.
+
+</Definition>
+
+## The problem it solves
+
+Every piece of hardware eventually fails, and sometimes a whole building does: a power outage, a cooling failure, a fibre cut, a flood. If every copy of your application lives in one data centre, one such event takes all of it down at once — no matter how many servers you run there.
+
+Regions and zones give you **fault isolation boundaries** you can design around. Spread your servers across zones and a zone failure takes out a fraction of your capacity, not all of it. Spread across regions and you can survive the loss of an entire region, at a much higher cost in money and complexity.
+
+## An everyday analogy
+
+<Analogy>
+
+A supermarket chain doesn't keep all its stock in one warehouse. It has several warehouses around a city (zones), each on a different power supply, so a fire at one still leaves the others able to deliver. And it has operations in other cities (regions), so a city-wide disaster doesn't stop the whole business.
+
+</Analogy>
+
+Where the analogy breaks down: the warehouses can quietly cover for each other only if each one already holds extra stock. If every warehouse is stocked to exactly what it sells, losing one means empty shelves until new stock arrives. That spare capacity is the key idea of this lesson.
+
+## See it in action
+
+<Demo slug="availability-zones" />
+
+Things to try:
+
+- With **One zone**, fail zone a1. Everything fails — and auto-recovery can't help, because there's no healthy zone to launch into.
+- With **Three zones** and **Just enough** capacity, fail a zone. A third of requests fail for five minutes until replacements are running.
+- Choose **Survive a zone** and fail a zone again. Nothing fails: the spare instances were already serving.
+- Back on **Just enough**, impair the control plane and then fail a zone. The errors never stop.
+
+## Step by step: losing a zone
+
+<Steps>
+
+1. **A zone fails.** Every instance in it stops responding at once.
+2. **Load balancers stop using it.** Health checks mark those instances unhealthy, and traffic is spread over the remaining zones — within seconds to a minute.
+3. **The remaining zones take all the load.** With three zones, each now carries half as much again as before. If they were already near full, they overload and requests fail.
+4. **Replacements are requested.** An autoscaling or recovery process asks the provider's **control plane** — the APIs that create and configure resources — to launch new instances in the healthy zones.
+5. **Replacements start serving.** After their start-up time, capacity is back to normal. Until then, users feel the shortfall.
+6. **The zone recovers.** Its instances come back, and the extra capacity can be removed.
+
+</Steps>
+
+## Under the hood
+
+**What makes zones independent.** AWS describes an Availability Zone as one or more discrete data centres with separate and redundant power, networking and connectivity. Zones in a region are up to about 100 km apart — far enough to avoid shared disasters, close enough for synchronous replication with single-digit-millisecond latency — and AWS separates software deployments to different zones in time, so a bad change shouldn't reach two at once. Other major clouds offer the same construct under similar names.
+
+**Regions are separate worlds.** Most cloud services are regional: a database, load balancer or queue lives in one region. Running in a second region means deploying and operating a second copy of everything, and deciding how data moves between them. Data replication between regions is usually asynchronous, so a region failure can lose the most recent writes.
+
+**Choosing a region.** Pick the region closest to most of your users for latency, check that it offers the services you need, and respect data residency laws that require some data to stay in a particular country or area. Prices also differ between regions.
+
+**Static stability.** The shortfall in step 3 lasts as long as step 5 takes — and step 5 depends on the control plane working during an incident, which is exactly when it is most likely to be strained. The alternative is to have the capacity in place *before* anything fails. AWS's own guidance: with three zones, over-provision by 50%, so that any two zones can carry the full load. Nothing needs to launch when a zone disappears. This is called **static stability**: the system keeps working without having to change anything.
+
+## Example: spreading a group across zones
+
+```yaml
+# An EC2 Auto Scaling group spread over three Availability Zones (AWS CloudFormation, abridged).
+WebServers:
+  Type: AWS::AutoScaling::AutoScalingGroup
+  Properties:
+    VPCZoneIdentifier: [!Ref SubnetA, !Ref SubnetB, !Ref SubnetC]   # one subnet per zone
+    MinSize: "9"          # 6 needed + 50% headroom, so any two zones can carry the load
+    MaxSize: "15"
+    HealthCheckType: ELB  # replace instances the load balancer considers unhealthy
+    TargetGroupARNs: [!Ref WebTargetGroup]
+```
+
+The numbers are illustrative: the point is that the group's minimum already includes the spare zone's worth of capacity.
+
+## In production
+
+**Every layer must be multi-zone.** Spreading web servers across zones achieves nothing if the database, cache or a single NAT gateway lives in one. Managed databases offer multi-zone options for a reason: a standby in another zone takes over if the primary's zone fails.
+
+**Test it.** Teams run game days and fault-injection experiments that deliberately remove a zone, because untested failover tends not to work when it's needed.
+
+**Multi-region is a bigger step.** It protects against rarer, larger events, and it can bring users lower latency, but it multiplies cost, operational work and data-consistency problems. Many applications are best served by a solid multi-zone design in one region, plus backups in another.
+
+<Callout kind="warning" title="Cross-zone traffic isn't free">
+
+Data transferred between zones is often charged, and every cross-zone call adds a little latency. Designs that keep a request's work within one zone where possible — while still surviving that zone's loss — save both.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Multiple zones for anything users depend on: it is the standard baseline for production.",
+    "Static-stability headroom when a shortfall during a zone failure would be costly or dangerous.",
+    "Multiple regions when an entire region's outage is unacceptable, users are spread across the world, or regulations require it.",
+  ]}
+  avoid={[
+    "A single zone for production workloads — one building's problem becomes your outage.",
+    "Multi-region before multi-zone works well: it adds complexity faster than it adds resilience.",
+    "Assuming replacements will launch quickly during a large event; the control plane may be overwhelmed.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"The cloud is automatically highly available."** The provider gives you separate zones; spreading your application across them, and sizing it to survive the loss of one, is your job.
+
+**"More servers in one zone means more resilience."** Extra servers in the same zone survive individual server failures, not the zone's failure. The demo shows this: headroom in one zone doesn't help.
+
+**"Autoscaling will replace lost capacity, so headroom is waste."** Replacements take minutes to start, depend on the control plane during an incident, and may compete with everyone else trying to do the same thing.
+
+**"Multi-region is just multi-zone, further away."** Regions don't share services or a network the way zones do. Replicating data, routing users and failing over are separate engineering problems.
+
+## Failure modes and debugging
+
+- **Errors during a zone outage, even though you run in three zones** — the remaining capacity couldn't carry the load. Check utilisation per zone against what two zones can handle.
+- **The application survives, but a single dependency doesn't** — a database, cache or gateway was in one zone. Map every component to the zones it uses.
+- **Failover to another region took far longer than expected** — DNS records had long TTLs, clients cached them, or the standby region wasn't scaled to take the full load.
+- **Higher bills after going multi-zone** — cross-zone data transfer. Look at traffic between zones and keep chatty paths local.

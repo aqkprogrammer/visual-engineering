@@ -100,6 +100,41 @@ export default defineLearningPaths([
         lesson: "containers/kubernetes-self-healing",
         why: "Controllers, probes and the scheduler keep the declared number of pods running.",
       },
+      {
+        lesson: "cloud/blue-green-and-canary-deployments",
+        why: "Shipping a new version safely: rolling updates, blue-green and canaries, and rollback.",
+      },
+    ],
+  },
+  {
+    slug: "running-in-the-cloud",
+    title: "Running applications in the cloud",
+    summary:
+      "Keep a service up through failures, traffic swings and releases: spreading load, surviving zone outages, autoscaling and deploying safely.",
+    audience:
+      "Developers and new operators putting services on a cloud platform who want to understand what keeps them available, and what it costs.",
+    outcomes: [
+      "Design a deployment that survives losing an Availability Zone",
+      "Choose autoscaling targets and settings and predict their failure modes",
+      "Pick a deployment strategy and explain how it limits the damage of a bad release",
+    ],
+    steps: [
+      {
+        lesson: "system-design/load-balancing",
+        why: "Every cloud architecture starts by spreading traffic across interchangeable servers.",
+      },
+      {
+        lesson: "cloud/regions-and-availability-zones",
+        why: "Where those servers run decides which failures you survive.",
+      },
+      {
+        lesson: "cloud/autoscaling",
+        why: "Capacity that follows demand — and the lag that comes with it.",
+      },
+      {
+        lesson: "cloud/blue-green-and-canary-deployments",
+        why: "Most incidents start with a change; the strategy decides how many users it reaches.",
+      },
     ],
   },
   {

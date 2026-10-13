@@ -1,0 +1,123 @@
+<Definition>
+
+A **deployment strategy** decides how a new version of software replaces the old one in production. **Blue-green** runs the new version alongside the old and switches all traffic at once; a **canary** sends a small share of real traffic to the new version first and widens it only if the new version behaves as well as the old.
+
+</Definition>
+
+## The problem it solves
+
+Most production incidents start with a change. Tests catch many bugs, but not the ones that only appear with real users, real data and real load. So the question isn't *whether* a bad release will reach production — it's how many users it hurts before you notice, and how quickly you can undo it.
+
+Deployment strategies answer that question differently. Replacing everything at once is simple but exposes every user immediately. Gradual strategies limit the **blast radius** — how much of your traffic a bad change can affect — and make rolling back faster and safer.
+
+## An everyday analogy
+
+<Analogy>
+
+A restaurant changing its recipe could switch the whole menu overnight and hope. Or it could serve the new dish to one table in twenty, watch their faces, and only put it on everyone's menu if those diners are as happy as the rest. That is a canary.
+
+</Analogy>
+
+Where the analogy breaks down: a restaurant can taste a dish before serving it. Software bugs often appear only under real conditions, which is exactly why a small, carefully watched slice of real traffic is so valuable.
+
+## See it in action
+
+<Demo slug="deployment-strategies" />
+
+Things to try:
+
+- Start with **Canary** and a buggy v2. Canary analysis spots the problem at 5% of traffic and rolls back within two minutes — before the overall error rate even reaches the alarm line.
+- Switch to **Blue-green**. Rollback is just as instant, but every user saw the bug first, and for a while you paid for two full fleets.
+- Try **All at once** with the bug turned off. There's downtime even for a healthy release, because every instance restarts together.
+- Turn off **Automated rollback** and compare the failed requests across strategies.
+
+## Step by step: the four strategies
+
+<Steps>
+
+1. **All at once (recreate).** Stop every old instance, start the new ones. Simple, but there's a gap with nothing serving, and a bad version reaches everyone. Rolling back means doing it all again.
+2. **Rolling.** Replace instances in batches — say a quarter at a time — so capacity stays up and exposure grows step by step. Rolling back means rolling the batches back.
+3. **Blue-green.** Start a complete second environment (green) with the new version while the old (blue) keeps serving. Switch the load balancer or DNS to green in one step. Keep blue running for a while: rolling back is switching back.
+4. **Canary.** Route a small share of traffic — a few percent — to the new version and compare its metrics with the old version's. If they match, widen the share in stages (5% → 25% → 50% → 100%); if not, send all traffic back to the old version.
+
+</Steps>
+
+## Under the hood
+
+**Watching the right numbers.** Google's SRE workbook makes a point the demo shows directly: a problem in a small canary is easy to miss in service-wide numbers. If 5% of traffic fails 20% of the time, the overall error rate rises by only about one percentage point. Canary analysis therefore compares the canary population with the control population — the instances still on the old version — rather than looking at the total. It also checks absolute targets, because both can degrade together.
+
+**Size and duration.** A canary must be big enough and run long enough to be representative: some bugs need peak load or a particular kind of request. The more often you deploy, the shorter each canary has to be. Running one canary at a time keeps results easy to attribute.
+
+**Rolling updates in Kubernetes.** A Deployment's default strategy, `RollingUpdate`, allows up to 25% of the desired pods to be unavailable and up to 25% extra pods during an update, so capacity stays close to normal. The `Recreate` strategy kills all existing pods before creating new ones — the all-at-once approach. `kubectl rollout undo` returns to the previous revision.
+
+**What rollback can't undo.** Switching traffic back fixes code, not data. If the new version wrote data in a format the old version can't read, or ran a destructive database migration, rolling back the code isn't enough. Teams make database changes backward-compatible — add new columns first, switch the code, remove old ones in a later release — so either version can run at any moment.
+
+## Example: a rolling update in Kubernetes
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+spec:
+  replicas: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0     # never drop below 10 ready pods
+      maxSurge: 3           # start up to 3 extra pods at a time
+  # selector and template omitted
+```
+
+```bash
+kubectl rollout status deployment/checkout   # watch the rollout
+kubectl rollout undo deployment/checkout     # roll back to the previous revision
+```
+
+Canary releases need traffic splitting by percentage, which comes from a service mesh, an ingress controller, a progressive-delivery tool or a load balancer with weighted target groups.
+
+## In production
+
+**Automate the decision.** The difference between catching a bug in two minutes and in ten is usually whether a machine is watching. Automated analysis compares canary and control on error rate and latency and rolls back on its own; humans review afterwards.
+
+**Pair with feature flags.** Deploying code and releasing a feature can be separate steps. A flag lets you ship code switched off, then turn it on for a few users — a canary at the feature level, with an instant off switch.
+
+**Know your costs.** Blue-green briefly needs double the capacity. Canaries need traffic splitting and good per-version metrics. Rolling needs the old and new versions to work side by side.
+
+<Callout kind="note" title="Progressive delivery">
+
+Canaries, feature flags and automated analysis are often grouped as progressive delivery: expose a change gradually, measure, and let the measurements decide whether to continue.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Canary for user-facing services where a bad release is costly, if you have per-version metrics and traffic splitting.",
+    "Blue-green when you need instant, whole-environment switches and rollbacks, and can afford double capacity briefly.",
+    "Rolling updates as a sensible default for stateless services on an orchestrator.",
+  ]}
+  avoid={[
+    "All-at-once for anything users depend on: it brings downtime and maximum blast radius.",
+    "Canaries without per-version metrics — you can't tell whether the canary is healthy.",
+    "Relying on rollback when a release includes a database change the old version can't handle.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Blue-green is safer than canary."** Blue-green makes rollback instant, but every user meets the new version at the moment of the switch. A canary limits who meets it.
+
+**"If the overall error rate looks fine, the canary is fine."** A small canary's problems are diluted in the total. Compare canary against control.
+
+**"Rolling back always fixes the problem."** It fixes code. Data written or migrated by the bad version can outlive the rollback.
+
+**"Gradual rollouts are slow."** They take longer than all-at-once for a good release, but a fully automated canary that catches a bad release in minutes is far faster than an incident.
+
+## Failure modes and debugging
+
+- **A bad release reached everyone before anyone noticed** — no canary, or analysis on aggregate metrics only. Compare per-version metrics and alert on them.
+- **Rollback didn't fix it** — the release changed data or schemas. Make migrations backward-compatible and separate them from code releases.
+- **Canary looks healthy, full rollout fails** — the canary saw unrepresentative traffic or ran too briefly. Increase its size, run through peak, or route specific traffic types to it.
+- **Errors during every deploy, even good ones** — instances restart without draining connections, or readiness checks pass too early. Check connection draining and readiness probes.

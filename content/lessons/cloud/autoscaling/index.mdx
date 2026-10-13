@@ -1,0 +1,124 @@
+<Definition>
+
+**Autoscaling** automatically changes how many instances (servers, containers or pods) run an application, adding capacity as demand rises and removing it as demand falls, so you pay for roughly what you need without running out.
+
+</Definition>
+
+## The problem it solves
+
+Traffic is rarely flat. It climbs in the morning, spikes when a campaign launches, and drops at night. If you size a fleet for the peak, you pay for idle machines most of the day. If you size it for the average, the peak overloads it and users get errors.
+
+Autoscaling follows demand instead: a policy watches a metric — usually how busy the instances are — and asks for more or fewer instances to keep that metric near a target. Done well, it gives you the peak's capacity at the peak and the quiet hours' bill in the quiet hours.
+
+## An everyday analogy
+
+<Analogy>
+
+A supermarket manager watches the queues. When every till has a long line, they call more staff to open tills; when the shop is quiet, they send people to other jobs. They aim for a target: no more than a few people waiting per till.
+
+</Analogy>
+
+Where the analogy breaks down: staff are already in the building and open a till in seconds. A new server or container might need minutes to start and warm up, and that delay is the source of most autoscaling problems.
+
+## See it in action
+
+<Demo slug="autoscaling" />
+
+Things to try:
+
+- Play the **Ramp** with a **60%** target. Capacity climbs ahead of demand, then steps back down gently.
+- Raise the target to **90%**. It's cheaper, but there's no room for the climb, and requests fail while new instances start.
+- Choose **Bursty** traffic and set the scale-in window to **None**. Capacity is removed in every lull, just before the next burst needs it. A five-minute window avoids it.
+- Set start-up to **6 min** and add a traffic surge. The new instances arrive after the surge has done its damage.
+
+## Step by step: target tracking
+
+<Steps>
+
+1. **Pick a metric and a target.** For example, keep average CPU utilisation at 60%. The metric must rise and fall in proportion to how busy each instance is.
+2. **Measure.** Every evaluation period — 15 seconds for Kubernetes' Horizontal Pod Autoscaler by default — the autoscaler reads the current value.
+3. **Compute the desired count.** In proportion: desired = ceil(current instances × current metric ÷ target). Ten instances at 90% CPU with a 60% target want ceil(10 × 1.5) = 15.
+4. **Ignore small wobbles.** Kubernetes takes no action while the ratio is within 10% of the target, so noise doesn't cause churn.
+5. **Scale out promptly.** Launch the missing instances. Instances that are still starting count towards the total, so the next evaluation doesn't launch them again.
+6. **Scale in cautiously.** Remove instances only when the metric has been low for a while, and never while new instances are still starting.
+
+</Steps>
+
+## Under the hood
+
+**Why scale-in is slower than scale-out.** Running out of capacity causes errors; having too much costs a little money. So both Kubernetes and AWS lean towards availability. The Horizontal Pod Autoscaler scales up immediately but, by default, scales down only to the highest recommendation it has seen in the last five minutes (its **stabilisation window**). EC2 Auto Scaling's target tracking also scales in more gradually than it scales out, and blocks scale-in while new instances are warming up.
+
+**Warm-up.** A new instance isn't useful the moment it's created: it has to boot, start the application, fill caches and pass health checks. EC2 Auto Scaling lets you declare an instance warm-up time, during which the instance doesn't count towards the group's metrics. Kubernetes likewise sets aside pods that aren't ready yet when computing CPU utilisation.
+
+**Cooldowns are for simpler policies.** EC2 Auto Scaling's default cooldown of 300 seconds applies to simple scaling policies, which pause after each action. AWS recommends target tracking or step scaling instead, which use warm-up times rather than cooldowns.
+
+**Choosing the metric.** CPU works when CPU is the bottleneck. Requests per instance suits web services behind a load balancer. For queue workers, use the backlog *per instance*, not the raw queue length — the metric must change in proportion to the number of instances, or the autoscaler can't compute how many it needs.
+
+## Example: a Kubernetes Horizontal Pod Autoscaler
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: web
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: web }
+  minReplicas: 3            # never fewer, even at night
+  maxReplicas: 30           # a ceiling on cost and on load passed to dependencies
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 60 }
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300   # the default, shown for clarity
+```
+
+## In production
+
+**Start-up time is a design target.** The faster an instance starts, the less headroom you need. Smaller images, pre-built machine images, keeping a pool of pre-warmed instances and lazy initialisation all buy reaction time.
+
+**Leave headroom.** The target is a buffer for growth during start-up. A 60% target means each instance can absorb two-thirds more load while new ones arrive; a 90% target leaves almost nothing.
+
+**Scale ahead of known events.** Scheduled scaling for a known launch, or predictive scaling that learns daily patterns, adds capacity before demand arrives instead of after.
+
+**Set limits deliberately.** The minimum protects against cold starts and zone failures; the maximum protects your budget and the databases behind the fleet. Scaling the web tier to 300 instances doesn't help if the database can handle 50.
+
+<Callout kind="warning" title="Autoscaling can't save you from a sudden spike">
+
+If traffic triples in seconds, no policy can add capacity faster than instances start. Spikes need headroom, queues to absorb bursts, or load shedding and rate limiting to protect what you have.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Stateless services whose load changes over the day or week.",
+    "Workers that drain a queue, scaled on backlog per worker.",
+    "Batch and background capacity that can grow and shrink freely.",
+  ]}
+  avoid={[
+    "As the only protection against sudden spikes: start-up time makes it too slow.",
+    "Scaling on a metric that doesn't change in proportion to instance count, such as total requests at the load balancer.",
+    "Stateful systems such as databases, where adding a node is a slow, careful operation rather than a quick launch.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Autoscaling makes capacity instant."** It reacts after a metric changes, and new instances take time to start. There is always a lag.
+
+**"A higher target is always better because it's cheaper."** It is cheaper, but it leaves less room to absorb growth while new instances start, so more requests fail during climbs.
+
+**"Scaling in quickly saves the most money."** Removing capacity during brief lulls often means paying to start it again minutes later — and users see errors in between.
+
+**"Autoscaling the app scales the whole system."** Databases, caches and third-party APIs behind it don't scale with it, and more instances can push them over.
+
+## Failure modes and debugging
+
+- **Errors at the start of every peak** — instances start too slowly for how fast traffic climbs. Lower the target, shorten start-up, or scale on a schedule.
+- **Instance count goes up and down every few minutes (flapping)** — scale-in reacts to brief dips. Lengthen the stabilisation window or scale-in delay.
+- **The fleet scales out but latency stays bad** — the bottleneck is elsewhere, often a database. Check the dependencies' utilisation.
+- **The autoscaler does nothing** — the metric is missing, delayed, or doesn't change with load. Confirm data is arriving and moves in proportion to instance count.

@@ -377,11 +377,7 @@ export default defineDomains([
         id: "foundations",
         title: "Cloud Foundations",
         summary: "What the cloud is and how providers are laid out physically.",
-        plannedTopics: [
-          "Cloud computing fundamentals",
-          "AWS global infrastructure",
-          "Regions and Availability Zones",
-        ],
+        plannedTopics: ["Cloud computing fundamentals", "AWS global infrastructure"],
       },
       {
         id: "networking",
@@ -431,14 +427,13 @@ export default defineDomains([
         id: "delivery",
         title: "Delivery",
         summary: "Getting changes to production safely.",
-        plannedTopics: ["CI/CD", "GitHub Actions", "Blue-green and canary deployments"],
+        plannedTopics: ["CI/CD", "GitHub Actions"],
       },
       {
         id: "operations",
         title: "Operations & Cost",
         summary: "Scaling, recovering, observing and paying for what you run.",
         plannedTopics: [
-          "Autoscaling",
           "Backups and disaster recovery",
           "CloudWatch",
           "Metrics, logs, traces and alerting",
