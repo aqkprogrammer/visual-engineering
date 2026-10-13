@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const player = (page: Page) =>
-  page.getByRole("region", { name: /simulation|handshake|self-healing/i });
+  page.getByRole("region", { name: /simulation|handshake|self-healing|explorer/i }).first();
 const caption = (page: Page) => player(page).locator("p[aria-live]");
 
 /** Move the timeline the way a user dragging the slider would. */
@@ -112,4 +112,53 @@ test("the player starts paused when reduced motion is requested", async ({ brows
   await expect(player(page).getByRole("button", { name: "Play" })).toBeVisible();
   await expect(caption(page)).toContainText("0.00 s");
   await context.close();
+});
+
+test("cache: a write without invalidation produces stale reads", async ({ page }) => {
+  await page.goto("/playground/cache");
+  const invalidate = page.getByRole("switch", { name: /Invalidate on write/ });
+  await expect(invalidate).toBeChecked();
+  await page.getByText("Invalidate on write", { exact: true }).click(); // the visible label, as a user would
+  await expect(invalidate).not.toBeChecked();
+  await seek(page, 30); // let the hot key A get cached first
+  await page.getByRole("button", { name: "Write a new version of A" }).click();
+  await expect(player(page)).toContainText("the cache still holds v1");
+  await seek(page, 60);
+  await expect(player(page)).toContainText("Stale read: served A v1");
+});
+
+test("rate limiter: a fixed window lets twice the limit through at a boundary", async ({
+  page,
+}) => {
+  await page.goto("/playground/rate-limiter");
+  await page.getByText("Fixed window", { exact: true }).click();
+  await page.getByText("Window-edge bursts", { exact: true }).click();
+  await seek(page, 52);
+  await expect(caption(page)).toContainText("20 accepted in the last second (limit 10)");
+  await page.getByText("Sliding log", { exact: true }).click();
+  await seek(page, 120);
+  const peak = player(page)
+    .getByText("Peak in any one second", { exact: true })
+    .locator("xpath=following-sibling::dd");
+  expect(Number(await peak.textContent())).toBeLessThanOrEqual(10);
+});
+
+test("embeddings: changing the measure changes the ranking", async ({ page }) => {
+  await page.goto("/playground/embeddings");
+  const summary = player(page).locator("p[aria-live]");
+  await expect(summary).toContainText("Top 3 by cosine similarity: kitten");
+  await page.getByText("Dot product", { exact: true }).click();
+  await expect(summary).toContainText("Top 3 by dot product: animals");
+  await page.getByRole("combobox", { name: "Query word" }).selectOption("apple");
+  await expect(summary).toContainText("Query “apple”");
+});
+
+test("lessons end with a working knowledge check", async ({ page }) => {
+  await page.goto("/system-design/rate-limiting");
+  const quiz = page.getByRole("region", { name: "Check your understanding" });
+  const first = quiz.getByRole("group").first();
+  await first.getByRole("radio").first().click();
+  await first.getByRole("button", { name: "Check answer" }).click();
+  await expect(first.getByRole("status")).toBeVisible();
+  await expect(quiz).toContainText(/of 4 correct/);
 });

@@ -24,13 +24,14 @@ This describes what is implemented today. Planned components are marked as such;
 
 ## Content pipeline
 
-| Step                     | Code                                                    | Notes                                                                                                                                            |
-| ------------------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Schemas                  | `lib/content/schema.ts`                                 | Domains, modules, lessons, references. `defineLesson` / `defineDomains` give authors type checking.                                              |
-| Discovery and validation | `lib/content/load.ts`, `lib/content/validate.ts`        | Every issue reported at once; exits non-zero in CI.                                                                                              |
-| MDX analysis             | `lib/content/mdx-text.ts`                               | Word count, reading time, h2/h3 headings with `github-slugger` ids (identical to `rehype-slug`). Plain text is kept for the future search index. |
-| Generated registry       | `scripts/content.ts` → `content/.generated/registry.ts` | Git-ignored; regenerated before `dev`, `build`, `test` and `typecheck`.                                                                          |
-| Runtime queries          | `lib/content/catalog.ts`                                | `server-only`; curriculum ordering, previous/next, related lessons. Drafts are visible only in development.                                      |
+| Step                     | Code                                                    | Notes                                                                                                                                                     |
+| ------------------------ | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Schemas                  | `lib/content/schema.ts`                                 | Domains, modules, lessons, references. `defineLesson` / `defineDomains` give authors type checking.                                                       |
+| Discovery and validation | `lib/content/load.ts`, `lib/content/validate.ts`        | Every issue reported at once; exits non-zero in CI.                                                                                                       |
+| Knowledge checks         | `content/lessons/*/quiz.ts`, `lib/content/quiz.ts`      | Required for published lessons; exactly one correct option per question, with an explanation for every option. Options render in a stable seeded shuffle. |
+| MDX analysis             | `lib/content/mdx-text.ts`                               | Word count, reading time, h2/h3 headings with `github-slugger` ids (identical to `rehype-slug`). Plain text is kept for the future search index.          |
+| Generated registry       | `scripts/content.ts` → `content/.generated/registry.ts` | Git-ignored; regenerated before `dev`, `build`, `test` and `typecheck`.                                                                                   |
+| Runtime queries          | `lib/content/catalog.ts`                                | `server-only`; curriculum ordering, previous/next, related lessons. Drafts are visible only in development.                                               |
 
 ## Routing
 
