@@ -11,6 +11,10 @@ import type { Heading } from "./schema";
 /** Average adult silent-reading speed for technical prose (words per minute). */
 export const WORDS_PER_MINUTE = 220;
 
+export function readingMinutesFor(wordCount: number): number {
+  return Math.max(1, Math.round(wordCount / WORDS_PER_MINUTE));
+}
+
 export type MdxAnalysis = {
   wordCount: number;
   readingMinutes: number;
@@ -47,7 +51,7 @@ export function analyzeMdx(source: string): MdxAnalysis {
     if (node.type === "text" || node.type === "inlineCode") {
       chunks.push(node.value);
     }
-    // Prose passed as string props, e.g. <InterviewQuestion question="…">.
+    // Prose passed as string props, e.g. <Callout title="…">.
     if (node.type === "mdxJsxFlowElement" || node.type === "mdxJsxTextElement") {
       for (const attr of node.attributes) {
         if (attr.type === "mdxJsxAttribute" && typeof attr.value === "string")
@@ -61,7 +65,7 @@ export function analyzeMdx(source: string): MdxAnalysis {
   const wordCount = plainText === "" ? 0 : plainText.split(" ").length;
   return {
     wordCount,
-    readingMinutes: Math.max(1, Math.round(wordCount / WORDS_PER_MINUTE)),
+    readingMinutes: readingMinutesFor(wordCount),
     headings,
     plainText,
   };

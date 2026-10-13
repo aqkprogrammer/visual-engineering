@@ -97,37 +97,3 @@ export function TradeOffs({ use, avoid }: { use: string[]; avoid: string[] }) {
     </div>
   );
 }
-
-/** Interview question with a model answer, collapsed by default so readers can try first. */
-export function InterviewQuestion({
-  question,
-  children,
-}: {
-  question: string;
-  children: ReactNode;
-}) {
-  return (
-    <details className="group rounded-lg border border-border bg-surface open:bg-transparent">
-      <summary className="cursor-pointer list-none px-5 py-4 font-medium marker:hidden [&::-webkit-details-marker]:hidden">
-        <span className="flex items-start justify-between gap-4">
-          <span>{question}</span>
-          <span
-            aria-hidden
-            className="mt-0.5 shrink-0 font-mono text-xs text-fg-subtle group-open:hidden"
-          >
-            show answer
-          </span>
-          <span
-            aria-hidden
-            className="mt-0.5 hidden shrink-0 font-mono text-xs text-fg-subtle group-open:inline"
-          >
-            hide
-          </span>
-        </span>
-      </summary>
-      <div className="border-t border-border px-5 py-4 text-fg-muted [&_p]:m-0 [&_p+p]:mt-3">
-        {children}
-      </div>
-    </details>
-  );
-}

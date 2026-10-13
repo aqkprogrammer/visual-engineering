@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { INTERVIEW_KINDS, INTERVIEW_LEVELS } from "@/lib/interview/taxonomy";
 
 /** kebab-case: lowercase letters/digits separated by single hyphens. */
 export const slugSchema = z
@@ -89,6 +90,7 @@ export type Heading = z.infer<typeof headingSchema>;
 export type Lesson = LessonMeta & {
   id: LessonRef;
   quiz: QuizQuestion[];
+  interview: InterviewItem[];
   readingMinutes: number;
   wordCount: number;
   headings: Heading[];
@@ -156,6 +158,40 @@ export function defineGlossary(terms: z.input<typeof glossaryTermSchema>[]) {
   return terms;
 }
 
+/** Inline Markdown only: `code` spans, so answers stay plain text everywhere they are shown. */
+const inlineText = z
+  .string()
+  .refine((text) => (text.match(/`/g) ?? []).length % 2 === 0, "unbalanced backticks");
+
+const rubricPoint = inlineText.pipe(z.string().min(10).max(160));
+
+export const interviewItemSchema = z.object({
+  id: slugSchema,
+  question: z.string().min(10).max(200),
+  /** The seniority at which a candidate should answer this well. */
+  level: z.enum(INTERVIEW_LEVELS),
+  kind: z.enum(INTERVIEW_KINDS),
+  /** A model answer, written in full sentences. */
+  answer: inlineText.pipe(z.string().min(80)),
+  /**
+   * What graders look for, published so learners can grade themselves the same way:
+   * points every good answer covers, signs of a strong answer, and common mistakes.
+   */
+  rubric: z.object({
+    core: z.array(rubricPoint).min(2).max(5),
+    strong: z.array(rubricPoint).max(3).default([]),
+    redFlags: z.array(rubricPoint).min(1).max(3),
+  }),
+});
+export type InterviewItem = z.output<typeof interviewItemSchema>;
+
+export const interviewSchema = z.array(interviewItemSchema).min(3).max(8);
+
+/** Typed identity helper for lesson `interview.ts` files. */
+export function defineInterview(items: z.input<typeof interviewSchema>) {
+  return items;
+}
+
 export const quizOptionSchema = z.object({
   id: z.string().regex(/^[a-e]$/, "option ids are a–e"),
   text: z.string().min(1),
@@ -179,6 +215,57 @@ export const quizQuestionSchema = z
 export type QuizQuestion = z.output<typeof quizQuestionSchema>;
 
 export const quizSchema = z.array(quizQuestionSchema).min(3).max(8);
+
+const clueTitle = z.string().min(5).max(80);
+
+export const incidentClueSchema = z.discriminatedUnion("kind", [
+  /** A chart produced by a simulation run; `ref` names it in `lib/incidents/evidence.ts`. */
+  z.object({
+    kind: z.literal("chart"),
+    ref: slugSchema,
+    title: clueTitle,
+    caption: z.string().min(20),
+  }),
+  /** Log or config lines produced by the same run. */
+  z.object({
+    kind: z.literal("log"),
+    ref: slugSchema,
+    title: clueTitle,
+    caption: z.string().min(20),
+  }),
+  /** Context written by hand, such as a colleague's message or a dashboard reading. */
+  z.object({ kind: z.literal("note"), title: clueTitle, text: z.string().min(20) }),
+]);
+export type IncidentClue = z.infer<typeof incidentClueSchema>;
+
+export const incidentSchema = z.object({
+  slug: slugSchema,
+  title: z.string().min(5).max(70),
+  /** One sentence; doubles as the meta description. */
+  summary: z.string().min(70).max(170),
+  difficulty: difficultySchema,
+  /** The lesson that explains the underlying mechanism. */
+  lesson: lessonRefSchema,
+  /** The playground demo in which the incident can be reproduced. */
+  demo: slugSchema,
+  /** What the on-call engineer is told, in a few short paragraphs. */
+  briefing: z.array(z.string().min(20)).min(1).max(4),
+  clues: z.array(incidentClueSchema).min(3).max(8),
+  /** Exactly two questions: the root cause, then the best first fix. */
+  questions: z.tuple([quizQuestionSchema, quizQuestionSchema]),
+  postmortem: z.object({
+    whatHappened: z.string().min(40),
+    whyItHappened: z.string().min(40),
+    prevention: z.array(z.string().min(15)).min(2).max(5),
+  }),
+  /** Steps to reproduce the incident in the playground demo, using its real control names. */
+  reproduce: z.array(z.string().min(10)).min(2).max(6),
+});
+export type Incident = z.output<typeof incidentSchema>;
+
+export function defineIncidents(incidents: z.input<typeof incidentSchema>[]) {
+  return incidents;
+}
 
 /** Typed identity helper for lesson `quiz.ts` files. */
 export function defineQuiz(questions: z.input<typeof quizSchema>) {
@@ -207,6 +294,7 @@ export const RESERVED_SEGMENTS = [
   "explore",
   "glossary",
   "how-it-works",
+  "incidents",
   "interview",
   "paths",
   "playground",
