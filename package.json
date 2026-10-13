@@ -1,6 +1,6 @@
 {
   "name": "visual-engineering",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Interactive, visual lessons on system design, AI engineering, infrastructure, networking and computer science.",
@@ -13,6 +13,7 @@
     "content": "tsx scripts/content.ts",
     "readme": "tsx scripts/readme.ts",
     "budget": "tsx scripts/budget.ts",
+    "links": "tsx scripts/links.ts",
     "lighthouse": "tsx scripts/lighthouse.ts",
     "dev": "pnpm content && next dev",
     "build": "pnpm content && next build",
@@ -24,7 +25,7 @@
     "test": "pnpm content && vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm readme --check && pnpm build && pnpm budget"
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm readme --check && pnpm build && pnpm budget && pnpm links"
   },
   "dependencies": {
     "@mdx-js/loader": "3.1.1",
