@@ -5,7 +5,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CONTENT_DIR, loadCatalog } from "@/lib/content/load";
 
 /** Runs the real loader on a copy of the curriculum with one lesson body changed. */
-describe("demos embedded in lessons", () => {
+// Each case loads the whole catalogue, including the incident simulations.
+describe("demos embedded in lessons", { timeout: 30_000 }, () => {
   let dir: string;
   const body = () => path.join(dir, "lessons/system-design/caching/index.mdx");
 

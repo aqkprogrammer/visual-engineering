@@ -95,3 +95,24 @@ test.describe("lessons link to practice", () => {
     await expect(page).toHaveURL(/\/incidents\/cache-collapse-at-night\/?$/);
   });
 });
+
+test.describe("system design sandbox", () => {
+  test("design an architecture that passes a challenge", async ({ page }) => {
+    await page.goto("/playground/system-design-sandbox/");
+    await page.getByLabel("Scenario").selectOption("read-heavy-catalogue");
+    const result = page.getByText(/^Load test result for this design:/);
+    await expect(result).toContainText("goals missed");
+
+    await page.getByLabel("App servers").selectOption("10");
+    await page.getByText("Cache", { exact: true }).click(); // the visible label, as a user would
+    await expect(page.getByRole("switch", { name: /Cache/ })).toBeChecked();
+    await page.getByRole("group", { name: "Hit ratio" }).getByText("95%").click();
+    await expect(result).toContainText("all goals met");
+
+    await page.getByRole("button", { name: "Next step" }).click();
+    await expect(page.getByRole("region", { name: "Load on each component" })).toContainText(
+      "App servers",
+    );
+    await expect(page.getByRole("heading", { name: "Related lessons" })).toBeVisible();
+  });
+});

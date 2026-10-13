@@ -72,6 +72,7 @@ Every demo runs on the same deterministic simulation engine: play, pause, step, 
 | [**Docker build cache simulator**](https://aqkprogrammer.github.io/visual-engineering/playground/docker-build-cache/) | 👣 Walkthrough · Containers & Kubernetes | Edit files and rebuild to see which Dockerfile steps hit the layer cache, why instruction order matters, and what gets pushed to a registry. |
 | [**Byte-pair encoding explorer**](https://aqkprogrammer.github.io/visual-engineering/playground/tokenizer/) | 🧭 Explorer · AI Engineering | Type any text and watch a toy BPE tokenizer split it into tokens, then change how many merges it has learned. |
 | [**Message queue simulator**](https://aqkprogrammer.github.io/visual-engineering/playground/message-queue/) | 🧪 Simulation · System Design | Change producer rate, consumer count and downstream speed, and watch backlogs, message age, retries and the dead-letter queue respond. |
+| [**System design sandbox**](https://aqkprogrammer.github.io/visual-engineering/playground/system-design-sandbox/) | 🧪 Simulation · System Design | Design a backend from app servers, a cache, read replicas and a write queue, then load-test it: watch utilisation, latency and the bottleneck move. |
 <!-- playground:end -->
 
 ## 🎓 How every lesson teaches
@@ -192,7 +193,7 @@ flowchart LR
 - [x] **Phase 3 — First 12 lessons** across system design, AI, containers, networking and computer science, each with an interactive demo and a knowledge check
 - [x] **Phase 4a — Discovery.** Search, four learning paths, a 58-term glossary, and progress saved in your browser
 - [x] **Phase 4b — Practice.** 49 interview questions with published rubrics and self-grading; an incident lab with evidence from real simulation runs
-- [ ] **Phase 4c — System design sandbox.** Compose clients, balancers, caches, queues and databases and watch the bottlenecks
+- [x] **Phase 4c — System design sandbox.** Build a backend from servers, a cache, replicas and a write queue, load-test it, and meet four challenges
 - [ ] **Phase 5 — Quality.** Accessibility audit, performance budgets, contributor guide
 - [ ] **Later.** System design simulator, incident lab, interview arena, AI engineering playground
 

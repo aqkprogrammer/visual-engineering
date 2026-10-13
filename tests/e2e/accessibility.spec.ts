@@ -31,6 +31,7 @@ const PAGES = [
   "/playground/docker-build-cache",
   "/playground/tokenizer",
   "/playground/message-queue",
+  "/playground/system-design-sandbox",
   "/paths",
   "/paths/how-a-web-request-is-served",
   "/glossary",
