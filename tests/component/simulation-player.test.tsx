@@ -194,3 +194,25 @@ describe("recentEvents", () => {
     expect(recentEvents(frames, 2, 2).map((e) => e.message)).toEqual(["failed", "warned"]);
   });
 });
+
+describe("SimulationPlayer on narrow screens", () => {
+  beforeEach(() => mockReducedMotion(false));
+
+  it("can enlarge the diagram into a focusable, scrollable region", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const toggle = screen.getByRole("button", { name: "Enlarge diagram" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByRole("region", { name: /enlarged diagram/ })).toBeNull();
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    const region = screen.getByRole("region", {
+      name: "Test player: enlarged diagram, scroll sideways",
+    });
+    expect(region).toHaveAttribute("tabindex", "0");
+
+    await user.click(toggle);
+    expect(screen.queryByRole("region", { name: /enlarged diagram/ })).toBeNull();
+  });
+});

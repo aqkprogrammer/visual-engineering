@@ -45,6 +45,7 @@ const PAGES = [
   "/incidents/cache-collapse-at-night",
   "/incidents/pods-missing-after-node-failure",
   "/about",
+  "/how-it-works",
   "/missing-page",
 ];
 
@@ -117,4 +118,25 @@ test("reduced motion preference disables CSS transitions", async ({ browser }) =
   expect(await durationFor("no-preference")).toBeGreaterThan(0.05);
   // …and effectively stops when the user asks for reduced motion.
   expect(await durationFor("reduce")).toBeLessThanOrEqual(0.00001);
+});
+
+test("an enlarged diagram on a phone stays accessible and scrolls inside its region", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "The enlarge control is shown on narrow screens only.");
+  await page.goto("/playground/system-design-sandbox");
+  await page.getByRole("button", { name: "Enlarge diagram" }).click();
+  const region = page.getByRole("region", { name: /enlarged diagram, scroll sideways/ });
+  await expect(region).toBeVisible();
+  const { scrollWidth, clientWidth } = await region.evaluate((el) => ({
+    scrollWidth: el.scrollWidth,
+    clientWidth: el.clientWidth,
+  }));
+  expect(scrollWidth).toBeGreaterThan(clientWidth);
+  // The page itself must not scroll sideways.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  expect(await auditPage(page)).toEqual([]);
 });

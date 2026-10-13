@@ -128,6 +128,8 @@ test.describe("keyboard and preferences", () => {
   });
 
   test("pages never scroll horizontally", async ({ page }) => {
+    // Visits every page type in one test, so it needs more than the default 30 s on slow machines.
+    test.setTimeout(120_000);
     for (const path of [
       "/",
       "/explore",
@@ -149,6 +151,14 @@ test.describe("keyboard and preferences", () => {
       "/playground/tokenizer",
       "/playground/message-queue",
       "/ai/how-rag-works",
+      "/playground/system-design-sandbox",
+      "/paths/how-a-web-request-is-served",
+      "/glossary",
+      "/search/?q=cache",
+      "/interview",
+      "/incidents",
+      "/incidents/errors-after-a-crash",
+      "/how-it-works",
       "/about",
     ]) {
       await page.goto(path);
