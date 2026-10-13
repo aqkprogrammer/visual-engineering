@@ -2,7 +2,7 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## [1.1.0] — 2026-10-13
+## [1.1.0] — 2026-10-14
 
 Every domain now has published lessons: 18 lessons, 19 interactive demos, 6 learning paths and 79 glossary terms.
 
