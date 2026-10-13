@@ -50,6 +50,7 @@ Most explanations of how systems work are static — a diagram and a wall of tex
 | 🧪 **Honest simulations** | Deterministic *teaching models* that state their assumptions. Illustrative numbers are labelled — never passed off as benchmarks. |
 | 📚 **Sourced, dated content** | Every lesson cites official docs and specs and shows when it was last reviewed. Analogies are marked as analogies. |
 | ♿ **Accessible by default** | Keyboard-operable, screen-reader friendly, reduced-motion aware, never colour-only — checked by axe on every page type. |
+| 🧭 **Guided and searchable** | Learning paths in a deliberate order, a plain-language glossary, instant search, and progress that stays in your browser. |
 | 🔓 **Free, private, open** | No account, no API key, no tracking. Fonts are self-hosted at build time. |
 
 ## 🕹️ Playground
@@ -189,7 +190,8 @@ flowchart LR
 - [x] **Phase 1 — Foundation.** Static site, design system, content pipeline, first lesson, tests, CI, GitHub Pages
 - [x] **Phase 2 — Simulation engine.** Deterministic engine and shared player (play, pause, step, scrub, speed, event log, keyboard shortcuts, reduced motion); load balancer, TLS 1.3 and Kubernetes self-healing demos
 - [x] **Phase 3 — First 12 lessons** across system design, AI, containers, networking and computer science, each with an interactive demo and a knowledge check
-- [ ] **Phase 4 — Platform.** Search, learning paths, glossary, quizzes, interview hub, local progress
+- [x] **Phase 4a — Discovery.** Search, four learning paths, a 58-term glossary, and progress saved in your browser
+- [ ] **Phase 4b — Practice.** Interview hub, incident and debugging lab, system design sandbox
 - [ ] **Phase 5 — Quality.** Accessibility audit, performance budgets, contributor guide
 - [ ] **Later.** System design simulator, incident lab, interview arena, AI engineering playground
 
@@ -277,7 +279,7 @@ Then open http://localhost:3000.
 ## ✍️ Writing a lesson
 
 <details>
-<summary><b>Add a lesson in four steps</b></summary>
+<summary><b>Add a lesson in five steps</b></summary>
 
 1. Create `content/lessons/<domain>/<slug>/` — the domain must exist in `content/domains.ts`.
 2. Add `meta.ts`:
@@ -300,8 +302,9 @@ Then open http://localhost:3000.
    });
    ```
 
-3. Write `index.mdx`. `<Definition>`, `<Analogy>`, `<Callout kind="note|warning|illustrative">`, `<Steps>`, `<TradeOffs>` and `<InterviewQuestion>` are available without imports. Leave a blank line inside block tags so their content is parsed as Markdown.
-4. Run `pnpm content` — it reports every problem at once: unknown modules, broken prerequisite links, cycles, links to drafts.
+3. Write `index.mdx`. `<Definition>`, `<Analogy>`, `<Callout kind="note|warning|illustrative">`, `<Steps>`, `<TradeOffs>`, `<InterviewQuestion>` and `<Demo slug="…" />` (any playground demo, lazy-loaded) are available without imports. Leave a blank line inside block tags so their content is parsed as Markdown.
+4. Add `quiz.ts` with 3–8 questions (`defineQuiz`) — required before a lesson is published. Each question has exactly one correct option and an explanation for every option.
+5. Run `pnpm content` — it reports every problem at once: unknown modules, broken prerequisite links, cycles, links to drafts, unknown demos.
 
 Drafts are visible in `pnpm dev` only. Reading time and the table of contents are generated for you.
 
