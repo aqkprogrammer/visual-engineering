@@ -4,7 +4,8 @@
  *   pnpm lighthouse        (run `pnpm build` first; uses Playwright's Chromium)
  *
  * Uses Lighthouse's default mobile emulation with simulated throttling. Each page is audited
- * three times and the median score is compared with the budget, because single lab runs vary.
+ * five times and the median is compared with the budget: on shared CI runners a single page's
+ * LCP and TBT varied by 30% or more between runs of identical code.
  * Budgets come from docs/PLAN.md §9.2. In CI the report also goes to the job summary.
  */
 import { spawn } from "node:child_process";
@@ -16,7 +17,7 @@ import { LIGHTHOUSE_CATEGORY_BUDGETS, LIGHTHOUSE_METRIC_BUDGETS } from "../lib/q
 
 const PORT = 4173;
 const ORIGIN = `http://127.0.0.1:${PORT}`;
-const RUNS = 3;
+const RUNS = 5;
 
 const PAGES = [
   "/",

@@ -107,7 +107,7 @@ How to add one: [SIMULATION-GUIDE.md](SIMULATION-GUIDE.md).
 | Static build                                                                                                                                             | `pnpm build`               |
 | Page-weight budgets (shared with the site via `lib/quality/budgets.ts`)                                                                                  | `pnpm budget`              |
 | E2E journeys, 404s, keyboard-only journeys, theme, no horizontal scroll, no third-party requests; axe WCAG 2.2 A/AA in both themes on desktop and mobile | `pnpm test:e2e`            |
-| Lighthouse budgets, mobile, median of three runs                                                                                                         | `pnpm lighthouse` (CI job) |
+| Lighthouse budgets, mobile, median of five runs                                                                                                          | `pnpm lighthouse` (CI job) |
 | Production dependency audit                                                                                                                              | CI                         |
 
 ## Security notes

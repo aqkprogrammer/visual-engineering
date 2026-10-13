@@ -13,7 +13,7 @@ export const PAGE_WEIGHT_BUDGETS = {
   html: 80,
 } as const;
 
-/** Minimum Lighthouse category scores (0–1), mobile, median of three runs. */
+/** Minimum Lighthouse category scores (0–1), mobile, median of five runs. */
 export const LIGHTHOUSE_CATEGORY_BUDGETS = {
   performance: 0.9,
   accessibility: 0.95,
