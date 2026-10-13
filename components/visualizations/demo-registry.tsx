@@ -43,6 +43,9 @@ const DockerSimulation = dynamic(() =>
 const TokenizerExplorer = dynamic(() =>
   import("./scenes/tokenizer/tokenizer-explorer").then((m) => m.TokenizerExplorer),
 );
+const SandboxSimulation = dynamic(() =>
+  import("./scenes/sandbox/sandbox-simulation").then((m) => m.SandboxSimulation),
+);
 const QueueSimulation = dynamic(() =>
   import("./scenes/queue/queue-simulation").then((m) => m.QueueSimulation),
 );
@@ -73,5 +76,7 @@ export function Demo({ slug }: { slug: DemoSlug }) {
       return <TokenizerExplorer />;
     case "message-queue":
       return <QueueSimulation />;
+    case "system-design-sandbox":
+      return <SandboxSimulation />;
   }
 }

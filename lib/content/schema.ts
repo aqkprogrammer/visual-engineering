@@ -104,6 +104,8 @@ export const playgroundDemoSchema = z.object({
   domain: domainIdSchema,
   /** The lesson that explains this demo, if one is published. */
   lesson: lessonRefSchema.optional(),
+  /** Other lessons that explain parts of the demo. */
+  related: z.array(lessonRefSchema).default([]),
   kind: z.enum(["simulation", "walkthrough", "explorer"]),
   tryThis: z.array(z.string().min(20)).min(2),
   references: z.array(referenceSchema).min(1),

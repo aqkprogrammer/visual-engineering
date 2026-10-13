@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight, MessageSquareText, Siren } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Boxes, MessageSquareText, Siren } from "lucide-react";
 import Link from "next/link";
 import { LessonListItem } from "@/components/lessons/lesson-meta";
 import { LoadBalancerDiagram } from "@/components/visualizations/static/load-balancer-diagram";
@@ -122,7 +122,20 @@ export default function HomePage() {
         <h2 id="practise" className="text-2xl font-semibold tracking-tight">
           Practise
         </h2>
-        <ul className="mt-8 grid gap-4 md:grid-cols-2">
+        <ul className="mt-8 grid gap-4 md:grid-cols-3">
+          <li>
+            <Link
+              href="/playground/system-design-sandbox"
+              className="group flex h-full flex-col gap-2 rounded-xl border border-border p-6 transition-colors hover:border-border-strong hover:bg-surface"
+            >
+              <Boxes aria-hidden className="size-5 text-fg-subtle" />
+              <span className="font-medium group-hover:text-accent">System design sandbox</span>
+              <span className="text-sm text-fg-muted">
+                Build a backend from servers, a cache, replicas and a queue, then load-test it. Four
+                challenges with explicit goals.
+              </span>
+            </Link>
+          </li>
           <li>
             <Link
               href="/incidents"

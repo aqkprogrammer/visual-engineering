@@ -118,6 +118,10 @@ How to add one: [SIMULATION-GUIDE.md](SIMULATION-GUIDE.md).
 
 `.github/workflows/deploy.yml` deploys to GitHub Pages only after CI passes on `main`. The build reads the origin and base path from the Pages configuration (`NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_BASE_PATH`), and `trailingSlash: true` emits `route/index.html` for every page.
 
+## System design sandbox
+
+`lib/simulation/models/sandbox.ts` is a request-flow model on the same engine as every other demo: each one-second step routes the offered traffic through app servers, an optional cache, read replicas or the primary, and an optional write queue, recording load, overflow, latency and the bottleneck. `lib/sandbox/challenges.ts` adds traffic profiles, scripted failures and goals, and `evaluate()` checks every second of a run against them. The design (architecture and traffic) is the input to a run, so changing it restarts the timeline; failures are actions at the current second.
+
 ## Not yet built
 
-Shareable scenario URLs, phone-specific scene layouts, the system design sandbox (Phase 4c), a `⌘K` search palette, progress export/import, Lighthouse budgets in CI and the contributor guide (Phase 5).
+Shareable scenario URLs, phone-specific scene layouts (scene text is small below about 500 px; the stats and tables carry the same information), a `⌘K` search palette, progress export/import, Lighthouse budgets in CI and the contributor guide (Phase 5).

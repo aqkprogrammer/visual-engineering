@@ -311,4 +311,38 @@ export default definePlayground([
       },
     ],
   },
+  {
+    slug: "system-design-sandbox",
+    title: "System design sandbox",
+    summary:
+      "Design a backend from app servers, a cache, read replicas and a write queue, then load-test it: watch utilisation, latency and the bottleneck move.",
+    domain: "system-design",
+    related: [
+      "system-design/load-balancing",
+      "system-design/caching",
+      "system-design/message-queues",
+      "computer-science/database-indexes",
+    ],
+    kind: "simulation",
+    tryThis: [
+      "In Free play at 1,000 requests/s, press Play with two app servers. Add servers until the bottleneck moves to the database.",
+      "Raise the traffic to 4,000/s with 98% reads, then compare adding read replicas with turning on a cache.",
+      "Notice that latency rises long before errors appear: at 80% utilisation a component is already five times slower than when idle.",
+      "Pick a challenge and find the cheapest design that meets every goal — then fail a server mid-run to see how much headroom you left.",
+    ],
+    references: [
+      {
+        title: "Handling Overload (Site Reliability Engineering)",
+        url: "https://sre.google/sre-book/handling-overload/",
+        publisher: "Google",
+        kind: "book",
+      },
+      {
+        title: "Using load shedding to avoid overload",
+        url: "https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/",
+        publisher: "Amazon Web Services",
+        kind: "article",
+      },
+    ],
+  },
 ]);
