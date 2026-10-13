@@ -13,9 +13,12 @@ export const metadata: Metadata = {
 };
 
 function initial(term: GlossaryTerm): string {
-  const first = term.term[0]?.toUpperCase() ?? "#";
-  return /[A-Z]/.test(first) ? first : "#";
+  const first = term.term[0]?.toUpperCase() ?? "";
+  return /[A-Z]/.test(first) ? first : "0–9";
 }
+
+/** "A" → "letter-A"; terms starting with a digit share "letter-digits". */
+const letterId = (letter: string) => `letter-${/^[A-Z]$/.test(letter) ? letter : "digits"}`;
 
 export default function GlossaryPage() {
   const terms = getGlossary();
@@ -41,8 +44,8 @@ export default function GlossaryPage() {
           {[...groups.keys()].map((letter) => (
             <li key={letter}>
               <a
-                href={`#letter-${letter}`}
-                className="inline-flex size-9 items-center justify-center rounded-md border border-border font-mono text-sm hover:border-border-strong hover:bg-surface"
+                href={`#${letterId(letter)}`}
+                className="inline-flex h-9 min-w-9 items-center justify-center rounded-md border border-border px-2 font-mono text-sm hover:border-border-strong hover:bg-surface"
               >
                 {letter}
               </a>
@@ -53,9 +56,9 @@ export default function GlossaryPage() {
 
       <div className="mt-10 space-y-12">
         {[...groups.entries()].map(([letter, group]) => (
-          <section key={letter} aria-labelledby={`letter-${letter}`}>
+          <section key={letter} aria-labelledby={letterId(letter)}>
             <h2
-              id={`letter-${letter}`}
+              id={letterId(letter)}
               className="scroll-mt-20 border-b border-border pb-2 font-mono text-lg text-fg-subtle"
             >
               {letter}

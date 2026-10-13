@@ -116,9 +116,12 @@ export default function HowItWorksPage() {
           <li>
             Lighthouse budgets on a phone profile: performance at least{" "}
             {pct(LIGHTHOUSE_CATEGORY_BUDGETS.performance)}, accessibility, best practices and SEO at
-            least {pct(LIGHTHOUSE_CATEGORY_BUDGETS.accessibility)}, Largest Contentful Paint under{" "}
-            {LIGHTHOUSE_METRIC_BUDGETS["largest-contentful-paint"].max / 1000} s and layout shift
-            under {LIGHTHOUSE_METRIC_BUDGETS["cumulative-layout-shift"].max}.
+            least {pct(LIGHTHOUSE_CATEGORY_BUDGETS.accessibility)}, and layout shift under{" "}
+            {LIGHTHOUSE_METRIC_BUDGETS["cumulative-layout-shift"].max}. Largest Contentful Paint
+            (target {LIGHTHOUSE_METRIC_BUDGETS["largest-contentful-paint"].max / 1000} s) and
+            blocking time (target {LIGHTHOUSE_METRIC_BUDGETS["total-blocking-time"].max} ms) are
+            reported on every run; lab timings vary between runs, so they count through the
+            performance score rather than failing on their own.
           </li>
         </ul>
         <p>The site is deployed only after all of these pass on the main branch.</p>

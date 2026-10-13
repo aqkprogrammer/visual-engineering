@@ -1,6 +1,6 @@
 # 0005. Client-side search over a build-time index
 
-- **Status:** Accepted — implementation in Phase 4
+- **Status:** Accepted, amended 2026-10-13 (see "Amendment")
 - **Date:** 2026-10-12
 
 ## Context
@@ -20,3 +20,13 @@ MiniSearch, with the index built from the plain text that `lib/content/mdx-text.
 ## Consequences
 
 Revisit Pagefind if the index grows past a comfortable size (roughly a few hundred lessons).
+
+## Amendment (2026-10-13)
+
+What shipped in Phase 4a differs from the decision above, deliberately:
+
+- **No MiniSearch.** The corpus is small (about 150 entries: lessons, paths, demos, incidents, interview questions and glossary terms), so a ~200-line scorer in `lib/search/search.ts` is smaller than any library and every ranking rule is unit-tested: all words must match; title and aliases weigh most; stems, word prefixes and one-letter typos count.
+- **Metadata, not full text.** The index holds titles, aliases, tags, headings, summaries and short supporting text rather than whole lesson bodies, keeping it small and the results focused.
+- **Loaded after render.** `app/search-index.json/route.ts` emits the index as a static file, which the search page fetches once it has rendered, so the index never delays first paint.
+
+The consequence still holds: revisit a library such as MiniSearch or Pagefind if the corpus grows to hundreds of lessons or needs full-text search.

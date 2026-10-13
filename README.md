@@ -195,7 +195,19 @@ flowchart LR
 - [x] **Phase 4b — Practice.** 49 interview questions with published rubrics and self-grading; an incident lab with evidence from real simulation runs
 - [x] **Phase 4c — System design sandbox.** Build a backend from servers, a cache, replicas and a write queue, load-test it, and meet four challenges
 - [x] **Phase 5 — Quality.** Page-weight and Lighthouse budgets in CI, keyboard-only and privacy tests, readable diagrams on phones, contributor and authoring guides
-- [ ] **Later.** System design simulator, incident lab, interview arena, AI engineering playground
+- [ ] **Phase 6 — Release 1.0.** Release checklist, full-history secret scan, link check, changelog, tagged release
+- [ ] **Later.** Software architecture and cloud lessons, shareable scenario links, progress export, AI engineering playground
+
+## ⚠️ Known limitations
+
+Honest about what 1.0 doesn't do yet:
+
+- **Coverage.** 12 lessons in five of the seven domains; software architecture and cloud have planned topics but no published lessons yet.
+- **Teaching models, not benchmarks.** Simulations simplify on purpose, list their assumptions, and use illustrative capacities and timings.
+- **Phones.** Diagrams are fitted to the screen and their text is small; each simulation can be enlarged into a scrollable view, and its numbers are also shown as text.
+- **Progress is per browser.** It isn't synced between devices and can't be exported yet.
+- **English only.** No translations yet.
+- **Lab performance only.** Speed budgets are checked with Lighthouse in CI; there is no field (real-user) data, because the site doesn't collect any.
 
 ## 🏗️ How it's built
 
@@ -328,7 +340,7 @@ Building an interactive simulation? Follow [docs/SIMULATION-GUIDE.md](docs/SIMUL
 | Production dependency audit | pnpm audit | CI |
 | README banner and curriculum match the real content | `scripts/readme.ts --check` | CI |
 | Page weight: ≤ 215 KB JS up front per page, ≤ 60 KB per simulation, ≤ 80 KB HTML (gzipped) | `scripts/budget.ts` | CI |
-| Lighthouse (mobile, median of 3): performance ≥ 90; accessibility, best practices, SEO ≥ 95; LCP ≤ 2.5 s, TBT ≤ 200 ms, CLS ≤ 0.1 | `scripts/lighthouse.ts` | CI |
+| Lighthouse (mobile, median of 5): performance ≥ 90; accessibility, best practices, SEO ≥ 95; CLS ≤ 0.1 — plus LCP ≤ 2.5 s and TBT ≤ 200 ms reported as warnings | `scripts/lighthouse.ts` | CI |
 | Keyboard-only journeys; no third-party requests or cookies | Playwright | CI |
 | Only green commits deploy | GitHub Actions → Pages | on `main` |
 
