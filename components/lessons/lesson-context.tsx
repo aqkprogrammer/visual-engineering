@@ -1,7 +1,7 @@
-import { ArrowRight, Route } from "lucide-react";
+import { ArrowRight, Route, Siren } from "lucide-react";
 import Link from "next/link";
 import type { PathPosition } from "@/lib/content/catalog";
-import type { GlossaryTerm } from "@/lib/content/schema";
+import type { GlossaryTerm, Incident } from "@/lib/content/schema";
 
 /** Where this lesson sits in each learning path that includes it, and what comes next. */
 export function LessonPaths({ positions }: { positions: PathPosition[] }) {
@@ -63,6 +63,36 @@ export function KeyTerms({ terms }: { terms: GlossaryTerm[] }) {
               className="inline-block rounded-full border border-border-strong px-3 py-1 text-sm hover:bg-surface"
             >
               {term.term}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Incident-lab scenarios whose root cause this lesson explains. */
+export function LessonIncidents({ incidents }: { incidents: Incident[] }) {
+  if (incidents.length === 0) return null;
+  return (
+    <section aria-labelledby="debug-it" className="space-y-4">
+      <h2 id="debug-it" className="text-xl font-semibold">
+        Debug it
+      </h2>
+      <ul className="grid gap-3">
+        {incidents.map((incident) => (
+          <li key={incident.slug}>
+            <Link
+              href={`/incidents/${incident.slug}`}
+              className="group block rounded-lg border border-border px-5 py-4 transition-colors hover:border-border-strong hover:bg-surface"
+            >
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-fg-subtle">
+                <Siren aria-hidden className="size-3.5" /> Incident lab
+              </span>
+              <span className="mt-1 block font-medium group-hover:text-accent">
+                {incident.title}
+              </span>
+              <span className="mt-1 block text-sm text-fg-muted">{incident.summary}</span>
             </Link>
           </li>
         ))}
