@@ -194,7 +194,7 @@ flowchart LR
 - [x] **Phase 4a — Discovery.** Search, four learning paths, a 58-term glossary, and progress saved in your browser
 - [x] **Phase 4b — Practice.** 49 interview questions with published rubrics and self-grading; an incident lab with evidence from real simulation runs
 - [x] **Phase 4c — System design sandbox.** Build a backend from servers, a cache, replicas and a write queue, load-test it, and meet four challenges
-- [ ] **Phase 5 — Quality.** Accessibility audit, performance budgets, contributor guide
+- [x] **Phase 5 — Quality.** Page-weight and Lighthouse budgets in CI, keyboard-only and privacy tests, readable diagrams on phones, contributor and authoring guides
 - [ ] **Later.** System design simulator, incident lab, interview arena, AI engineering playground
 
 ## 🏗️ How it's built
@@ -327,11 +327,16 @@ Building an interactive simulation? Follow [docs/SIMULATION-GUIDE.md](docs/SIMUL
 | WCAG 2.2 A/AA scan of every page type in both themes | axe-core | CI |
 | Production dependency audit | pnpm audit | CI |
 | README banner and curriculum match the real content | `scripts/readme.ts --check` | CI |
+| Page weight: ≤ 215 KB JS up front per page, ≤ 60 KB per simulation, ≤ 80 KB HTML (gzipped) | `scripts/budget.ts` | CI |
+| Lighthouse (mobile, median of 3): performance ≥ 90; accessibility, best practices, SEO ≥ 95; LCP ≤ 2.5 s, TBT ≤ 200 ms, CLS ≤ 0.1 | `scripts/lighthouse.ts` | CI |
+| Keyboard-only journeys; no third-party requests or cookies | Playwright | CI |
 | Only green commits deploy | GitHub Actions → Pages | on `main` |
 
 ## 🤝 Contributing
 
-Corrections, new lessons and simulation ideas are welcome — open an issue or a pull request. A full contribution guide arrives in Phase 5. Please report security problems privately as described in [SECURITY.md](SECURITY.md).
+Corrections, new lessons and simulation ideas are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md); lesson writers should read the [authoring guide](docs/AUTHORING.md), and simulation builders the [simulation guide](docs/SIMULATION-GUIDE.md). Everyone is expected to follow the [code of conduct](CODE_OF_CONDUCT.md). Please report security problems privately as described in [SECURITY.md](SECURITY.md).
+
+Curious how the site checks itself? See [How this platform works](https://aqkprogrammer.github.io/visual-engineering/how-it-works/).
 
 ## 📄 License
 

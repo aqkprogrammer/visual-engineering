@@ -19,6 +19,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: url("/") },
     { url: url("/explore") },
     { url: url("/about") },
+    { url: url("/how-it-works") },
     { url: url("/playground") },
     { url: url("/paths") },
     { url: url("/glossary") },

@@ -1,0 +1,27 @@
+name: Content correction
+description: Something in a lesson, quiz, interview question or glossary entry is wrong, unclear or out of date.
+labels: ["content"]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: The URL or path of the page, e.g. /system-design/caching/
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or unclear?
+      description: Quote the sentence if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: correction
+    attributes:
+      label: What should it say?
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: A link to official documentation, a specification or a paper that supports the correction.
