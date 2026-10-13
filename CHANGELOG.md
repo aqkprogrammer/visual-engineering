@@ -2,6 +2,13 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Three cloud lessons**, each with a new simulation: Regions and Availability Zones (fail a zone, a region or the control plane, and see what static stability buys), blue-green and canary deployments (ship a buggy release four ways and count the failed requests), and autoscaling (target tracking against ramps, spikes and bursts).
+- A **Running applications in the cloud** learning path, and 10 glossary terms.
+
 ## [1.0.0] — 2026-10-13
 
 The first release: an open, static, accessible platform for learning how technology works by watching it, changing it and breaking it.

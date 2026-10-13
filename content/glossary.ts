@@ -503,4 +503,91 @@ export default defineGlossary([
     lesson: "computer-science/database-indexes",
     related: ["sequential-scan", "database-index"],
   },
+
+  // Cloud
+  {
+    id: "availability-zone",
+    term: "Availability Zone",
+    aliases: ["AZ"],
+    definition:
+      "One of several isolated locations within a cloud region: one or more data centres with their own power, networking and connectivity, close enough to the others for low-latency links.",
+    lesson: "cloud/regions-and-availability-zones",
+    related: ["cloud-region", "static-stability"],
+  },
+  {
+    id: "cloud-region",
+    term: "Region",
+    aliases: ["Cloud region"],
+    definition:
+      "A geographic area where a cloud provider runs an isolated set of its services, made up of several Availability Zones. Most services and their data live in one region.",
+    lesson: "cloud/regions-and-availability-zones",
+    related: ["availability-zone"],
+  },
+  {
+    id: "static-stability",
+    term: "Static stability",
+    definition:
+      "Keeping a system working through a failure without having to change anything — for example, running enough spare capacity in advance that losing a zone needs no new instances.",
+    lesson: "cloud/regions-and-availability-zones",
+    related: ["availability-zone", "control-plane"],
+  },
+  {
+    id: "control-plane",
+    term: "Control plane",
+    aliases: ["Data plane"],
+    definition:
+      "The parts of a system that create, configure and change resources, such as the APIs that launch instances. The data plane is what serves the actual traffic. Designs that depend on the control plane during an outage are fragile.",
+    lesson: "cloud/regions-and-availability-zones",
+    related: ["static-stability"],
+  },
+  {
+    id: "blue-green-deployment",
+    term: "Blue-green deployment",
+    definition:
+      "Running a new version in a complete second environment beside the old one, then switching all traffic to it at once. Rolling back is switching traffic back.",
+    lesson: "cloud/blue-green-and-canary-deployments",
+    related: ["canary-release", "rolling-update"],
+  },
+  {
+    id: "canary-release",
+    term: "Canary release",
+    aliases: ["Canary deployment", "Canarying"],
+    definition:
+      "Sending a small share of real traffic to a new version and comparing it with the old version before widening the rollout, so a bad release reaches few users.",
+    lesson: "cloud/blue-green-and-canary-deployments",
+    related: ["blue-green-deployment", "rolling-update"],
+  },
+  {
+    id: "rolling-update",
+    term: "Rolling update",
+    definition:
+      "Replacing instances of an application in batches, so capacity stays up while the new version gradually takes over.",
+    lesson: "cloud/blue-green-and-canary-deployments",
+    related: ["canary-release", "blue-green-deployment"],
+  },
+  {
+    id: "autoscaling",
+    term: "Autoscaling",
+    definition:
+      "Automatically adding instances as demand rises and removing them as it falls, usually to keep a metric such as CPU utilisation near a target.",
+    lesson: "cloud/autoscaling",
+    related: ["target-tracking", "scale-in-stabilization"],
+  },
+  {
+    id: "target-tracking",
+    term: "Target tracking",
+    definition:
+      "An autoscaling policy that keeps a metric near a chosen value, scaling in proportion: desired instances = current instances × current metric ÷ target.",
+    lesson: "cloud/autoscaling",
+    related: ["autoscaling"],
+  },
+  {
+    id: "scale-in-stabilization",
+    term: "Scale-in stabilisation window",
+    aliases: ["Stabilization window"],
+    definition:
+      "A period over which an autoscaler remembers its recommendations and scales in only to the highest of them, so brief dips in load don't remove capacity that is needed again minutes later.",
+    lesson: "cloud/autoscaling",
+    related: ["autoscaling", "target-tracking"],
+  },
 ]);

@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 const player = (page: Page) =>
   page
     .getByRole("region", {
-      name: /simulation|handshake|self-healing|explorer|index|resolution|pipeline|cache/i,
+      name: /simulation|handshake|self-healing|explorer|index|resolution|pipeline|cache|zones|strategies|autoscaling/i,
     })
     .first();
 const caption = (page: Page) => player(page).locator("p[aria-live]");
@@ -28,6 +28,9 @@ test("playground lists every demo", async ({ page }) => {
     "Load balancer simulator",
     "TLS 1.3 handshake, step by step",
     "Kubernetes self-healing",
+    "Regions and Availability Zones",
+    "Deployment strategies",
+    "Autoscaling",
   ]) {
     await expect(page.getByRole("link", { name: new RegExp(name) })).toBeVisible();
   }
@@ -224,4 +227,38 @@ test("message queue: a slow downstream grows the backlog", async ({ page }) => {
     .getByText("Waiting", { exact: true })
     .locator("xpath=following-sibling::dd");
   expect(Number(await waiting.textContent())).toBeGreaterThan(50);
+});
+
+test("zones: three lean zones lose a third of capacity; headroom loses nothing", async ({
+  page,
+}) => {
+  await page.goto("/playground/availability-zones");
+  await seek(page, 2);
+  await page.getByRole("button", { name: "Fail zone a2" }).click();
+  await expect(caption(page)).toContainText("33% of requests failing");
+
+  await page.getByText("Survive a zone", { exact: true }).click();
+  await seek(page, 2);
+  await page.getByRole("button", { name: "Fail zone a2" }).click();
+  await seek(page, 6);
+  await expect(caption(page)).toContainText("All 3,000 requests a second served");
+});
+
+test("deployments: canary analysis rolls back a bad release at 5% of traffic", async ({ page }) => {
+  await page.goto("/playground/deployment-strategies");
+  await seek(page, 8);
+  await expect(caption(page)).toContainText("Rolled back");
+  await expect(player(page)).toContainText("Canary analysis");
+
+  await page.getByText("All at once", { exact: true }).click();
+  await seek(page, 6);
+  await expect(caption(page)).toContainText("every request fails");
+});
+
+test("autoscaling: without a scale-in window, bursty traffic keeps failing", async ({ page }) => {
+  await page.goto("/playground/autoscaling");
+  await page.getByText("Bursty", { exact: true }).click();
+  await page.getByRole("group", { name: "Scale-in window" }).getByText("None").click();
+  await seek(page, 40);
+  await expect(player(page)).toContainText("Overloaded");
 });
