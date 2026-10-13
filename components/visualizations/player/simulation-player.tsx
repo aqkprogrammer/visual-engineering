@@ -7,6 +7,7 @@ import {
   CircleCheck,
   FlaskConical,
   Info,
+  Maximize2,
   Pause,
   Play,
   RotateCcw,
@@ -16,6 +17,7 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
   type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
@@ -102,6 +104,9 @@ export function SimulationPlayer<State>({
 }: SimulationPlayerProps<State>) {
   const id = useId();
   const rootRef = useRef<HTMLElement>(null);
+  // On narrow screens a scene's text is tiny when fitted to the width; enlarging renders it at a
+  // readable size inside a horizontally scrollable area.
+  const [enlarged, setEnlarged] = useState(false);
   const frame = frames[Math.min(playback.frame, frames.length - 1)]!;
   const atEnd = playback.frame >= frames.length - 1;
   const { pause, playing } = playback;
@@ -160,9 +165,33 @@ export function SimulationPlayer<State>({
         {description}
       </p>
 
-      <div className="relative bg-blueprint" style={sceneStyle}>
-        {scene(frame)}
+      <div className="flex justify-end border-b border-border px-3 py-1.5 sm:hidden">
+        <button
+          type="button"
+          aria-pressed={enlarged}
+          onClick={() => setEnlarged((e) => !e)}
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-fg-muted hover:bg-surface-2 hover:text-fg aria-pressed:text-fg"
+        >
+          <Maximize2 aria-hidden className="size-3.5" />
+          Enlarge diagram
+        </button>
       </div>
+      {enlarged ? (
+        <div
+          className="relative overflow-x-auto"
+          tabIndex={0}
+          role="region"
+          aria-label={`${title}: enlarged diagram, scroll sideways`}
+        >
+          <div className="relative min-w-[720px] bg-blueprint" style={sceneStyle}>
+            {scene(frame)}
+          </div>
+        </div>
+      ) : (
+        <div className="relative bg-blueprint" style={sceneStyle}>
+          {scene(frame)}
+        </div>
+      )}
 
       <div className="border-t border-border px-4 py-3">
         <p

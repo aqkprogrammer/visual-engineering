@@ -30,6 +30,8 @@ updates:
             "@playwright/test",
             "@testing-library/*",
             "@axe-core/*",
+            "lighthouse",
+            "chrome-launcher",
           ]
       lint-and-format:
         patterns: ["eslint", "prettier", "prettier-plugin-*", "typescript"]

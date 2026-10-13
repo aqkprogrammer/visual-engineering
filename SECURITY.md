@@ -18,6 +18,6 @@ Visual Engineering is a statically generated website with no backend, no account
 
 - **Content and supply chain** — lessons are MDX, which compiles to code. Malicious content or a compromised dependency could execute in readers' browsers. Mitigations: maintainer review on all content (`CODEOWNERS`), a lockfile with frozen installs in CI, pnpm's minimum-release-age guard, Dependabot updates and a production dependency audit in CI.
 - **CI/CD** — workflows use least-privilege `permissions`, SHA-pinned actions and checkouts without persisted credentials.
-- **Client-side storage** — only non-sensitive preferences (such as the colour theme) are stored, in the reader's own browser.
+- **Client-side storage** — only the colour theme and learning progress (completed lessons and knowledge-check scores) are stored, in the reader's own browser. Stored progress is validated on every read, so corrupted or tampered data is ignored. Interview practice answers are never stored, and nothing is sent anywhere.
 
 Simulations run entirely in the browser on fixed data. They never execute user-supplied code, call external APIs or touch real infrastructure.

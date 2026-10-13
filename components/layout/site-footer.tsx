@@ -44,6 +44,9 @@ export function SiteFooter() {
           <Link href="/about" className="hover:text-fg">
             About
           </Link>
+          <Link href="/how-it-works" className="hover:text-fg">
+            How it works
+          </Link>
           <a href={site.repoUrl} className="hover:text-fg">
             Source on GitHub
           </a>

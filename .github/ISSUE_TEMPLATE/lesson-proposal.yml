@@ -1,0 +1,41 @@
+name: Lesson proposal
+description: Propose a new lesson, demo or incident before writing it.
+labels: ["proposal"]
+body:
+  - type: input
+    id: title
+    attributes:
+      label: Working title
+      placeholder: How consistent hashing works
+    validations:
+      required: true
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Domain
+      options:
+        - System design
+        - Software architecture
+        - AI engineering
+        - Containers
+        - Cloud
+        - Networking
+        - Computer science
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Who is it for, and what will they be able to do afterwards?
+    validations:
+      required: true
+  - type: textarea
+    id: visual
+    attributes:
+      label: What would the simulation or diagram show?
+      description: What can a reader change or break, and what should they notice?
+  - type: textarea
+    id: sources
+    attributes:
+      label: Primary sources
+      description: Official documentation, specifications or papers you would base it on.

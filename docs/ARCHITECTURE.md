@@ -98,15 +98,17 @@ How to add one: [SIMULATION-GUIDE.md](SIMULATION-GUIDE.md).
 
 ## Quality gates
 
-| Gate                                                                                                              | Where               |
-| ----------------------------------------------------------------------------------------------------------------- | ------------------- |
-| ESLint (Next core-web-vitals, TypeScript, React hooks, jsx-a11y), zero warnings                                   | `pnpm lint`         |
-| Prettier (MDX excluded, see ADR-0002)                                                                             | `pnpm format:check` |
-| Strict TypeScript                                                                                                 | `pnpm typecheck`    |
-| Unit and component tests                                                                                          | `pnpm test`         |
-| Static build                                                                                                      | `pnpm build`        |
-| E2E journeys, 404s, keyboard, theme, no horizontal scroll; axe WCAG 2.2 A/AA in both themes on desktop and mobile | `pnpm test:e2e`     |
-| Production dependency audit                                                                                       | CI                  |
+| Gate                                                                                                                                                     | Where                      |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| ESLint (Next core-web-vitals, TypeScript, React hooks, jsx-a11y), zero warnings                                                                          | `pnpm lint`                |
+| Prettier (MDX excluded, see ADR-0002)                                                                                                                    | `pnpm format:check`        |
+| Strict TypeScript                                                                                                                                        | `pnpm typecheck`           |
+| Unit and component tests                                                                                                                                 | `pnpm test`                |
+| Static build                                                                                                                                             | `pnpm build`               |
+| Page-weight budgets (shared with the site via `lib/quality/budgets.ts`)                                                                                  | `pnpm budget`              |
+| E2E journeys, 404s, keyboard-only journeys, theme, no horizontal scroll, no third-party requests; axe WCAG 2.2 A/AA in both themes on desktop and mobile | `pnpm test:e2e`            |
+| Lighthouse budgets, mobile, median of three runs                                                                                                         | `pnpm lighthouse` (CI job) |
+| Production dependency audit                                                                                                                              | CI                         |
 
 ## Security notes
 
@@ -124,4 +126,4 @@ How to add one: [SIMULATION-GUIDE.md](SIMULATION-GUIDE.md).
 
 ## Not yet built
 
-Shareable scenario URLs, phone-specific scene layouts (scene text is small below about 500 px; the stats and tables carry the same information), a `⌘K` search palette, progress export/import, Lighthouse budgets in CI and the contributor guide (Phase 5).
+Shareable scenario URLs, phone-specific scene layouts (on phones, scenes can be enlarged into a scrollable view instead), a `⌘K` search palette, progress export/import, Lighthouse budgets in CI and the contributor guide (Phase 5).

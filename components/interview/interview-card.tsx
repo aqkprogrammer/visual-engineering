@@ -1,4 +1,3 @@
-import { Check, Plus, TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import type { InterviewItem } from "@/lib/content/schema";
 import type { InterviewKind, InterviewLevel } from "@/lib/interview/taxonomy";
@@ -26,18 +25,37 @@ export function InterviewTags({ item }: { item: InterviewItem }) {
   );
 }
 
-function RubricList({ title, points, icon }: { title: string; points: string[]; icon: ReactNode }) {
+/*
+ * Markers are CSS-generated (with empty alt text, so screen readers skip them) rather than icon
+ * components: the interview page renders every rubric, and hundreds of inline SVGs made its DOM
+ * several times larger.
+ */
+const MARKER = {
+  core: "before:text-ok before:content-['✓'_/_'']",
+  strong: "before:text-accent before:content-['+'_/_'']",
+  redFlags: "before:text-warn before:content-['!'_/_'']",
+} as const;
+
+function RubricList({
+  title,
+  points,
+  marker,
+}: {
+  title: string;
+  points: string[];
+  marker: keyof typeof MARKER;
+}) {
   if (points.length === 0) return null;
   return (
     <div className="space-y-1.5">
       <p className="text-sm font-medium text-fg">{title}</p>
       <ul className="space-y-1">
         {points.map((point) => (
-          <li key={point} className="flex gap-2 text-sm">
-            {icon}
-            <span>
-              <InlineText text={point} />
-            </span>
+          <li
+            key={point}
+            className={`relative pl-6 text-sm before:absolute before:left-1 before:font-semibold ${MARKER[marker]}`}
+          >
+            <InlineText text={point} />
           </li>
         ))}
       </ul>
@@ -49,21 +67,9 @@ function RubricList({ title, points, icon }: { title: string; points: string[]; 
 export function Rubric({ rubric }: { rubric: InterviewItem["rubric"] }) {
   return (
     <div className="space-y-3">
-      <RubricList
-        title="Every good answer covers"
-        points={rubric.core}
-        icon={<Check aria-hidden className="mt-0.5 size-4 shrink-0 text-ok" />}
-      />
-      <RubricList
-        title="Signs of a strong answer"
-        points={rubric.strong}
-        icon={<Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />}
-      />
-      <RubricList
-        title="Red flags"
-        points={rubric.redFlags}
-        icon={<TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warn" />}
-      />
+      <RubricList title="Every good answer covers" points={rubric.core} marker="core" />
+      <RubricList title="Signs of a strong answer" points={rubric.strong} marker="strong" />
+      <RubricList title="Red flags" points={rubric.redFlags} marker="redFlags" />
     </div>
   );
 }

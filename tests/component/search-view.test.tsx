@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SearchView } from "@/components/search/search-view";
 import type { SearchDoc } from "@/lib/search/search";
 
@@ -30,6 +30,7 @@ const docs: SearchDoc[] = [
 
 afterEach(() => {
   window.history.replaceState(null, "", "/");
+  vi.unstubAllGlobals();
 });
 
 describe("SearchView", () => {
@@ -72,5 +73,24 @@ describe("SearchView", () => {
       await user.click(screen.getByRole("button", { name: "idempotency" }));
     });
     expect(screen.getByRole("searchbox")).toHaveValue("idempotency");
+  });
+});
+
+describe("SearchView fetching its index", () => {
+  it("shows a loading message, then searches the fetched index", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(docs) });
+    vi.stubGlobal("fetch", fetchMock);
+    window.history.replaceState(null, "", "/search/?q=dlq");
+    render(<SearchView />);
+    expect(screen.getByText("Loading the search index…")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /Dead-letter queue/ })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith("/search-index.json");
+  });
+
+  it("explains when the index can't be loaded", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+    render(<SearchView />);
+    expect(await screen.findByText(/Search couldn’t load/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "idempotency" })).toBeNull();
   });
 });

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { SearchView } from "@/components/search/search-view";
-import { buildSearchIndex } from "@/lib/search/build";
 import { alternatesFor } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -11,7 +10,6 @@ export const metadata: Metadata = {
 };
 
 export default function SearchPage() {
-  const docs = buildSearchIndex();
   return (
     <div className="mx-auto max-w-3xl px-4 pt-12 sm:px-6">
       <header className="space-y-4">
@@ -22,7 +20,7 @@ export default function SearchPage() {
         </p>
       </header>
       <div className="mt-10">
-        <SearchView docs={docs} />
+        <SearchView />
       </div>
     </div>
   );
