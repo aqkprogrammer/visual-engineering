@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_PROGRESS,
+  MAX_IMPORT_BYTES,
   completedCount,
+  exportProgress,
+  importProgress,
+  mergeProgress,
   isCompleted,
   nextIncomplete,
   parseProgress,
@@ -91,5 +95,84 @@ describe("recordQuiz", () => {
   it("round-trips through JSON and parseProgress", () => {
     const p = setCompleted(recordQuiz(EMPTY_PROGRESS, LB, 4, 5, now), CACHE, true, now);
     expect(parseProgress(JSON.parse(JSON.stringify(p)))).toEqual(p);
+  });
+});
+
+describe("export and import", () => {
+  const progress = recordQuiz(setCompleted(EMPTY_PROGRESS, LB, true, now), CACHE, 3, 5, now);
+
+  it("round-trips an export", () => {
+    const result = importProgress(exportProgress(progress, later));
+    expect(result).toEqual({ ok: true, progress });
+  });
+
+  it("records when the export was made", () => {
+    expect(JSON.parse(exportProgress(progress, later))).toMatchObject({
+      version: 1,
+      exportedAt: later.toISOString(),
+    });
+  });
+
+  it("explains why a file can't be imported", () => {
+    const error = (text: string) => {
+      const result = importProgress(text);
+      return result.ok ? undefined : result.error;
+    };
+    expect(error("{not json")).toMatch(/valid JSON/);
+    expect(error("[1, 2]")).toMatch(/isn't a Visual Engineering progress export/);
+    expect(error(JSON.stringify({ version: 2, lessons: {} }))).toMatch(/version/);
+    expect(error(JSON.stringify({ version: 1, lessons: { "bad id": {} } }))).toMatch(
+      /doesn't contain any lesson progress/,
+    );
+    expect(error(" ".repeat(MAX_IMPORT_BYTES + 1))).toMatch(/too large/);
+  });
+
+  it("drops malformed entries but keeps the rest", () => {
+    const text = JSON.stringify({
+      version: 1,
+      lessons: { [LB]: { completedAt: now.toISOString() }, [CACHE]: { quiz: "great" } },
+    });
+    expect(importProgress(text)).toEqual({
+      ok: true,
+      progress: { version: 1, lessons: { [LB]: { completedAt: now.toISOString() } } },
+    });
+  });
+});
+
+describe("mergeProgress", () => {
+  it("keeps lessons from both sides", () => {
+    const a = setCompleted(EMPTY_PROGRESS, LB, true, now);
+    const b = setCompleted(EMPTY_PROGRESS, CACHE, true, later);
+    expect(completedCount(mergeProgress(a, b), [LB, CACHE])).toBe(2);
+  });
+
+  it("keeps the earlier completion date", () => {
+    const a = setCompleted(EMPTY_PROGRESS, LB, true, later);
+    const b = setCompleted(EMPTY_PROGRESS, LB, true, now);
+    expect(mergeProgress(a, b).lessons[LB]?.completedAt).toBe(now.toISOString());
+    expect(mergeProgress(b, a).lessons[LB]?.completedAt).toBe(now.toISOString());
+  });
+
+  it("keeps the latest quiz attempt and the best score", () => {
+    const a = recordQuiz(EMPTY_PROGRESS, CACHE, 5, 5, now);
+    const b = recordQuiz(EMPTY_PROGRESS, CACHE, 2, 5, later);
+    const quiz = mergeProgress(a, b).lessons[CACHE]?.quiz;
+    expect(quiz).toEqual({ best: 5, last: 2, total: 5, at: later.toISOString() });
+    expect(mergeProgress(b, a).lessons[CACHE]?.quiz).toEqual(quiz);
+  });
+
+  it("drops a best score from a quiz with a different number of questions", () => {
+    const a = recordQuiz(EMPTY_PROGRESS, CACHE, 4, 4, now);
+    const b = recordQuiz(EMPTY_PROGRESS, CACHE, 2, 5, later);
+    expect(mergeProgress(a, b).lessons[CACHE]?.quiz?.best).toBe(2);
+  });
+
+  it("combines a completion from one side with a quiz from the other", () => {
+    const a = setCompleted(EMPTY_PROGRESS, LB, true, now);
+    const b = recordQuiz(EMPTY_PROGRESS, LB, 3, 5, later);
+    expect(mergeProgress(a, b).lessons[LB]).toEqual({
+      completedAt: now.toISOString(),
+      quiz: { best: 3, last: 3, total: 5, at: later.toISOString() },
+    });
   });
 });

@@ -115,3 +115,74 @@ export function nextIncomplete<T extends string>(
 ): T | undefined {
   return ids.find((id) => !isCompleted(progress, id));
 }
+
+/** Largest progress file accepted on import: far more than every lesson could need. */
+export const MAX_IMPORT_BYTES = 256 * 1024;
+
+/** A portable copy of progress, for moving it to another browser or keeping a backup. */
+export function exportProgress(progress: Progress, now: Date): string {
+  return `${JSON.stringify(
+    { version: PROGRESS_VERSION, exportedAt: now.toISOString(), lessons: progress.lessons },
+    null,
+    2,
+  )}\n`;
+}
+
+export type ImportResult = { ok: true; progress: Progress } | { ok: false; error: string };
+
+/** Reads an exported file, keeping only well-formed entries (see parseProgress). */
+export function importProgress(text: string): ImportResult {
+  if (text.length > MAX_IMPORT_BYTES) {
+    return { ok: false, error: "That file is too large to be a progress export." };
+  }
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return { ok: false, error: "That file isn't valid JSON." };
+  }
+  if (!isRecord(raw) || !isRecord(raw.lessons)) {
+    return { ok: false, error: "That file isn't a Visual Engineering progress export." };
+  }
+  if (raw.version !== PROGRESS_VERSION) {
+    return {
+      ok: false,
+      error: "That export comes from a version of the site this one can't read.",
+    };
+  }
+  const progress = parseProgress(raw);
+  if (Object.keys(progress.lessons).length === 0) {
+    return { ok: false, error: "That file doesn't contain any lesson progress." };
+  }
+  return { ok: true, progress };
+}
+
+function mergeQuiz(a: QuizRecord | undefined, b: QuizRecord | undefined): QuizRecord | undefined {
+  if (!a || !b) return a ?? b;
+  const [older, newer] = Date.parse(a.at) <= Date.parse(b.at) ? [a, b] : [b, a];
+  // A best score only carries over when both attempts were at the same version of the quiz.
+  const best = older.total === newer.total ? Math.max(older.best, newer.best) : newer.best;
+  return { ...newer, best };
+}
+
+/**
+ * Combines two progress records without losing anything: a lesson completed in either is
+ * completed (at the earlier time), and quiz results keep the latest attempt and the best score.
+ */
+export function mergeProgress(a: Progress, b: Progress): Progress {
+  const lessons: Record<string, LessonProgress> = { ...a.lessons };
+  for (const [id, incoming] of Object.entries(b.lessons)) {
+    const current = lessons[id];
+    if (!current) {
+      lessons[id] = incoming;
+      continue;
+    }
+    const dates = [current.completedAt, incoming.completedAt].filter(
+      (d): d is string => d !== undefined,
+    );
+    const completedAt = dates.sort((x, y) => Date.parse(x) - Date.parse(y))[0];
+    const quiz = mergeQuiz(current.quiz, incoming.quiz);
+    lessons[id] = { ...(completedAt && { completedAt }), ...(quiz && { quiz }) };
+  }
+  return { version: PROGRESS_VERSION, lessons };
+}
