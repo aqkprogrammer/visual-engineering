@@ -46,7 +46,16 @@ export type LimiterState = {
 
 export type LimiterAction = { type: "configure"; config: Partial<LimiterConfig> };
 
-const clone = <T>(value: T): T => structuredClone(value);
+/** Copies what a step changes; timeline entries are never modified once recorded. */
+function clone(state: LimiterState): LimiterState {
+  return {
+    ...state,
+    config: { ...state.config },
+    log: [...state.log],
+    timeline: [...state.timeline],
+    totals: { ...state.totals },
+  };
+}
 
 function arrivals(s: LimiterState, rng: Rng): number {
   const fractional = (rate: number) =>

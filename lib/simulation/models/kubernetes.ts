@@ -69,7 +69,14 @@ export type KubeAction =
   | { type: "recover-node"; node: string }
   | { type: "scale"; replicas: number };
 
-const clone = <T>(value: T): T => structuredClone(value);
+/** Pods and nodes are updated in place, so each step copies them (both lists are short). */
+function clone(state: KubeState): KubeState {
+  return {
+    ...state,
+    pods: state.pods.map((p) => ({ ...p })),
+    nodes: state.nodes.map((n) => ({ ...n })),
+  };
+}
 
 function podName(rng: Rng): string {
   let suffix = "";

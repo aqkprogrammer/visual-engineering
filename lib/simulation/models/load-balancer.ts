@@ -118,7 +118,28 @@ export type LbAction =
   | { type: "remove-server" }
   | { type: "configure"; config: Partial<LbConfig> };
 
-const clone = <T>(value: T): T => structuredClone(value);
+/**
+ * Copies everything a step may change. Requests are copied too, because ticks advance them in
+ * place; the rolling metric arrays only gain or lose entries, so their entries are shared.
+ */
+function clone(state: LbState): LbState {
+  const copyRequest = (r: Request): Request => ({ ...r });
+  return {
+    ...state,
+    config: { ...state.config },
+    servers: state.servers.map((server) => ({
+      ...server,
+      queue: server.queue.map(copyRequest),
+      processing: server.processing.map(copyRequest),
+    })),
+    network: state.network.map(copyRequest),
+    latencies: [...state.latencies],
+    errors: [...state.errors],
+    failedNow: { ...state.failedNow },
+    failedByAction: { ...state.failedByAction },
+    totals: { ...state.totals, routed: { ...state.totals.routed } },
+  };
+}
 
 function newServer(id: string, inRotation: boolean): Server {
   return {
