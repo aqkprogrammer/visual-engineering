@@ -1,8 +1,15 @@
 "use client";
 
-import { CircleCheck, CircleX, Power, RotateCcw, Snail, Trash2, Zap } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { CircleCheck, CircleX, Link2, Power, RotateCcw, Snail, Trash2, Zap } from "lucide-react";
+import { useId, useMemo, useState, useSyncExternalStore } from "react";
 import { CHALLENGES, FREE_PLAY_ID, evaluate, getChallenge } from "@/lib/sandbox/challenges";
+import {
+  decodeDesign,
+  encodeDesign,
+  READ_SHARES,
+  TRAFFIC_BASES,
+  type SharedDesign,
+} from "@/lib/sandbox/share";
 import {
   CAPACITY,
   costUnits,
@@ -151,14 +158,62 @@ function ComponentTable({ m, a }: { m: Metrics; a: Architecture }) {
   );
 }
 
+const noopSubscribe = () => () => {};
+
+/**
+ * Opens the design in the page's link, if any. The first render always shows the default design
+ * (it is server-rendered); a linked design replaces it once the page has hydrated.
+ */
 export function SandboxSimulation() {
-  const [challengeId, setChallengeId] = useState(FREE_PLAY_ID);
+  const hydrated = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+  // Read once: later changes to the address bar (e.g. copying a link) must not reset the run.
+  const shared = useMemo(
+    () => (hydrated ? decodeDesign(window.location.search) : null),
+    [hydrated],
+  );
+  return <Sandbox key={shared ? "shared" : "default"} shared={shared} />;
+}
+
+type LinkStatus = { copied: true } | { copied: false; url: string } | null;
+
+function Sandbox({ shared }: { shared: SharedDesign | null }) {
+  const [challengeId, setChallengeId] = useState(shared?.challengeId ?? FREE_PLAY_ID);
   const challenge = getChallenge(challengeId);
-  const [architecture, setArchitecture] = useState<Architecture>(challenge.start);
-  const [freeTraffic, setFreeTraffic] = useState<TrafficProfile>(challenge.traffic);
+  const [architecture, setArchitecture] = useState<Architecture>(
+    shared?.architecture ?? challenge.start,
+  );
+  const [freeTraffic, setFreeTraffic] = useState<TrafficProfile>({
+    ...challenge.traffic,
+    ...shared?.traffic,
+  });
   const traffic = challenge.goals ? challenge.traffic : freeTraffic;
-  const log = useActionLog<SandboxAction>();
+  const log = useActionLog<SandboxAction>(shared?.failures);
+  const [linkStatus, setLinkStatus] = useState<LinkStatus>(null);
   const scenarioId = useId();
+
+  const copyLink = async () => {
+    const query = encodeDesign({
+      challengeId,
+      architecture,
+      ...(!challenge.goals && {
+        traffic: { base: freeTraffic.base, readShare: freeTraffic.readShare },
+      }),
+      failures: log.actions,
+    });
+    const url = `${window.location.origin}${window.location.pathname}?${query}`;
+    window.history.replaceState(window.history.state, "", url);
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkStatus({ copied: true });
+    } catch {
+      // Clipboard access can be blocked; show the link so it can be copied by hand.
+      setLinkStatus({ copied: false, url });
+    }
+  };
 
   const ticks = Math.max(challenge.ticks, (log.actions.at(-1)?.tick ?? 0) + 30);
   const frames = useMemo(
@@ -177,6 +232,7 @@ export function SandboxSimulation() {
 
   /** Architecture and traffic are the design under test: changing them restarts the run. */
   const restart = () => {
+    setLinkStatus(null);
     log.reset();
     playback.pause();
     playback.seek(0);
@@ -186,6 +242,7 @@ export function SandboxSimulation() {
     restart();
   };
   const act = (action: SandboxAction) => {
+    setLinkStatus(null);
     log.add(playback.frame + 1, action);
     if (!playback.playing) playback.seek(playback.frame + 1);
   };
@@ -222,7 +279,31 @@ export function SandboxSimulation() {
           <p className="font-mono text-xs text-fg-subtle">
             Cost of this design: {costUnits(architecture)} units
           </p>
+          <button
+            type="button"
+            onClick={() => void copyLink()}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border-strong px-2.5 py-1 text-xs hover:bg-surface"
+          >
+            <Link2 aria-hidden className="size-3.5" /> Copy link to this design
+          </button>
+          <span role="status" className="text-xs text-fg-muted">
+            {linkStatus?.copied && "Link copied — it opens this scenario, design and failures."}
+          </span>
         </div>
+        {linkStatus && !linkStatus.copied && (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={`${scenarioId}-link`} className="text-xs font-medium text-fg-muted">
+              Couldn&apos;t copy automatically — copy this link:
+            </label>
+            <input
+              id={`${scenarioId}-link`}
+              readOnly
+              value={linkStatus.url}
+              onFocus={(event) => event.target.select()}
+              className="w-full rounded-md border border-border-strong bg-bg px-2.5 py-1 font-mono text-xs"
+            />
+          </div>
+        )}
         <h2 id={`${scenarioId}-title`} className="font-semibold">
           {challenge.title}
         </h2>
@@ -327,7 +408,7 @@ export function SandboxSimulation() {
                   <SegmentedControl
                     label="Traffic"
                     value={String(freeTraffic.base)}
-                    options={[500, 1000, 2000, 4000].map((n) => ({
+                    options={TRAFFIC_BASES.map((n) => ({
                       value: String(n),
                       label: `${n.toLocaleString("en-US")}/s`,
                     }))}
@@ -339,7 +420,7 @@ export function SandboxSimulation() {
                   <SegmentedControl
                     label="Reads"
                     value={String(freeTraffic.readShare)}
-                    options={[0.5, 0.9, 0.98].map((n) => ({
+                    options={READ_SHARES.map((n) => ({
                       value: String(n),
                       label: `${Math.round(n * 100)}%`,
                     }))}

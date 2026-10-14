@@ -115,4 +115,18 @@ test.describe("system design sandbox", () => {
     );
     await expect(page.getByRole("heading", { name: "Related lessons" })).toBeVisible();
   });
+
+  test("a shared link opens the same design, and the page can copy one", async ({ page }) => {
+    await page.goto(
+      "/playground/system-design-sandbox/?scenario=read-heavy-catalogue&app=10&cache=95",
+    );
+    await expect(page.getByRole("heading", { name: "Read-heavy catalogue" })).toBeVisible();
+    await expect(page.getByText(/^Load test result for this design:/)).toContainText(
+      "all goals met",
+    );
+
+    await page.getByLabel("Read replicas").selectOption("1");
+    await page.getByRole("button", { name: "Copy link to this design" }).click();
+    await expect(page).toHaveURL(/\?scenario=read-heavy-catalogue&app=10&replicas=1&cache=95/);
+  });
 });
