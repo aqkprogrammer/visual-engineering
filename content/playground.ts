@@ -432,4 +432,90 @@ export default definePlayground([
       },
     ],
   },
+  {
+    slug: "service-calls",
+    title: "Monolith versus microservices",
+    summary:
+      "Split one request's work across services and watch failures and slow responses compound — then add timeouts, retries and a fallback.",
+    domain: "software-architecture",
+    lesson: "software-architecture/monoliths-and-microservices",
+    kind: "simulation",
+    tryThis: [
+      "Compare 3, 5 and 10 services: each remote call adds its own small chance of failing and of being slow, and they multiply.",
+      "Switch the calls to In parallel: the slowest answer decides, so ten parallel calls are slow about as often as ten in a row.",
+      "Crash the recommendations service, then turn on the fallback: requests succeed without recommendations. Crash a module in the Monolith and everything stops.",
+      "Slow down service 2 and turn on timeouts: slow responses become fast errors. Timeouts protect latency, not success.",
+    ],
+    references: [
+      {
+        title: "Microservices",
+        url: "https://martinfowler.com/articles/microservices.html",
+        publisher: "Martin Fowler and James Lewis",
+        kind: "article",
+      },
+      {
+        title: "The Tail at Scale",
+        url: "https://research.google/pubs/pub40801/",
+        publisher: "Google Research (Communications of the ACM)",
+        kind: "paper",
+      },
+    ],
+  },
+  {
+    slug: "event-sourcing",
+    title: "Event sourcing and CQRS",
+    summary:
+      "Record every change as an event, rebuild state by replaying them, and watch read models fall behind, catch up, rebuild and appear from history.",
+    domain: "software-architecture",
+    lesson: "software-architecture/event-sourcing-and-cqrs",
+    kind: "simulation",
+    tryThis: [
+      "Play, then stop the projector: events keep arriving, but the balance view shows an older balance until you restart it.",
+      "Add a spending-by-category view mid-run: it is built from every past event, including ones recorded before it existed.",
+      "Reverse the last withdrawal: a new event undoes it, and the original stays in the log.",
+      "Turn off snapshots and compare how many events are replayed to load the account.",
+    ],
+    references: [
+      {
+        title: "Event Sourcing pattern",
+        url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/event-sourcing",
+        publisher: "Microsoft",
+        kind: "official-docs",
+      },
+      {
+        title: "CQRS",
+        url: "https://martinfowler.com/bliki/CQRS.html",
+        publisher: "Martin Fowler",
+        kind: "article",
+      },
+    ],
+  },
+  {
+    slug: "hexagonal-architecture",
+    title: "Hexagonal architecture explorer",
+    summary:
+      "Make the same five changes to a layered and a hexagonal version of one application, and see which modules each change touches and what its tests need.",
+    domain: "software-architecture",
+    lesson: "software-architecture/hexagonal-architecture",
+    kind: "explorer",
+    tryThis: [
+      "Move the database to DynamoDB: in the hexagonal version only a new adapter appears; in the layered version the business layer changes too.",
+      "Add a command-line tool: one new adapter, because the use case never knew about HTTP.",
+      "Change a discount rule: the same small edit in both — the difference is whether its tests need a database.",
+    ],
+    references: [
+      {
+        title: "Hexagonal architecture",
+        url: "https://alistair.cockburn.us/hexagonal-architecture/",
+        publisher: "Alistair Cockburn",
+        kind: "article",
+      },
+      {
+        title: "The Clean Architecture",
+        url: "https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html",
+        publisher: "Robert C. Martin",
+        kind: "article",
+      },
+    ],
+  },
 ]);

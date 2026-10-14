@@ -139,9 +139,7 @@ export default defineDomains([
         plannedTopics: [
           "Layered architecture",
           "Clean architecture",
-          "Hexagonal architecture (ports and adapters)",
           "Modular monolith architecture",
-          "Monoliths versus microservices",
           "Micro-frontends",
         ],
       },
@@ -150,7 +148,7 @@ export default defineDomains([
         title: "Domain Modeling",
         summary:
           "Finding boundaries in the business domain and modelling state changes explicitly.",
-        plannedTopics: ["Domain-driven design", "Service boundaries", "CQRS", "Event sourcing"],
+        plannedTopics: ["Domain-driven design", "Service boundaries"],
       },
       {
         id: "design-principles",

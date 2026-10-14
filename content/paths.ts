@@ -138,6 +138,37 @@ export default defineLearningPaths([
     ],
   },
   {
+    slug: "software-architecture-foundations",
+    title: "Software architecture foundations",
+    summary:
+      "How to structure a system so it can change: keeping business logic independent, splitting into services, and recording history as events.",
+    audience:
+      "Developers moving from features to design decisions who want to understand the trade-offs behind common architectural styles.",
+    outcomes: [
+      "Keep business rules independent of frameworks and databases, and test them fast",
+      "Decide whether and where to split a monolith, and design calls between services for failure",
+      "Explain when event sourcing and CQRS are worth their complexity",
+    ],
+    steps: [
+      {
+        lesson: "software-architecture/hexagonal-architecture",
+        why: "Good boundaries start inside one codebase: business logic in the middle, technology at the edges.",
+      },
+      {
+        lesson: "software-architecture/monoliths-and-microservices",
+        why: "Those boundaries can become services — and every network call has a cost.",
+      },
+      {
+        lesson: "system-design/message-queues",
+        why: "Asynchronous messaging decouples services and introduces at-least-once delivery.",
+      },
+      {
+        lesson: "software-architecture/event-sourcing-and-cqrs",
+        why: "Events as the source of truth, and read models that are eventually consistent.",
+      },
+    ],
+  },
+  {
     slug: "ai-engineering-foundations",
     title: "AI engineering foundations",
     summary:

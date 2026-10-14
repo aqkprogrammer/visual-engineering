@@ -76,6 +76,9 @@ Every demo runs on the same deterministic simulation engine: play, pause, step, 
 | [**Regions and Availability Zones**](https://aqkprogrammer.github.io/visual-engineering/playground/availability-zones/) | 🧪 Simulation · Cloud & Infrastructure | Run an application in one zone, three zones or two regions, then fail a zone, a region or the control plane, and see which layouts keep serving. |
 | [**Deployment strategies**](https://aqkprogrammer.github.io/visual-engineering/playground/deployment-strategies/) | 🧪 Simulation · Cloud & Infrastructure | Ship the same buggy release all at once, rolling, blue-green or as a canary, with and without automated rollback, and count the failed requests. |
 | [**Autoscaling**](https://aqkprogrammer.github.io/visual-engineering/playground/autoscaling/) | 🧪 Simulation · Cloud & Infrastructure | Watch a target tracking policy add and remove instances as traffic ramps, spikes and bursts — and see what start-up time and scale-in windows change. |
+| [**Monolith versus microservices**](https://aqkprogrammer.github.io/visual-engineering/playground/service-calls/) | 🧪 Simulation · Software Architecture | Split one request's work across services and watch failures and slow responses compound — then add timeouts, retries and a fallback. |
+| [**Event sourcing and CQRS**](https://aqkprogrammer.github.io/visual-engineering/playground/event-sourcing/) | 🧪 Simulation · Software Architecture | Record every change as an event, rebuild state by replaying them, and watch read models fall behind, catch up, rebuild and appear from history. |
+| [**Hexagonal architecture explorer**](https://aqkprogrammer.github.io/visual-engineering/playground/hexagonal-architecture/) | 🧭 Explorer · Software Architecture | Make the same five changes to a layered and a hexagonal version of one application, and see which modules each change touches and what its tests need. |
 <!-- playground:end -->
 
 ## 🎓 How every lesson teaches
@@ -92,7 +95,7 @@ flowchart LR
 ## 🧭 Curriculum
 
 <!-- curriculum:start -->
-**15 live lessons** · 7 domains · 43 modules · 204 planned topics. Expand a domain to see what's inside.
+**18 live lessons** · 7 domains · 43 modules · 200 planned topics. Expand a domain to see what's inside.
 
 <details open>
 <summary><b>System Design</b> — How large systems stay fast, available and correct under real traffic. <sub>🟢 4 live · 45 planned</sub></summary>
@@ -109,13 +112,13 @@ flowchart LR
 | **Case Studies** | — | URL shortener · Chat and messaging application · Social media feed · Video streaming platform · E-commerce system · Ride-booking platform · Notification service · File storage service · Payment processing system · Real-time analytics platform · Search service · AI-powered application |
 
 </details>
-<details>
-<summary><b>Software Architecture</b> — Structuring code and services so they stay changeable. <sub>⚪ in progress · 22 planned</sub></summary>
+<details open>
+<summary><b>Software Architecture</b> — Structuring code and services so they stay changeable. <sub>🟢 3 live · 18 planned</sub></summary>
 
 | Module | Live lessons | Planned topics |
 |---|---|---|
-| **Architectural Styles** | — | Layered architecture · Clean architecture · Hexagonal architecture (ports and adapters) · Modular monolith architecture · Monoliths versus microservices · Micro-frontends |
-| **Domain Modeling** | — | Domain-driven design · Service boundaries · CQRS · Event sourcing |
+| **Architectural Styles** | [Hexagonal architecture (ports and adapters)](https://aqkprogrammer.github.io/visual-engineering/software-architecture/hexagonal-architecture/)<br>[Monoliths and microservices](https://aqkprogrammer.github.io/visual-engineering/software-architecture/monoliths-and-microservices/) | Layered architecture · Clean architecture · Modular monolith architecture · Micro-frontends |
+| **Domain Modeling** | [Event sourcing and CQRS](https://aqkprogrammer.github.io/visual-engineering/software-architecture/event-sourcing-and-cqrs/) | Domain-driven design · Service boundaries |
 | **Design Principles** | — | SOLID principles · DRY, KISS and YAGNI · Dependency injection · Repository and unit-of-work patterns · Design patterns · Code organization |
 | **API Design** | — | API-first design · REST versus GraphQL versus gRPC · Backend-for-frontend |
 | **Evolving Systems** | — | Refactoring and technical debt · Strangler migration pattern · Architecture decision records |
@@ -200,14 +203,14 @@ flowchart LR
 - [x] **Phase 5 — Quality.** Page-weight and Lighthouse budgets in CI, keyboard-only and privacy tests, readable diagrams on phones, contributor and authoring guides
 - [x] **Phase 6 — Release 1.0.** Release checklist, full-history secret scan, link check, changelog — [v1.0.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.0.0)
 - [x] **Phase 7a — Cloud lessons.** Regions and Availability Zones, blue-green and canary deployments, autoscaling — each with a new simulation
-- [ ] **Phase 7b — Software architecture lessons.** Monoliths and microservices, event sourcing and CQRS, hexagonal architecture
+- [x] **Phase 7b — Software architecture lessons.** Monoliths and microservices, hexagonal architecture, event sourcing and CQRS
 - [ ] **Later.** Shareable scenario links, progress export, AI engineering playground
 
 ## ⚠️ Known limitations
 
 Honest about what 1.0 doesn't do yet:
 
-- **Coverage.** 15 lessons in six of the seven domains; software architecture has planned topics but no published lessons yet.
+- **Coverage.** 18 lessons across all seven domains; most domains still have more planned topics than published lessons.
 - **Teaching models, not benchmarks.** Simulations simplify on purpose, list their assumptions, and use illustrative capacities and timings.
 - **Phones.** Diagrams are fitted to the screen and their text is small; each simulation can be enlarged into a scrollable view, and its numbers are also shown as text.
 - **Progress is per browser.** It isn't synced between devices and can't be exported yet.

@@ -1,0 +1,129 @@
+<Definition>
+
+**Hexagonal architecture**, also called **ports and adapters**, organises an application so that its business logic sits in the centre and talks to the outside world only through interfaces it defines — **ports** — while **adapters** connect those ports to specific technologies such as a web framework, a database or an email service.
+
+</Definition>
+
+## The problem it solves
+
+In many codebases the business rules are tangled with the technology around them. The code that decides an order's discount also builds SQL queries, reads HTTP headers and sends emails. That makes every change bigger than it should be: swapping a database touches business code, adding a command-line tool means copying logic out of web controllers, and testing a pricing rule needs a running database.
+
+Alistair Cockburn described hexagonal architecture to fix exactly this. His goal: let an application be driven equally by users, other programs, automated tests or batch scripts, and be developed and tested in isolation from the devices and databases it will eventually run with.
+
+## An everyday analogy
+
+<Analogy>
+
+A laptop has standard ports — USB-C, HDMI, a headphone jack. It doesn't care which brand of monitor or headphones you plug in, as long as each fits the port. Adapters let you connect older devices to the same ports. The laptop is designed around its ports, not around any particular device.
+
+</Analogy>
+
+Where the analogy breaks down: hardware ports are fixed standards made by others. In hexagonal architecture, the application defines its own ports, in its own terms — "save an order", "notify a customer" — and that is the point.
+
+## See it in action
+
+<Demo slug="hexagonal-architecture" />
+
+Things to try:
+
+- Choose **Move orders from PostgreSQL to DynamoDB**. In the hexagonal version only a new adapter appears; in the layered version the business layer and its tests change too.
+- Choose **Add a command-line tool**. One new adapter, because the use case never knew it was being called over HTTP.
+- Choose **Change a discount rule**. The same small edit in both — the difference is whether the tests need a database.
+
+## Step by step: how the pieces fit
+
+<Steps>
+
+1. **The core holds the business logic** — use cases such as *place an order* and rules such as *pricing* — written without importing any framework, database or network library.
+2. **The core defines ports** for everything it needs from outside: an `OrderRepository` to save and load orders, a `Notifier` to tell customers things. Ports are interfaces written in business terms.
+3. **Driven adapters implement those ports**: a PostgreSQL repository, a DynamoDB repository, an in-memory repository for tests, an email notifier.
+4. **Driving adapters call into the core**: an HTTP controller, a command-line tool, a message consumer, a test. Each translates its input into a call to a use case.
+5. **Wiring picks the adapters.** At start-up, one place — often called the composition root — decides which adapter goes into each port: PostgreSQL in production, in-memory in tests.
+
+</Steps>
+
+## Under the hood
+
+**Dependencies point inwards.** The core depends on nothing outside it; adapters depend on the core's ports. Robert C. Martin's Clean Architecture, which builds on hexagonal architecture, states it as the dependency rule: source code dependencies can only point inwards, and nothing in an inner circle can know anything about something in an outer one. That direction is what keeps technology changes out of business code.
+
+**Dependency inversion.** In a classic layered design, the business layer calls the data access layer directly, so the business layer depends on the database code. Hexagonal architecture inverts that: the business layer declares the interface it needs, and the database code implements it. Control still flows from business logic to the database, but the source code dependency points the other way.
+
+**Why it helps testing.** Because the core receives its adapters from outside, a test can hand it an in-memory repository and a fake notifier. Business-logic tests then need no database, network or framework, and run in milliseconds.
+
+**It's not about the number six.** The hexagon is just a drawing with room for several ports on each side. What matters is the boundary between the core and everything else.
+
+## Example: a port, a use case and two adapters
+
+```ts
+// Core: the port, written in business terms.
+export interface OrderRepository {
+  save(order: Order): Promise<void>;
+  findById(id: string): Promise<Order | undefined>;
+}
+
+// Core: a use case depends only on the port.
+export class PlaceOrder {
+  constructor(private readonly orders: OrderRepository) {}
+  async run(cart: Cart): Promise<Order> {
+    const order = Order.fromCart(cart); // business rules live in the domain model
+    await this.orders.save(order);
+    return order;
+  }
+}
+
+// Driven adapter for production.
+export class PostgresOrderRepository implements OrderRepository { /* SQL here */ }
+
+// Driven adapter for tests: no database needed.
+export class InMemoryOrderRepository implements OrderRepository {
+  private readonly byId = new Map<string, Order>();
+  async save(order: Order) { this.byId.set(order.id, order); }
+  async findById(id: string) { return this.byId.get(id); }
+}
+```
+
+## In production
+
+**Keep the core free of framework types.** If annotations from the web framework or the ORM creep into domain classes, the boundary is gone. Map between domain objects and database or API representations in the adapters.
+
+**Test at two levels.** Fast tests of the core with in-memory adapters, plus a smaller number of integration tests that check each real adapter against the real technology.
+
+**Don't over-abstract.** A port for every library call adds indirection without benefit. Put ports where the outside world genuinely varies or must be replaced in tests: storage, messaging, external APIs, clocks.
+
+<Callout kind="note" title="Related styles">
+
+Onion architecture and Clean Architecture share the same core idea — business logic in the middle, dependencies pointing inwards — with different names for the rings. Learn one and you can read the others.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Applications with real business rules that will outlive their frameworks and databases.",
+    "Systems with several entry points (web, CLI, queues) or several storage options.",
+    "Teams that want fast, reliable tests of business logic.",
+  ]}
+  avoid={[
+    "Simple CRUD screens with little logic: the extra interfaces and mapping cost more than they save.",
+    "Short-lived prototypes where speed matters more than structure.",
+    "Abstracting every library behind a port 'just in case'.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Hexagonal means you can swap the database easily, so it's only useful if you plan to."** Swapping is rare. The everyday benefit is smaller changes and tests that don't need infrastructure.
+
+**"It requires six ports."** The hexagon is a diagram; the number of ports is whatever the application needs.
+
+**"Layered architecture is the same thing."** Layers can look similar, but if the business layer imports the data layer, dependencies point the wrong way. The difference is the direction of dependencies.
+
+**"It means more code everywhere."** It means some interfaces and mapping at the boundaries; the core often gets simpler because it no longer handles technology concerns.
+
+## Failure modes and debugging
+
+- **Business code imports the ORM or web framework** — the boundary has leaked. Move the dependency into an adapter and map at the boundary.
+- **Tests of business rules need a database** — the core creates its own adapters instead of receiving them. Pass ports in through constructors.
+- **Every change touches many files across layers** — logic is spread over controllers and data access. Move it into use cases in the core.
+- **Endless interfaces with one implementation each** — over-abstraction. Keep ports where variation or testing genuinely needs them.

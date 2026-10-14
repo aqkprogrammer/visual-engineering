@@ -1,6 +1,6 @@
 {
   "name": "visual-engineering",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "Interactive, visual lessons on system design, AI engineering, infrastructure, networking and computer science.",

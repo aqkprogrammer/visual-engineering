@@ -2,12 +2,16 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.0] — 2026-10-14
+
+Every domain now has published lessons: 18 lessons, 19 interactive demos, 6 learning paths and 79 glossary terms.
 
 ### Added
 
 - **Three cloud lessons**, each with a new simulation: Regions and Availability Zones (fail a zone, a region or the control plane, and see what static stability buys), blue-green and canary deployments (ship a buggy release four ways and count the failed requests), and autoscaling (target tracking against ramps, spikes and bursts).
 - A **Running applications in the cloud** learning path, and 10 glossary terms.
+- **Three software architecture lessons**: monoliths and microservices (watch failures and tail latency compound across service calls, then add timeouts and fallbacks), hexagonal architecture (an explorer comparing what five changes touch in a layered and a hexagonal design), and event sourcing and CQRS (an event log with read models that lag, catch up, rebuild and appear from history).
+- A **Software architecture foundations** learning path, and 11 glossary terms.
 
 ## [1.0.0] — 2026-10-13
 
@@ -38,4 +42,5 @@ The first release: an open, static, accessible platform for learning how technol
 - CI runs lint, strict types, 330+ unit and component tests, a static build, page-weight budgets, an internal link check, end-to-end journeys on desktop and phone (including keyboard-only journeys and a no-third-party-requests check), axe WCAG 2.2 AA audits of every page type in both themes, Lighthouse budgets and a full-history secret scan. The site deploys only when all of them pass.
 - No accounts, analytics, cookies or third-party requests.
 
+[1.1.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.1.0
 [1.0.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.0.0

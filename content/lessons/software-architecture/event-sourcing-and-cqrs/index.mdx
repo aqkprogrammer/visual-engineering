@@ -1,0 +1,129 @@
+<Definition>
+
+**Event sourcing** stores every change to an object as an immutable event in an append-only log, and derives the current state by replaying those events. **CQRS** (Command Query Responsibility Segregation) uses one model to handle changes and separate models, often called read models or projections, to answer queries.
+
+</Definition>
+
+## The problem it solves
+
+Most applications store only the latest state: a row says the balance is 441. How it got there — which deposits, which withdrawals, which corrections — is gone unless someone built a separate audit log. And a single model has to serve both careful, validated updates and many different, fast queries.
+
+Event sourcing keeps the history as the source of truth. You can always answer "what happened?" and "what was the state last Tuesday?", and you can build new views of the past that nobody planned for. CQRS lets the write side focus on enforcing rules while read models are shaped for each screen or report.
+
+Microsoft's guidance is blunt about the cost: event sourcing is a complex pattern with significant trade-offs, and for most systems and most parts of a system, traditional data management is enough.
+
+## An everyday analogy
+
+<Analogy>
+
+A bank statement. The bank doesn't just write your balance on a card and rub it out each time; it records every transaction. The balance is the sum of the transactions. A mistaken charge isn't erased — a refund appears as a new line.
+
+</Analogy>
+
+Where the analogy breaks down: a statement is printed later, in one format. In an event-sourced system, many different views are kept up to date continuously, each a little behind the log.
+
+## See it in action
+
+<Demo slug="event-sourcing" />
+
+Things to try:
+
+- Play, then **stop the projector**. Events keep being recorded, but the balance view shows an old balance until you restart it.
+- **Add a spending-by-category view** mid-run. It is built from every past event, including ones recorded before it existed.
+- **Reverse the last withdrawal**. A new event undoes it; the original stays in the log.
+- Turn off **snapshots** and compare how many events are replayed to load the account.
+
+## Step by step: a command and a query
+
+<Steps>
+
+1. **A command arrives** — withdraw 80.
+2. **Rehydrate.** The write side loads the account by replaying its events (from the latest snapshot, if there is one) to get the current balance.
+3. **Decide.** Business rules check the command against that state. Insufficient funds? Reject it, and record nothing.
+4. **Append.** If accepted, append a new event — `MoneyWithdrawn(80)` — to the account's stream. Events are never updated or deleted.
+5. **Project.** Event handlers apply new events to read models: the balance view, the statement, the spending report. Each tracks the last event it has applied.
+6. **Query.** Reads come from the read models. They may be a few events behind the log for a moment: they are **eventually consistent**.
+
+</Steps>
+
+## Under the hood
+
+**Replaying and snapshots.** Rebuilding state by replaying a long stream gets slow, so systems save a snapshot every N events and replay only what came after it. Snapshots are an optimisation; the event stream stays the source of truth and snapshots can always be regenerated from it.
+
+**Correcting mistakes.** You never edit history. A mistaken event is undone with a new, compensating event — `WithdrawalReversed` — so the log shows both what happened and how it was fixed. A bug that produced wrong events leaves them in the store; fixing the code doesn't fix the history.
+
+**Designing events.** Good events record business intent ("two seats reserved") rather than resulting state ("remaining seats changed to 42"). Intent-rich events make better audit trails and let you build new read models later.
+
+**Concurrency.** Two commands might load the same account at once and both decide a withdrawal is fine. Event stores use optimistic concurrency: an append is rejected if the stream changed since it was read, and the command is retried on fresh state.
+
+**Projections must be idempotent.** Events are typically delivered at least once, so a handler may see the same event twice. Tracking the last processed sequence number per read model, as the demo shows, makes duplicates harmless.
+
+**CQRS without event sourcing.** CQRS only separates the update model from read models; they can share a database. Martin Fowler warns that it is a significant mental leap, that most systems fit a simpler create-read-update-delete model, and that it should be used only on specific parts of a system.
+
+## Example: events and a projection
+
+```ts
+type AccountEvent =
+  | { seq: number; type: "MoneyDeposited"; amount: number }
+  | { seq: number; type: "MoneyWithdrawn"; amount: number }
+  | { seq: number; type: "WithdrawalReversed"; amount: number; reverses: number };
+
+// The write side rebuilds state from events.
+const balanceOf = (events: AccountEvent[]) =>
+  events.reduce((b, e) => (e.type === "MoneyWithdrawn" ? b - e.amount : b + e.amount), 0);
+
+// A read model applies each event once, remembering how far it has got.
+function project(view: { balance: number; position: number }, e: AccountEvent) {
+  if (e.seq <= view.position) return view; // already applied: duplicates are harmless
+  const delta = e.type === "MoneyWithdrawn" ? -e.amount : e.amount;
+  return { balance: view.balance + delta, position: e.seq };
+}
+```
+
+## In production
+
+**Plan for eventual consistency in the interface.** After a user acts, read models may not show the change for a moment. Interfaces show the result of the command directly, or wait for the read model to reach a known position.
+
+**Version your events.** Events live forever, but their schemas evolve. Consumers tolerate unknown fields, events carry a version, and "upcasters" convert old versions when they are read.
+
+**Rebuild safely.** To change a read model, build a new one from the log alongside the old and switch over when it has caught up — not by wiping the live one, as the demo does for simplicity.
+
+**Personal data.** An append-only log clashes with the right to have personal data deleted. Keep personal data outside events and reference it, or encrypt it per person and delete the key.
+
+<Callout kind="warning" title="Hard to adopt, hard to undo">
+
+Migrating to or away from event sourcing is costly, and it constrains future design in the parts that use it. Apply it where audit, history or replay is a real requirement — a ledger, an order pipeline — not as a default for every table.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Domains where the history itself matters: ledgers, payments, orders, compliance.",
+    "When you need to rebuild state at any point in time, or build new views from past events.",
+    "When reads and writes have very different shapes or scale, and eventual consistency for reads is acceptable.",
+  ]}
+  avoid={[
+    "Simple CRUD data with no need for history or replay.",
+    "Views that must reflect every write immediately.",
+    "Teams without experience of event-driven systems, or short-lived prototypes.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Event sourcing and CQRS are the same thing."** CQRS separates read and write models; event sourcing stores state as events. They combine well but each can be used alone.
+
+**"Event sourcing means you can just edit events to fix mistakes."** Events are immutable; corrections are new events.
+
+**"Read models are always up to date."** They lag the log by design. The lag is usually short, but it is never zero.
+
+**"Every service should be event-sourced."** Microsoft and Fowler both advise applying these patterns selectively, where their benefits justify the complexity.
+
+## Failure modes and debugging
+
+- **Users don't see their own change** — the read model hasn't caught up. Return the command's result directly or wait for the projection's position.
+- **A read model drifts from the truth** — a projection processed a duplicate event twice or skipped one. Make projections idempotent, then rebuild from the log.
+- **Loading an aggregate gets slower over time** — long streams without snapshots.
+- **Old events break new code** — the schema changed without versioning or upcasting.
