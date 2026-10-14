@@ -41,10 +41,10 @@ This describes what is implemented today. Planned components are marked as such;
 
 ## Search and progress
 
-| Feature  | Code                                                       | Notes                                                                                                                                                                                                               |
-| -------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Search   | `lib/search/build.ts` (build time), `lib/search/search.ts` | The index of lessons, paths, demos and glossary terms is passed to the `/search` page as props. Scoring is pure and unit-tested: every word must match; title and aliases count most; stems, prefixes and one typo. |
-| Progress | `lib/progress/progress.ts`, `components/progress/*`        | Pure, versioned record in `localStorage` (`ve:progress`), validated on read. `useSyncExternalStore` keeps every component on the page in sync and renders nothing personal on the server.                           |
+| Feature  | Code                                                       | Notes                                                                                                                                                                                                                                                                                                                            |
+| -------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Search   | `lib/search/build.ts` (build time), `lib/search/search.ts` | The index of lessons, paths, demos and glossary terms is passed to the `/search` page as props. Scoring is pure and unit-tested: every word must match; title and aliases count most; stems, prefixes and one typo.                                                                                                              |
+| Progress | `lib/progress/progress.ts`, `components/progress/*`        | Pure, versioned record in `localStorage` (`ve:progress`), validated on read. `useSyncExternalStore` keeps every component on the page in sync and renders nothing personal on the server Export and import move it between browsers as a JSON file; imports are validated like stored data and merged, never replacing anything. |
 
 ## Routing
 
@@ -122,8 +122,8 @@ How to add one: [SIMULATION-GUIDE.md](SIMULATION-GUIDE.md).
 
 ## System design sandbox
 
-`lib/simulation/models/sandbox.ts` is a request-flow model on the same engine as every other demo: each one-second step routes the offered traffic through app servers, an optional cache, read replicas or the primary, and an optional write queue, recording load, overflow, latency and the bottleneck. `lib/sandbox/challenges.ts` adds traffic profiles, scripted failures and goals, and `evaluate()` checks every second of a run against them. The design (architecture and traffic) is the input to a run, so changing it restarts the timeline; failures are actions at the current second.
+`lib/simulation/models/sandbox.ts` is a request-flow model on the same engine as every other demo: each one-second step routes the offered traffic through app servers, an optional cache, read replicas or the primary, and an optional write queue, recording load, overflow, latency and the bottleneck. `lib/sandbox/challenges.ts` adds traffic profiles, scripted failures and goals, and `evaluate()` checks every second of a run against them. The design (architecture and traffic) is the input to a run, so changing it restarts the timeline; failures are actions at the current second. `lib/sandbox/share.ts` encodes a scenario, design and injected failures as a short query string (`?scenario=launch-day&app=6&cache=95&failures=12f`); decoding accepts only values the controls can produce, and the page applies a linked design after hydration.
 
 ## Not yet built
 
-Shareable scenario URLs, phone-specific scene layouts (on phones, scenes can be enlarged into a scrollable view instead), a `⌘K` search palette, progress export/import, Lighthouse budgets in CI and the contributor guide (Phase 5).
+Phone-specific scene layouts (on phones, scenes can be enlarged into a scrollable view instead) and a `⌘K` search palette.
