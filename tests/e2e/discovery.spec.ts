@@ -64,6 +64,38 @@ test.describe("learning paths and progress", () => {
     ).toBeVisible();
   });
 
+  test("progress can be exported and imported", async ({ page }) => {
+    await page.goto("/system-design/caching/");
+    await page.getByRole("button", { name: "Mark as complete" }).click();
+    await page.goto("/paths/");
+    const summary = page.getByRole("region", { name: "Your progress" });
+    await expect(summary.getByText(/^1 of \d+ lessons completed/)).toBeVisible();
+
+    const downloading = page.waitForEvent("download");
+    await summary.getByRole("button", { name: "Export progress" }).click();
+    const download = await downloading;
+    expect(download.suggestedFilename()).toMatch(
+      /^visual-engineering-progress-\d{4}-\d{2}-\d{2}\.json$/,
+    );
+    const file = await download.path();
+
+    await summary.getByRole("button", { name: "Reset progress" }).click();
+    await summary.getByRole("button", { name: "Yes, reset progress" }).click();
+    await expect(summary.getByText(/^0 of \d+ lessons completed/)).toBeVisible();
+
+    const input = summary.getByLabel("Progress file to import");
+    await input.setInputFiles({
+      name: "notes.json",
+      mimeType: "application/json",
+      buffer: Buffer.from("{oops"),
+    });
+    await expect(summary.getByRole("status")).toHaveText("That file isn't valid JSON.");
+
+    await input.setInputFiles(file);
+    await expect(summary.getByRole("status")).toHaveText(/Imported progress for 1 lesson/);
+    await expect(summary.getByText(/^1 of \d+ lessons completed/)).toBeVisible();
+  });
+
   test("a finished knowledge check shows its score", async ({ page }) => {
     await page.goto("/system-design/caching/");
     const questions = page.getByRole("group", { name: /^Question \d+:/ });

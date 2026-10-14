@@ -59,7 +59,18 @@ export type QueueState = {
 
 export type QueueAction = { type: "configure"; config: Partial<QueueConfig> };
 
-const clone = <T>(value: T): T => structuredClone(value);
+/** Copies what a step changes. Messages are never modified in place, so they are shared. */
+function clone(state: QueueState): QueueState {
+  return {
+    ...state,
+    config: { ...state.config },
+    queue: [...state.queue],
+    consumers: state.consumers.map((c) => ({ ...c })),
+    dlq: [...state.dlq],
+    completed: [...state.completed],
+    totals: { ...state.totals },
+  };
+}
 
 export function oldestAgeTicks(state: QueueState): number {
   return state.queue.length === 0

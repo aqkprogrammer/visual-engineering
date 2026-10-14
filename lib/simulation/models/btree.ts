@@ -29,8 +29,6 @@ export type Heap = number[];
 
 export const INITIAL_KEYS = [42, 7, 88, 23, 61, 15, 74, 3, 55, 31, 96, 48, 67, 12, 80];
 
-const clone = <T>(value: T): T => structuredClone(value);
-
 export function emptyTree(): BTree {
   return {
     nodes: { 1: { id: 1, leaf: true, keys: [], children: [], next: null } },
@@ -49,7 +47,10 @@ export function childIndex(node: BNode, key: number): number {
 type Split = { separator: number; right: number };
 
 function insertInto(tree: BTree, nodeId: number, key: number, log: string[]): Split | null {
-  const node = tree.nodes[nodeId]!;
+  // Copy-on-write: only pages on the insertion path are copied; the rest are shared.
+  const original = tree.nodes[nodeId]!;
+  const node: BNode = { ...original, keys: [...original.keys], children: [...original.children] };
+  tree.nodes[nodeId] = node;
   if (node.leaf) {
     if (node.keys.includes(key)) return null;
     node.keys.push(key);
@@ -96,7 +97,7 @@ function insertInto(tree: BTree, nodeId: number, key: number, log: string[]): Sp
 
 /** Inserts a key, returning the new tree and a description of any page splits. */
 export function insert(tree: BTree, key: number): { tree: BTree; log: string[] } {
-  const next = clone(tree);
+  const next: BTree = { ...tree, nodes: { ...tree.nodes } };
   const log: string[] = [];
   const split = insertInto(next, next.root, key, log);
   if (split) {
