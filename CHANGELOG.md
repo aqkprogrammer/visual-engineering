@@ -2,7 +2,9 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.5.0] — 2026-10-24
+
+Connections and speed: a knowledge map, design comparisons, quick search, and lessons on resilience and CDNs — 26 lessons and 27 demos in all.
 
 ### Added
 
@@ -11,6 +13,11 @@ All notable changes to this project are recorded here. The format follows [Keep 
 - **Quick search** — press ⌘K or Ctrl+K on any page to search lessons, demos, paths, incidents, interview questions and terms, and jump straight to a result with the arrow keys and Enter. It loads only when first used, so pages are no heavier.
 - **CDNs and edge caching** — a lesson and simulation: serve three regions from one origin or from edge caches, publish an update and watch long TTLs serve old pages, purge every cache and see the origin burst, and add stale-while-revalidate and an origin shield. With 4 new glossary terms.
 - **Timeouts, retries and circuit breakers** — a lesson and simulation: slow a dependency for five seconds and watch immediate retries keep it overloaded long afterwards, backoff fail to help on its own, and a retry budget or circuit breaker let it recover. The first lesson in the Resilience module, with 4 new glossary terms.
+
+### Changed
+
+- Fonts are bundled with the site from the Fontsource packages instead of being downloaded from Google during the build, which had failed intermittently. The same IBM Plex fonts, still one preloaded file.
+- `fast-uri`, used only by development tools, is pinned to 3.1.9 for four security advisories.
 
 ## [1.4.0] — 2026-10-24
 
@@ -87,7 +94,7 @@ The first release: an open, static, accessible platform for learning how technol
 - CI runs lint, strict types, 330+ unit and component tests, a static build, page-weight budgets, an internal link check, end-to-end journeys on desktop and phone (including keyboard-only journeys and a no-third-party-requests check), axe WCAG 2.2 AA audits of every page type in both themes, Lighthouse budgets and a full-history secret scan. The site deploys only when all of them pass.
 - No accounts, analytics, cookies or third-party requests.
 
-[Unreleased]: https://github.com/aqkprogrammer/visual-engineering/compare/v1.4.0...HEAD
+[1.5.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.5.0
 [1.4.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.4.0
 [1.3.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.3.0
 [1.2.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.2.0
