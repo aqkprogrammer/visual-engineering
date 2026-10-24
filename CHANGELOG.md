@@ -2,6 +2,13 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **AI agents, tool calling and MCP** — a lesson with a step-by-step agent loop: a support assistant refunds an order using tools from an MCP server, and you can break it with a timeout, a prompt injection hidden in a tool result, and a task that never finishes, then fix it with a step limit, human approval and server-side validation.
+- The **AI engineering foundations** path ends with the agents lesson, and the glossary gains 4 terms.
+
 ## [1.3.0] — 2026-10-24
 
 The AI engineering playground: three lessons on retrieval and context, each with its own explorer.
@@ -65,6 +72,7 @@ The first release: an open, static, accessible platform for learning how technol
 - CI runs lint, strict types, 330+ unit and component tests, a static build, page-weight budgets, an internal link check, end-to-end journeys on desktop and phone (including keyboard-only journeys and a no-third-party-requests check), axe WCAG 2.2 AA audits of every page type in both themes, Lighthouse budgets and a full-history secret scan. The site deploys only when all of them pass.
 - No accounts, analytics, cookies or third-party requests.
 
+[Unreleased]: https://github.com/aqkprogrammer/visual-engineering/compare/v1.3.0...HEAD
 [1.3.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.3.0
 [1.2.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.2.0
 [1.1.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.1.0

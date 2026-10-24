@@ -1,0 +1,136 @@
+<Definition>
+
+**Tool calling** (also called function calling) lets a language model ask your application to run a function — look up an order, search documents, issue a refund — and read the result. An **agent** is a model running in a loop of such calls, deciding for itself which tool to use next until the task is done.
+
+</Definition>
+
+## The problem it solves
+
+On its own, a language model can only produce text. It can't see today's data, check an order, or change anything. Tool calling gives it a controlled way to do that: you describe the functions it may use, the model replies with a structured request to call one, and your code decides whether and how to run it.
+
+Some tasks need more than one call, and the right sequence isn't known in advance: look up the order, check the policy, issue the refund, confirm. An agent handles this by repeating the cycle — model, tool, result, model — until the model answers. That flexibility is the point, and also the risk: the model now chooses actions, and every action it can take is something that can go wrong.
+
+## An everyday analogy
+
+<Analogy>
+
+A new assistant with a phone and a list of extensions. You give them a goal; they decide whom to call, ask questions, write down the answers and call the next person, until they can report back. You decide which extensions are on the list — and you might insist they check with you before calling accounts payable.
+
+</Analogy>
+
+Where the analogy breaks down: a person can tell a trusted colleague from a stranger's note scribbled on an invoice. A language model reads everything in its context the same way, so an instruction hidden in a tool result can look just as authoritative as yours.
+
+## See it in action
+
+<Demo slug="agent-loop" />
+
+Things to try:
+
+- Step through the **normal** run: four model calls, three tools, then an answer. The conversation — and the tokens billed — grow with every call, because each call re-sends everything so far.
+- Choose **Tool times out** with a **step limit of 3**: the loop stops before the refund. At 5, the model's retry succeeds.
+- Choose **Prompt injection** with no safeguards: an instruction in the order's note gets $500 refunded to a stranger. Turn on **human approval** or **server-side validation** and the correct $84 is refunded instead.
+- Choose **Never finishes**: only the step limit ends the loop, after billing almost three times the input tokens of a normal run.
+
+## Step by step: the agent loop
+
+<Steps>
+
+1. **Describe the tools.** Each has a name, a description and a JSON Schema for its inputs. They are sent to the model with every request.
+2. **Send the conversation.** The user's message, the system prompt and the tool definitions go to the model.
+3. **The model asks for a tool call.** Instead of answering, it returns a structured request — a tool name and arguments — and stops. Anthropic's API, for example, signals this with `stop_reason: "tool_use"`.
+4. **Your app decides and runs it.** Check the call, ask a person if the action is sensitive, run it, and capture the result or the error.
+5. **Return the result.** Append the call and its result to the conversation and call the model again.
+6. **Repeat until done or stopped.** The loop ends when the model answers without a tool call — or when the app's limits (steps, time, tokens) say so.
+
+</Steps>
+
+## Under the hood
+
+**The model never runs anything.** It only produces text in a structured form. Your application parses the request and executes it, which is exactly where permissions, validation and approval belong.
+
+**The Model Context Protocol (MCP).** Without a standard, every application wires every tool in its own way. MCP is an open protocol, built on JSON-RPC 2.0, in which a *server* exposes tools and a *client* inside the application discovers them with `tools/list` and invokes them with `tools/call`. Each tool is described by a name, a description and an `inputSchema` in JSON Schema. The specification distinguishes protocol errors (an unknown tool, a malformed request) from tool execution errors, which are returned as results with `isError: true` so the model can read them and try again — as it does in the timeout scenario.
+
+**Tools cost context.** Tool names, descriptions and schemas are input tokens on every request, so dozens of rarely used tools crowd the context window and the bill. Load tools only when they are needed, and keep descriptions short and precise.
+
+**Prompt injection.** Text that reaches the model through tools — web pages, emails, documents, a customer's note on an order — can contain instructions. OWASP lists prompt injection first in its 2025 Top 10 for LLM applications, and **excessive agency** — giving a model more capability or autonomy than the task needs — sixth. Delimiting and labelling untrusted content helps, but no prompt reliably stops injection. The dependable defences are outside the model: least privilege, validation on the server, and human approval for consequential actions.
+
+**What the MCP specification asks for.** It says there *should* always be a human in the loop able to deny tool invocations. Clients should ask for confirmation on sensitive operations, show tool inputs before calling, validate results, apply timeouts and log usage. Servers *must* validate inputs, enforce access control, rate-limit calls and sanitise outputs.
+
+**Agents or workflows?** Anthropic's guidance distinguishes *workflows*, where code follows a predefined path and calls the model at fixed points, from *agents*, where the model directs its own steps. Workflows are more predictable; agents fit open-ended tasks whose steps can't be known in advance. Start with the simplest thing that works, and include stopping conditions such as a maximum number of iterations.
+
+## Example: a minimal agent loop
+
+```ts
+const MAX_STEPS = 10;
+const SENSITIVE = new Set(["issue_refund"]);
+
+async function runAgent(messages: Message[]): Promise<string> {
+  for (let step = 0; step < MAX_STEPS; step++) {
+    const reply = await model.create({ messages, tools: await mcp.listTools() });
+    messages.push(reply.message);
+    if (reply.stopReason !== "tool_use") return reply.text; // the model answered
+
+    for (const call of reply.toolCalls) {
+      let result: ToolResult;
+      if (SENSITIVE.has(call.name) && !(await askHumanToApprove(call))) {
+        result = { isError: true, text: "Denied by a human reviewer." };
+      } else {
+        result = await mcp.callTool(call.name, call.arguments, { timeoutMs: 10_000 });
+      }
+      messages.push(toolResultMessage(call.id, result)); // errors go back to the model too
+    }
+  }
+  return handOverToPerson(messages); // the step limit was reached
+}
+```
+
+The server behind `issue_refund` still checks that the amount matches the order: the approval step is one defence, not the only one.
+
+## In production
+
+**Least privilege.** Give the agent only the tools the task needs, with credentials scoped to the user it acts for. A read-only task should not have write tools at all.
+
+**Limits on everything.** Cap model calls, wall-clock time, tokens and spend per task, and hand over to a person when a limit is hit. Make side-effecting tools idempotent, so a retried call doesn't refund twice.
+
+**Trace every step.** Log each model call, tool call, argument, result and approval with a trace id. When an agent does something surprising, the transcript is the only way to see why.
+
+**Evaluate on tasks, not prompts.** Build a set of realistic tasks — including hostile inputs and failing tools — and measure success rate, steps taken and cost per task before and after every change.
+
+<Callout kind="warning" title="Untrusted text in, actions out">
+
+The dangerous combination is an agent that reads untrusted content and can take consequential actions. If it must do both, put a check that doesn't depend on the model — validation, policy rules or a person — between the two.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Agents for open-ended tasks whose steps depend on what earlier steps find.",
+    "Tool calling with a single call, or a fixed workflow, when the steps are known in advance.",
+    "MCP when tools should be reusable across several applications or models.",
+  ]}
+  avoid={[
+    "Agents where a deterministic workflow would do: they cost more, run slower and are harder to test.",
+    "Giving agents write access or broad credentials 'in case they need it'.",
+    "Relying on prompt instructions alone to stop injected instructions in tool results.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"The model executes the tools."** It requests them. Your application runs them — and is responsible for checking them.
+
+**"A good system prompt prevents prompt injection."** It helps, but isn't reliable. Put enforceable checks outside the model.
+
+**"MCP makes tools safe."** MCP standardises how tools are described and called. Safety still depends on what the tools can do, who approves them and what the server validates.
+
+**"More tools make an agent more capable."** They also cost context on every call and give the model more ways to choose wrong. Fewer, well-described tools usually work better.
+
+## Failure modes and debugging
+
+- **The agent loops, calling the same tool again and again** — nothing tells it the task is finished or impossible. Add step and time limits, and make tools return clear final states.
+- **The agent does something nobody asked for** — an instruction arrived through a tool result. Find it in the trace, then add validation or approval on the action it triggered.
+- **A tool error ends the conversation** — exceptions are thrown instead of returned. Return execution errors to the model as results so it can retry or explain.
+- **The wrong tool is chosen** — overlapping or vague descriptions. Rename and describe tools by when to use them, and remove ones the task doesn't need.
+- **Costs climb with task length** — every step re-sends the conversation. Trim old tool results, cap steps and cache stable prefixes.
