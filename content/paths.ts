@@ -81,6 +81,10 @@ export default defineLearningPaths([
         lesson: "system-design/message-queues",
         why: "Queues absorb bursts and decouple services, and teach backpressure and idempotency.",
       },
+      {
+        lesson: "system-design/timeouts-retries-and-circuit-breakers",
+        why: "Every dependency eventually gets slow; timeouts, retries and breakers decide whether that becomes an outage.",
+      },
     ],
   },
   {

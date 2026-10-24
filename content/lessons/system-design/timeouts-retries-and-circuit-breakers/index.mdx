@@ -1,0 +1,128 @@
+<Definition>
+
+A **timeout** limits how long a caller waits for a response. A **retry** sends a failed request again. A **circuit breaker** stops calling a dependency that keeps failing, so calls fail fast instead of piling up. Together they decide what a service does when something it depends on gets slow or breaks.
+
+</Definition>
+
+## The problem it solves
+
+Every network call can be slow or fail. Without a timeout, a caller waits — holding a thread, a connection and memory — for as long as the dependency takes, and enough waiting callers exhaust the service itself. Without retries, a brief glitch that one more attempt would have fixed becomes an error for the user.
+
+But the obvious fixes interact badly. Retries add load exactly when a dependency is struggling. Short timeouts give up on work the dependency will still do. Together they can turn a five-second slowdown into an outage that lasts until someone intervenes. Resilience patterns are about getting the benefits without that trap.
+
+## An everyday analogy
+
+<Analogy>
+
+A busy call centre. If callers hang up after a minute and immediately redial — three times each — the queue fills with people who have already given up once, and agents spend their time answering calls whose callers have hung up. Even when the original rush passes, the redialling keeps the lines jammed. A recorded message saying "we're busy, try in an hour" — a circuit breaker — lets the queue drain.
+
+</Analogy>
+
+Where the analogy breaks down: people redial at random times and eventually give up. Software retries at whatever schedule it was written with, in perfect lockstep with thousands of copies of itself, and never gets tired.
+
+## See it in action
+
+<Demo slug="retries" />
+
+Things to try:
+
+- Press **Play**, then **slow the dependency**. With 1 s timeouts and **three immediate retries**, calls jump to 400 a second — and stay there after the slowdown ends. Nothing succeeds again.
+- Choose **Don't retry** and slow it again: errors stop within seconds of the dependency recovering.
+- Choose **Retry 3× with backoff**: it still never recovers. Backoff spreads retries out, but there are just as many of them.
+- Choose **Retry within a budget**, or turn on the **circuit breaker**: the dependency recovers.
+- Choose a **3 s timeout**: nothing fails at all, but answers take up to about 2.6 s.
+
+## Step by step: why a short slowdown can last for ever
+
+<Steps>
+
+1. **The dependency slows down.** Its capacity drops below the incoming request rate, so a queue builds.
+2. **Calls time out.** Callers give up after their timeout — but the calls are still in the queue, and the dependency will still do the work.
+3. **Retries arrive.** Each timed-out call comes back as a new one. With three retries, the load can reach four times the original.
+4. **The slowdown ends, the overload doesn't.** Even at full capacity, the dependency now receives more calls than it can serve, so they keep timing out and being retried — and much of its work is for callers who already gave up.
+5. **Something has to shed load** — fewer retries, a circuit breaker, or an operator — before it can recover.
+
+</Steps>
+
+## Under the hood
+
+**Choosing a timeout.** The Amazon Builders' Library suggests picking an acceptable rate of false timeouts, such as 0.1%, and setting the timeout at the matching percentile of the dependency's latency — p99.9 in that example — with some padding. Too long, and callers tie up resources and users wait; too short, and healthy-but-slow calls fail and are retried.
+
+**Retries multiply across layers.** If each of five layers in a call chain retries three times, a single failing database call can be attempted 3⁵ = 243 times. The same article recommends retrying at a single point in the stack, and describes retries as "selfish": they spend more of the server's resources to raise one request's chance of success.
+
+**Backoff and jitter.** Exponential backoff waits longer after each attempt; jitter adds randomness so that thousands of clients don't retry in lockstep. AWS's analysis compared several variants and found that adding jitter greatly reduces the total work compared with backoff alone, with "full jitter" — waiting a random time up to the backoff limit — among the best. Backoff smooths spikes, but it doesn't reduce the total number of retries — which is why it doesn't rescue the demo.
+
+**Retry budgets.** Limit retries to a fraction of normal traffic: a token bucket earns a token per successful or fresh request and spends one per retry. When things are healthy, every failure can be retried; when most calls fail, retries are capped, and the load can't snowball. The AWS SDKs added this kind of retry throttling in 2016.
+
+**Circuit breakers.** Martin Fowler and Microsoft describe three states. **Closed**: calls pass through and failures are counted. **Open**: after too many failures, calls fail immediately without reaching the dependency, giving it room to recover. **Half-open**: after a timeout, a limited number of trial calls go through; if they succeed, the breaker closes, and if any fails, it opens again. Microsoft's guidance adds that retries should stop when the breaker reports the fault isn't transient.
+
+**Only retry what is safe to repeat.** Reads are usually safe. A request that charges a card or creates an order may have succeeded even though the response was lost. Make such operations idempotent — for example with an idempotency key — before retrying them.
+
+## Example: retries with a budget and full jitter
+
+```ts
+const budget = { tokens: 50, max: 50, perRequest: 0.1 }; // retries may add ~10%
+
+async function callWithRetries<T>(call: () => Promise<T>, attempts = 4): Promise<T> {
+  budget.tokens = Math.min(budget.max, budget.tokens + budget.perRequest);
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await withTimeout(call(), 1_000);
+    } catch (error) {
+      if (attempt >= attempts || !isRetryable(error) || budget.tokens < 1) throw error;
+      budget.tokens -= 1;
+      const cap = 100 * 2 ** attempt; // 200 ms, 400 ms, 800 ms …
+      await sleep(Math.random() * cap); // full jitter
+    }
+  }
+}
+```
+
+## In production
+
+**Measure before you tune.** Set timeouts from real latency percentiles, and alert on timeout and retry rates, not just errors. A rising retry rate is often the first sign of an overloaded dependency.
+
+**Retry in one place.** Decide which layer owns retries — usually the one closest to the user — and turn them off below it.
+
+**Respect the server.** Honour `Retry-After` headers and 429 or 503 responses; they are the dependency asking for less load.
+
+**Degrade gracefully.** When a breaker is open, return a cached value, a default, or a partial page if you can — not just an error.
+
+<Callout kind="illustrative" title="The demo's numbers">
+
+100 requests a second, a dependency that handles 150, a five-second slowdown to 50 and timeouts of 1 or 3 s are round numbers for teaching. The shape — retries turning a short slowdown into a lasting overload — is what matters.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Timeouts on every network call, set from the dependency's measured latency.",
+    "A small number of retries, with backoff, jitter and a budget, for idempotent operations.",
+    "Circuit breakers around dependencies that can fail for longer periods, with a fallback when they open.",
+  ]}
+  avoid={[
+    "Retrying at every layer of a call chain: attempts multiply.",
+    "Immediate retries without a budget: they amplify overload.",
+    "Retrying operations that aren't idempotent.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Retries always improve reliability."** They hide brief glitches, but under overload they add load and can keep a dependency from recovering.
+
+**"Exponential backoff prevents retry storms."** It spreads retries out in time but doesn't reduce how many there are. Limiting them — with a budget or a breaker — does.
+
+**"A longer timeout is safer."** It avoids false failures but ties up resources and makes users wait. The right timeout comes from measured latency.
+
+**"A circuit breaker fixes the dependency."** It gives the dependency room to recover and makes failures fast; the dependency still has to recover.
+
+## Failure modes and debugging
+
+- **The dependency recovered but errors continue** — a retry storm. Look at call volume against capacity; cut retries, add a budget or open a breaker to shed load.
+- **Request volume to a dependency is a multiple of user traffic** — retries at several layers. Trace one request and count its attempts.
+- **Threads or connections are exhausted during a slowdown** — timeouts are missing or too long. Add or shorten them, and isolate pools per dependency (bulkheads).
+- **Duplicate orders or charges** — non-idempotent operations were retried. Add idempotency keys.
+- **The breaker flaps between open and closed** — the threshold is too sensitive or the open period too short for the dependency's recovery time.
