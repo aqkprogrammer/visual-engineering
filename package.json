@@ -28,6 +28,8 @@
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm readme --check && pnpm build && pnpm budget && pnpm links"
   },
   "dependencies": {
+    "@fontsource-variable/ibm-plex-sans": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
     "@mdx-js/loader": "3.1.1",
     "@mdx-js/react": "3.1.1",
     "@next/mdx": "16.4.2",
