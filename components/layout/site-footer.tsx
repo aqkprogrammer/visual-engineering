@@ -26,6 +26,9 @@ export function SiteFooter() {
           <Link href="/paths" className="hover:text-fg">
             Learning paths
           </Link>
+          <Link href="/map" className="hover:text-fg">
+            Knowledge map
+          </Link>
           <Link href="/playground" className="hover:text-fg">
             Playground
           </Link>

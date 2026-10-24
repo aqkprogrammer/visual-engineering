@@ -342,6 +342,41 @@ export default defineGlossary([
     related: ["shard-key", "sharding"],
   },
 
+  {
+    id: "retry-storm",
+    term: "Retry storm",
+    aliases: ["Metastable failure"],
+    definition:
+      "Retries multiplying the load on a struggling dependency so that it stays overloaded even after the original problem has gone.",
+    lesson: "system-design/timeouts-retries-and-circuit-breakers",
+    related: ["circuit-breaker", "exponential-backoff", "retry-budget"],
+  },
+  {
+    id: "exponential-backoff",
+    term: "Exponential backoff",
+    aliases: ["Jitter", "Backoff with jitter"],
+    definition:
+      "Waiting longer after each failed attempt before retrying, usually with random jitter so that many clients don't retry at the same moment.",
+    lesson: "system-design/timeouts-retries-and-circuit-breakers",
+    related: ["retry-storm", "retry-budget"],
+  },
+  {
+    id: "retry-budget",
+    term: "Retry budget",
+    definition:
+      "A limit on retries as a share of normal traffic, often a token bucket, so that retries can't snowball when most calls are failing.",
+    lesson: "system-design/timeouts-retries-and-circuit-breakers",
+    related: ["retry-storm", "token-bucket"],
+  },
+  {
+    id: "circuit-breaker",
+    term: "Circuit breaker",
+    definition:
+      "A wrapper around calls to a dependency that, after too many failures, fails calls immediately for a while instead of sending them, then lets a few trial calls through to test recovery.",
+    lesson: "system-design/timeouts-retries-and-circuit-breakers",
+    related: ["retry-storm"],
+  },
+
   // Networking
   {
     id: "dns",

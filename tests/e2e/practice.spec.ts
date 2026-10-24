@@ -129,4 +129,15 @@ test.describe("system design sandbox", () => {
     await page.getByRole("button", { name: "Copy link to this design" }).click();
     await expect(page).toHaveURL(/\?scenario=read-heavy-catalogue&app=10&replicas=1&cache=95/);
   });
+
+  test("compare two designs under the same conditions", async ({ page }) => {
+    await page.goto("/playground/system-design-sandbox/");
+    await page.getByLabel("Scenario").selectOption("read-heavy-catalogue");
+    await page.getByRole("button", { name: "Compare with another design" }).click();
+    await page.getByLabel("Design B: app servers").selectOption("10");
+    await page.getByText("Design B: cache", { exact: true }).click();
+    const table = page.getByRole("region", { name: "Design comparison" });
+    await expect(table.getByRole("row", { name: /Cost \(units\)/ })).toContainText("12");
+    await expect(page.getByText(/^Design B is better on \d of 5 measures\.$/)).toBeVisible();
+  });
 });

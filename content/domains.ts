@@ -76,7 +76,7 @@ export default defineDomains([
         summary:
           "Designing for partial failure: timeouts, retries, circuit breakers, bulkheads and recovery.",
         plannedTopics: [
-          "Circuit breakers, retries, timeouts and bulkheads",
+          "Bulkheads and load shedding",
           "High availability",
           "Disaster recovery",
           "Observability",

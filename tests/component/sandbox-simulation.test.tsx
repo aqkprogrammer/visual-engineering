@@ -102,3 +102,23 @@ describe("SandboxSimulation", () => {
     expect(link.value).toMatch(/\?scenario=free-play&app=2&.*&traffic=1000&reads=90$/);
   });
 });
+
+describe("comparing designs", () => {
+  it("runs a second design under the same conditions and can adopt it", async () => {
+    const user = userEvent.setup();
+    render(<SandboxSimulation />);
+    await user.selectOptions(screen.getByLabelText("Scenario"), "read-heavy-catalogue");
+    await user.click(screen.getByRole("button", { name: "Compare with another design" }));
+    expect(screen.getByText("Neither design is better on more measures.")).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Design B: app servers"), "10");
+    await user.click(screen.getByRole("switch", { name: /Design B: cache/ }));
+    const table = screen.getByRole("region", { name: "Design comparison" });
+    expect(table).toHaveTextContent(/Challenge goals met/);
+    expect(screen.getByText(/^Design B is better on \d of 5 measures\.$/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Use design B above" }));
+    expect(screen.getByLabelText("App servers")).toHaveValue("10");
+    expect(screen.getByRole("switch", { name: /^Cache/ })).toBeChecked();
+  });
+});

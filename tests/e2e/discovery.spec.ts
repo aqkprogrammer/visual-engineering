@@ -135,3 +135,30 @@ test.describe("glossary", () => {
     await expect(page).toHaveURL(/\/glossary\/#idempotency$/);
   });
 });
+
+test.describe("knowledge map", () => {
+  test("shows completed lessons, unlocks what builds on them, and links to lessons", async ({
+    page,
+  }) => {
+    await page.goto("/ai/embeddings/");
+    await page.getByRole("button", { name: "Mark as complete" }).click();
+    await page.goto("/map/");
+    const map = page.getByRole("region", { name: "Knowledge map" });
+    await expect(
+      map.getByRole("link", { name: /^Embeddings and vector similarity — completed/ }),
+    ).toBeVisible();
+    await expect(
+      map.getByRole("link", {
+        name: /^How retrieval-augmented generation \(RAG\) works — ready to start/,
+      }),
+    ).toBeAttached();
+
+    await page.getByText("AI engineering foundations", { exact: true }).click();
+    await expect(
+      page.getByText(/AI engineering foundations: \d+ lessons, numbered in order/),
+    ).toBeVisible();
+
+    await map.getByRole("link", { name: /^Tokens and tokenization/ }).click();
+    await expect(page).toHaveURL(/\/ai\/tokenization\/?$/);
+  });
+});

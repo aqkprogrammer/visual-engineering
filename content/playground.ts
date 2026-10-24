@@ -358,6 +358,37 @@ export default definePlayground([
     ],
   },
   {
+    slug: "retries",
+    title: "Timeouts, retries and circuit breakers",
+    summary:
+      "Slow a dependency for five seconds and see immediate retries keep it overloaded long after, while a retry budget or a circuit breaker lets it recover.",
+    domain: "system-design",
+    lesson: "system-design/timeouts-retries-and-circuit-breakers",
+    related: ["software-architecture/monoliths-and-microservices"],
+    kind: "simulation",
+    tryThis: [
+      "Press Play, then slow the dependency. With 1 s timeouts and three immediate retries, calls jump to 400 a second — and stay there after the slowdown ends. Nothing succeeds again.",
+      "Choose Don't retry and slow it again: errors stop within seconds of the dependency recovering.",
+      "Choose Retry 3× with backoff: it still never recovers. Backoff spreads retries out, but there are just as many of them.",
+      "Choose Retry within a budget, or turn on the circuit breaker: the dependency recovers.",
+      "Choose a 3 s timeout with any retry setting: nothing fails at all, but answers take up to about 2.6 s.",
+    ],
+    references: [
+      {
+        title: "Timeouts, retries, and backoff with jitter",
+        url: "https://builder.aws.com/content/3EumjoZascWd1oZiEgL8ORlv3qE/timeouts-retries-and-backoff-with-jitter",
+        publisher: "Amazon Builders' Library",
+        kind: "article",
+      },
+      {
+        title: "Circuit Breaker pattern",
+        url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker",
+        publisher: "Microsoft",
+        kind: "official-docs",
+      },
+    ],
+  },
+  {
     slug: "btree-index",
     title: "B+ tree index explorer",
     summary:

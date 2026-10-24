@@ -81,6 +81,9 @@ const ShardingExplorer = dynamic(() =>
 const ReplicationSimulation = dynamic(() =>
   import("./scenes/replication/replication-simulation").then((m) => m.ReplicationSimulation),
 );
+const RetriesSimulation = dynamic(() =>
+  import("./scenes/retries/retries-simulation").then((m) => m.RetriesSimulation),
+);
 const SandboxSimulation = dynamic(() =>
   import("./scenes/sandbox/sandbox-simulation").then((m) => m.SandboxSimulation),
 );
@@ -140,5 +143,7 @@ export function Demo({ slug }: { slug: DemoSlug }) {
       return <ShardingExplorer />;
     case "replication":
       return <ReplicationSimulation />;
+    case "retries":
+      return <RetriesSimulation />;
   }
 }

@@ -72,6 +72,7 @@ Every demo runs on the same deterministic simulation engine: play, pause, step, 
 | [**Agent loop with tools**](https://aqkprogrammer.github.io/visual-engineering/playground/agent-loop/) | 👣 Walkthrough · AI Engineering | Step through an agent that refunds an order with tools from an MCP server, then break it with a timeout, a prompt injection and a loop that never ends. |
 | [**Sharding explorer**](https://aqkprogrammer.github.io/visual-engineering/playground/sharding/) | 🧭 Explorer · System Design | Spread 600 keys across nodes with hash modulo or consistent hashing, add and remove nodes, and see how many keys move and which node gets hot. |
 | [**Leader-follower replication**](https://aqkprogrammer.github.io/visual-engineering/playground/replication/) | 🧪 Simulation · System Design | Stream changes from a leader to two followers, read from replicas, crash the leader and compare asynchronous and synchronous writes. |
+| [**Timeouts, retries and circuit breakers**](https://aqkprogrammer.github.io/visual-engineering/playground/retries/) | 🧪 Simulation · System Design | Slow a dependency for five seconds and see immediate retries keep it overloaded long after, while a retry budget or a circuit breaker lets it recover. |
 | [**B+ tree index explorer**](https://aqkprogrammer.github.io/visual-engineering/playground/btree-index/) | 👣 Walkthrough · Computer Science | Search a table with and without an index, count the page reads, and insert keys to watch B+ tree pages split. |
 | [**DNS resolution, step by step**](https://aqkprogrammer.github.io/visual-engineering/playground/dns-resolution/) | 👣 Walkthrough · Networking & Web | Follow a lookup from your browser through recursive, root, TLD and authoritative servers, then see how caching short-circuits repeat lookups. |
 | [**RAG pipeline inspector**](https://aqkprogrammer.github.io/visual-engineering/playground/rag-pipeline/) | 👣 Walkthrough · AI Engineering | Inspect every stage of a retrieval-augmented generation pipeline and see how chunking, top-k and reranking decide whether the answer is right. |
@@ -101,10 +102,10 @@ flowchart LR
 ## 🧭 Curriculum
 
 <!-- curriculum:start -->
-**24 live lessons** · 7 domains · 43 modules · 194 planned topics. Expand a domain to see what's inside.
+**25 live lessons** · 7 domains · 43 modules · 194 planned topics. Expand a domain to see what's inside.
 
 <details open>
-<summary><b>System Design</b> — How large systems stay fast, available and correct under real traffic. <sub>🟢 6 live · 42 planned</sub></summary>
+<summary><b>System Design</b> — How large systems stay fast, available and correct under real traffic. <sub>🟢 7 live · 42 planned</sub></summary>
 
 | Module | Live lessons | Planned topics |
 |---|---|---|
@@ -113,7 +114,7 @@ flowchart LR
 | **Data at Scale** | [Caching: hits, eviction and stale data](https://aqkprogrammer.github.io/visual-engineering/system-design/caching/)<br>[Database replication: leaders, followers and lag](https://aqkprogrammer.github.io/visual-engineering/system-design/replication/)<br>[Sharding and consistent hashing](https://aqkprogrammer.github.io/visual-engineering/system-design/sharding-and-consistent-hashing/) | Database indexing and query optimization · SQL versus NoSQL |
 | **Consistency & Coordination** | — | CAP theorem · PACELC · Eventual consistency · Distributed transactions · Saga pattern · Idempotency · Distributed locking |
 | **Messaging & Async** | [Message queues and backpressure](https://aqkprogrammer.github.io/visual-engineering/system-design/message-queues/) | Event streaming (logs versus queues) · Kafka fundamentals · RabbitMQ fundamentals · Synchronous versus asynchronous communication · Event-driven architecture |
-| **Resilience** | — | Circuit breakers, retries, timeouts and bulkheads · High availability · Disaster recovery · Observability |
+| **Resilience** | [Timeouts, retries and circuit breakers](https://aqkprogrammer.github.io/visual-engineering/system-design/timeouts-retries-and-circuit-breakers/) | Bulkheads and load shedding · High availability · Disaster recovery · Observability |
 | **Real-time & APIs** | — | WebSockets, polling and Server-Sent Events · API versioning · Service discovery · Multi-tenancy |
 | **Case Studies** | — | URL shortener · Chat and messaging application · Social media feed · Video streaming platform · E-commerce system · Ride-booking platform · Notification service · File storage service · Payment processing system · Real-time analytics platform · Search service · AI-powered application |
 
@@ -214,13 +215,14 @@ flowchart LR
 - [x] **Phase 9 — AI engineering playground.** Chunking, keyword-versus-vector-versus-hybrid search, and context-window budgets — three lessons, each with an explorer — [v1.3.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.3.0)
 - [x] **Phase 10a — AI agents.** Tool calling, the Model Context Protocol and agent safety, with a step-by-step agent loop
 - [x] **Phase 10b — Data at scale.** Replication (lag, stale reads, synchronous writes, failover) and sharding with consistent hashing, each with a new demo — [v1.4.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.4.0)
-- [ ] **Later.** Side-by-side sandbox comparisons, a knowledge map, more system design lessons
+- [x] **Phase 11 — Connections.** A knowledge map of every lesson and path, side-by-side sandbox comparisons, and a resilience lesson on timeouts, retries and circuit breakers
+- [ ] **Later.** More system design lessons (CDNs, consistency, idempotency), a `⌘K` search palette, layouts designed for phones
 
 ## ⚠️ Known limitations
 
 Honest about what the site doesn't do yet:
 
-- **Coverage.** 24 lessons across all seven domains; most domains still have more planned topics than published lessons.
+- **Coverage.** 25 lessons across all seven domains; most domains still have more planned topics than published lessons.
 - **Teaching models, not benchmarks.** Simulations simplify on purpose, list their assumptions, and use illustrative capacities and timings.
 - **Phones.** Diagrams are fitted to the screen and their text is small; each simulation can be enlarged into a scrollable view, and its numbers are also shown as text.
 - **Progress is per browser.** It isn't synced between devices; export it to a file and import it elsewhere to move it.

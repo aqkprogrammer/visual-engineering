@@ -25,6 +25,7 @@ export const DEMO_SLUGS = [
   "agent-loop",
   "sharding",
   "replication",
+  "retries",
 ] as const;
 
 export type DemoSlug = (typeof DEMO_SLUGS)[number];

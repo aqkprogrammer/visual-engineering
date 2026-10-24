@@ -22,6 +22,11 @@ export default function PathsPage() {
           Lessons in a deliberate order, each building on the last. Every step says why it comes
           where it does, and lessons you mark as complete are ticked off as you go.
         </p>
+        <p className="text-sm">
+          <Link href="/map" className="text-accent underline underline-offset-2">
+            See every path on the knowledge map
+          </Link>
+        </p>
       </header>
 
       <div className="mt-12 grid gap-10 lg:grid-cols-[1fr_20rem] lg:items-start">

@@ -21,6 +21,11 @@ export default function ExplorePage() {
           Seven domains, organised from fundamentals to production practice. Published lessons are
           listed under each domain; everything else is on the roadmap and marked as planned.
         </p>
+        <p className="text-sm">
+          <Link href="/map" className="text-accent underline underline-offset-2">
+            See how the lessons connect on the knowledge map
+          </Link>
+        </p>
       </header>
 
       <div className="mt-12 divide-y divide-border border-y border-border">
