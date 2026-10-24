@@ -62,6 +62,10 @@ export default defineLearningPaths([
         why: "Caches cut load and latency, and introduce the classic stale-data trade-off.",
       },
       {
+        lesson: "system-design/cdn-and-edge-caching",
+        why: "The same idea at global scale: caches near users, with freshness controlled by HTTP headers.",
+      },
+      {
         lesson: "computer-science/database-indexes",
         why: "Most slow endpoints end at a slow query; indexes are the first tool to reach for.",
       },

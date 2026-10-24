@@ -84,6 +84,9 @@ const ReplicationSimulation = dynamic(() =>
 const RetriesSimulation = dynamic(() =>
   import("./scenes/retries/retries-simulation").then((m) => m.RetriesSimulation),
 );
+const CdnSimulation = dynamic(() =>
+  import("./scenes/cdn/cdn-simulation").then((m) => m.CdnSimulation),
+);
 const SandboxSimulation = dynamic(() =>
   import("./scenes/sandbox/sandbox-simulation").then((m) => m.SandboxSimulation),
 );
@@ -145,5 +148,7 @@ export function Demo({ slug }: { slug: DemoSlug }) {
       return <ReplicationSimulation />;
     case "retries":
       return <RetriesSimulation />;
+    case "cdn":
+      return <CdnSimulation />;
   }
 }

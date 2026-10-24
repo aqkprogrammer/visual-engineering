@@ -43,6 +43,8 @@ const PAGES = [
   "/playground/sharding",
   "/playground/replication",
   "/playground/retries",
+  "/playground/cdn",
+  "/system-design/cdn-and-edge-caching",
   "/system-design/timeouts-retries-and-circuit-breakers",
   "/system-design/replication",
   "/system-design/sharding-and-consistent-hashing",
