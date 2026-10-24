@@ -1,24 +1,38 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { absoluteUrl, site } from "@/lib/site";
 import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
-// Fonts are downloaded at build time and self-hosted — no runtime requests to Google.
-const plexSans = IBM_Plex_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+// IBM Plex (SIL Open Font License 1.1), bundled from the Fontsource packages so builds never
+// depend on downloading fonts. Served from this site — no requests to font services.
+// next/font needs literal paths, so each file is spelled out.
+const plexSans = localFont({
+  // One variable file covers every weight, so only one file is preloaded.
+  src: "../node_modules/@fontsource-variable/ibm-plex-sans/files/ibm-plex-sans-latin-wght-normal.woff2",
+  weight: "100 700",
+  style: "normal",
   variable: "--font-plex-sans",
   display: "swap",
 });
 
 // Only for small labels and numbers: not preloaded, so it never competes with the page's
 // critical resources; it swaps in when ready.
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
+const plexMono = localFont({
+  src: [
+    {
+      path: "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2",
+      weight: "500",
+      style: "normal",
+    },
+  ],
   variable: "--font-plex-mono",
   display: "swap",
   preload: false,
