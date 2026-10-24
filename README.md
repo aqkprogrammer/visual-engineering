@@ -218,7 +218,7 @@ flowchart LR
 - [x] **Phase 10b — Data at scale.** Replication (lag, stale reads, synchronous writes, failover) and sharding with consistent hashing, each with a new demo — [v1.4.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.4.0)
 - [x] **Phase 11 — Connections.** A knowledge map of every lesson and path, side-by-side sandbox comparisons, and a resilience lesson on timeouts, retries and circuit breakers
 - [x] **Phase 12 — Quick search.** Press ⌘K or Ctrl+K on any page to search everything
-- [x] **Phase 13 — CDNs.** A lesson and simulation on edge caching: TTLs, purges, stale-while-revalidate and origin shields
+- [x] **Phase 13 — CDNs.** A lesson and simulation on edge caching: TTLs, purges, stale-while-revalidate and origin shields — [v1.5.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.5.0)
 - [ ] **Later.** More system design lessons (consistency, idempotency), layouts designed for phones
 
 ## ⚠️ Known limitations
