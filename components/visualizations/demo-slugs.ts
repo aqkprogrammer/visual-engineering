@@ -19,6 +19,9 @@ export const DEMO_SLUGS = [
   "service-calls",
   "event-sourcing",
   "hexagonal-architecture",
+  "chunking",
+  "hybrid-search",
+  "context-budget",
 ] as const;
 
 export type DemoSlug = (typeof DEMO_SLUGS)[number];

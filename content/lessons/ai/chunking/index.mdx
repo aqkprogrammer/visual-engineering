@@ -1,0 +1,144 @@
+<Definition>
+
+**Chunking** is splitting documents into smaller passages — chunks — before they are embedded and indexed for retrieval. Each chunk is what a search can find and what a language model is eventually shown, so how you cut decides what can be found.
+
+</Definition>
+
+## The problem it solves
+
+A retrieval-augmented generation (RAG) system can't hand a model your whole knowledge base for every question. It searches for the few passages most likely to contain the answer and puts only those in the prompt. That means documents have to be broken into passages first, and there is no neutral way to do it.
+
+Cut too small, and a passage loses the context that makes it make sense: "Never run the job more than twice" is useless if the chunk doesn't say which job. Cut too large, and each chunk mixes several topics, so it matches many questions weakly, and every retrieval fills the prompt with text that isn't the answer. Cut in the wrong place, and an instruction lands in one chunk while its warning lands in the next.
+
+Most RAG failures that look like "the model got it wrong" are really "the right text was never retrieved", and chunking is often where that starts.
+
+## An everyday analogy
+
+<Analogy>
+
+Cutting a recipe book into index cards so a friend can find what they need quickly. Cut every 50 words and some cards start halfway through a step. Cut one card per recipe and the cards are too long to scan. Cut one card per step, write the recipe's name at the top of each, and every card makes sense on its own.
+
+</Analogy>
+
+Where the analogy breaks down: your friend can always pick up the next card. A retriever only returns the cards that scored highest for the question, so a step that depends on the card before it may arrive alone.
+
+## See it in action
+
+<Demo slug="chunking" />
+
+Things to try:
+
+- Start with **fixed 30-word chunks**. Every chunk cuts a sentence, the retry answer loses its warning, and the failover approval isn't found at all.
+- Choose **fixed 60-word chunks**, then add **10 words of overlap**. The instruction and its warning now share a chunk.
+- Choose **Structure-aware** and turn on **section headings**. The approval sentence says the lead must approve "it"; with its heading in front, the chunk says what "it" is and is retrieved.
+- Compare **fixed 120-word chunks** with **structure-aware 30-word chunks and two retrieved**. Both answer the retry question, but the first sends the model three times as many words.
+
+## Step by step
+
+<Steps>
+
+1. **Extract the text** from each document, keeping its structure: headings, paragraphs, lists and tables.
+2. **Choose a unit of size.** Splitters measure chunks in characters or tokens; what matters is that a chunk fits comfortably within the embedding model's input limit.
+3. **Split.** Fixed-size splitting cuts every N units. Sentence splitting packs whole sentences up to the limit. Structure-aware splitting never crosses a section boundary and falls back to smaller units only when a section is too long.
+4. **Overlap.** Optionally repeat the end of each chunk at the start of the next, so text near a boundary appears whole in at least one chunk.
+5. **Add context.** Optionally prefix each chunk with its document title or section heading, or a short generated description, so it can be understood on its own.
+6. **Embed and index** each chunk, storing its source, position and metadata so answers can cite it.
+
+</Steps>
+
+## Under the hood
+
+**Recursive splitting.** A common general-purpose approach tries a list of separators in order — LangChain's recursive splitter defaults to paragraph breaks, then line breaks, then spaces, then individual characters — and moves to the next separator only for pieces that are still too large. The effect is to keep paragraphs, then sentences, then words together as long as possible. By default it measures chunk size in characters.
+
+**Overlap is a patch, not a fix.** It helps when the answer straddles a boundary, but it duplicates text: with 20% overlap you store, embed and pay for about a fifth more text, and the same passage can be retrieved twice. In the demo, fixed 30-word chunks with 20 words of overlap index almost three times the document.
+
+**Size trades recall against precision and cost.** A small chunk's embedding represents one idea sharply, so it matches a focused question well — but the answer may need the sentence next to it. A large chunk carries its context with it, but its embedding blends several ideas, and every one you retrieve spends prompt tokens on text that isn't the answer. Models also use long contexts unevenly: Liu et al. found that performance is often highest when relevant information is at the start or end of the input and degrades when it is in the middle.
+
+**Contextual chunks.** A chunk such as "The on-call lead must approve it" can't be found by a question about database failover, because nothing in it says "database" or "failover". Prefixing chunks with their heading is the simplest fix. Anthropic's contextual retrieval goes further, generating 50–100 tokens of context per chunk with a model; in their tests it reduced the rate of failed top-20 retrievals by 35% on its own, and by 49% when also applied to keyword (BM25) search.
+
+**Retrieve more, smaller pieces.** Instead of making chunks bigger, retrieve more of them, or retrieve small chunks and then expand each to its surrounding section ("parent document" or "small-to-big" retrieval). Both keep the precise match while restoring context.
+
+## Example: structure-aware chunking with overlap
+
+```ts
+type Section = { heading: string; sentences: string[] };
+type Chunk = { heading: string; text: string };
+
+const words = (s: string) => s.split(/\s+/).length;
+
+/** Packs whole sentences into chunks of at most `maxWords`, never crossing a section. */
+function chunkSections(sections: Section[], maxWords: number, overlapWords: number): Chunk[] {
+  const chunks: Chunk[] = [];
+  for (const { heading, sentences } of sections) {
+    let current: string[] = [];
+    const flush = () => {
+      if (current.length === 0) return;
+      chunks.push({ heading, text: `${heading}: ${current.join(" ")}` });
+      // Carry trailing sentences that fit within the overlap into the next chunk.
+      const carried: string[] = [];
+      for (let i = current.length - 1; i > 0; i--) {
+        if (words([current[i], ...carried].join(" ")) > overlapWords) break;
+        carried.unshift(current[i]);
+      }
+      current = carried;
+    };
+    for (const sentence of sentences) {
+      if (current.length > 0 && words([...current, sentence].join(" ")) > maxWords) flush();
+      current.push(sentence);
+    }
+    flush();
+  }
+  return chunks;
+}
+```
+
+A sentence longer than the limit would still need splitting by words — the last fallback of a recursive splitter.
+
+## In production
+
+**Measure retrieval, not just answers.** Build a small set of real questions with the passages that answer them, and track how often those passages appear in the top k results (recall@k) as you change chunking. It is much faster to iterate on than reading generated answers.
+
+**Chunk by document type.** Prose, API references, tables, code and chat transcripts break differently. Splitters that understand Markdown headings, HTML sections or code syntax keep the natural units together.
+
+**Keep metadata with every chunk.** Source, section, position and version let you cite answers, filter out superseded documents, expand to neighbouring chunks and delete everything from a document when it changes.
+
+**Re-chunking means re-embedding.** Changing the chunking strategy changes every chunk, so the whole collection has to be re-embedded and re-indexed. Version your indexes and switch over once the new one is built.
+
+<Callout kind="note" title="Numbers in the demo">
+
+The runbook is 178 words and chunk sizes are in words to keep it readable. Real systems typically use chunks of hundreds of tokens; the right size is the one your retrieval tests say works for your documents and questions.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Small, structure-aware chunks for documents with clear sections and questions with focused answers.",
+    "Headings or generated context on every chunk when passages depend on their surroundings.",
+    "Overlap when answers often span a boundary and you can't split on structure.",
+  ]}
+  avoid={[
+    "Fixed-size splitting of structured documents when a structure-aware splitter is available.",
+    "Very large chunks to avoid boundary problems: they dilute matches and fill the prompt with irrelevant text.",
+    "Large overlaps by default: they multiply storage and embedding cost and return near-duplicate results.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Bigger chunks are safer because they contain more context."** They contain more of everything. Matching gets weaker and every retrieved chunk spends tokens on text that isn't the answer.
+
+**"There is a best chunk size."** It depends on the documents, the questions and the embedding model. Measure it with your own retrieval tests.
+
+**"Overlap fixes boundary problems."** It reduces them at the price of duplicated text. Splitting on structure avoids most of them in the first place.
+
+**"If the answer is wrong, the model is the problem."** Check what was retrieved first. If the evidence wasn't in the context, no model could have used it.
+
+## Failure modes and debugging
+
+- **Answers that ignore a caveat or condition** — the caveat landed in a neighbouring chunk. Look at where the boundary fell; split on structure, add overlap, or retrieve neighbours.
+- **A passage that obviously answers the question is never retrieved** — it doesn't contain the question's key words or meaning on its own (pronouns, missing subject). Add headings or generated context to chunks.
+- **Prompts full of loosely related text** — chunks are too large or k is too high. Use smaller chunks and measure recall@k.
+- **The same passage appears twice in the context** — overlapping chunks both scored highly. Reduce overlap or deduplicate results.
+- **Tables and code come out garbled** — a text splitter cut through them. Use a splitter that understands the format, or keep them as single chunks.

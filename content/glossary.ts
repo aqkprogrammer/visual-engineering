@@ -389,8 +389,8 @@ export default defineGlossary([
     term: "Context window",
     definition:
       "The maximum number of tokens a language model can take into account at once, covering the prompt, any retrieved documents, the conversation so far and the answer.",
-    lesson: "ai/tokenization",
-    related: ["token", "rag"],
+    lesson: "ai/context-windows",
+    related: ["token", "rag", "prompt-caching"],
   },
   {
     id: "embedding",
@@ -431,8 +431,8 @@ export default defineGlossary([
     term: "Chunking",
     definition:
       "Splitting documents into passages for retrieval. Chunks must be small enough to match a question precisely but large enough to make sense on their own.",
-    lesson: "ai/how-rag-works",
-    related: ["rag"],
+    lesson: "ai/chunking",
+    related: ["rag", "chunk-overlap", "contextual-retrieval"],
   },
   {
     id: "reranker",
@@ -458,7 +458,90 @@ export default defineGlossary([
     lesson: "ai/how-rag-works",
     related: ["rag"],
   },
-
+  {
+    id: "chunk-overlap",
+    term: "Chunk overlap",
+    definition:
+      "Repeating the end of one chunk at the start of the next, so text near a boundary appears whole in at least one chunk. It duplicates text, which costs storage and embedding work.",
+    lesson: "ai/chunking",
+    related: ["chunking"],
+  },
+  {
+    id: "contextual-retrieval",
+    term: "Contextual retrieval",
+    aliases: ["Contextual chunks"],
+    definition:
+      "Adding context — such as the document title, section heading or a short generated description — to each chunk before indexing it, so chunks can be understood and found on their own.",
+    lesson: "ai/chunking",
+    related: ["chunking", "bm25"],
+  },
+  {
+    id: "bm25",
+    term: "BM25",
+    aliases: ["Okapi BM25"],
+    definition:
+      "The standard keyword-ranking formula: rare query words weigh more, repeated words help less each time, and long documents are normalised. It is the default in Elasticsearch.",
+    lesson: "ai/hybrid-search",
+    related: ["inverse-document-frequency", "inverted-index", "hybrid-search"],
+  },
+  {
+    id: "inverse-document-frequency",
+    term: "Inverse document frequency",
+    aliases: ["IDF"],
+    definition:
+      "A word's weight based on how few documents contain it. A word in almost every document says little about relevance; a word in one document says a lot.",
+    lesson: "ai/hybrid-search",
+    related: ["bm25"],
+  },
+  {
+    id: "inverted-index",
+    term: "Inverted index",
+    definition:
+      "The data structure behind keyword search: for every word, the list of documents (and positions) that contain it, so matching documents can be found without reading them all.",
+    lesson: "ai/hybrid-search",
+    related: ["bm25"],
+  },
+  {
+    id: "hybrid-search",
+    term: "Hybrid search",
+    definition:
+      "Running keyword and vector search for the same query and merging their results, so exact terms and paraphrases are both found.",
+    lesson: "ai/hybrid-search",
+    related: ["bm25", "nearest-neighbour-search", "reciprocal-rank-fusion"],
+  },
+  {
+    id: "reciprocal-rank-fusion",
+    term: "Reciprocal rank fusion",
+    aliases: ["RRF"],
+    definition:
+      "A way to merge ranked lists: each document scores 1 ÷ (k + rank) in every list it appears in, and the sums are sorted. It uses only positions, so scores on different scales never need comparing.",
+    lesson: "ai/hybrid-search",
+    related: ["hybrid-search"],
+  },
+  {
+    id: "recall-at-k",
+    term: "Recall@k",
+    definition:
+      "The share of the relevant passages for a question that appear in the top k results. The usual way to measure whether retrieval found what the model needs.",
+    lesson: "ai/hybrid-search",
+    related: ["hybrid-search", "rag"],
+  },
+  {
+    id: "prompt-caching",
+    term: "Prompt caching",
+    definition:
+      "Reusing the processing of an identical prompt prefix across requests, billed at a discount. Cached tokens still take up space in the context window.",
+    lesson: "ai/context-windows",
+    related: ["context-window", "token"],
+  },
+  {
+    id: "lost-in-the-middle",
+    term: "Lost in the middle",
+    definition:
+      "The finding that language models often use information at the start or end of a long input more reliably than information in the middle.",
+    lesson: "ai/context-windows",
+    related: ["context-window"],
+  },
   // Computer science — databases
   {
     id: "database-index",

@@ -172,18 +172,23 @@ export default defineLearningPaths([
     slug: "ai-engineering-foundations",
     title: "AI engineering foundations",
     summary:
-      "How language-model applications see and find text: tokens, embeddings and vector search, and retrieval-augmented generation built on top of them.",
+      "How language-model applications see and find text: tokens and context windows, embeddings, and retrieval — chunking, hybrid search and RAG.",
     audience:
       "Engineers building with language models who want to understand cost, context limits, semantic search and why RAG answers go wrong.",
     outcomes: [
-      "Estimate token usage and explain why it varies by language and content",
+      "Estimate token usage and budget a context window as conversations grow",
       "Explain how embeddings make semantic search work, and where they fail",
       "Debug a RAG system by separating retrieval problems from generation problems",
+      "Choose chunking and search methods, and measure them with recall@k",
     ],
     steps: [
       {
         lesson: "ai/tokenization",
         why: "Models read tokens, not words; tokens set the cost and the size of the context window.",
+      },
+      {
+        lesson: "ai/context-windows",
+        why: "Everything a model sees on a request has to fit in its window, and every token is paid for.",
       },
       {
         lesson: "ai/embeddings",
@@ -192,6 +197,14 @@ export default defineLearningPaths([
       {
         lesson: "ai/how-rag-works",
         why: "RAG combines embedding search with a model to answer from your own documents.",
+      },
+      {
+        lesson: "ai/chunking",
+        why: "How documents are cut decides what retrieval can find in the first place.",
+      },
+      {
+        lesson: "ai/hybrid-search",
+        why: "Keyword and vector search fail in different ways; combining them covers both.",
       },
     ],
   },
