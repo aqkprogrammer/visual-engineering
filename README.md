@@ -69,6 +69,7 @@ Every demo runs on the same deterministic simulation engine: play, pause, step, 
 | [**Chunking explorer**](https://aqkprogrammer.github.io/visual-engineering/playground/chunking/) | 🧭 Explorer · AI Engineering | Split a runbook into chunks by size, by sentence or by section, add overlap and headings, and see which questions retrieval can still answer. |
 | [**Keyword, vector and hybrid search**](https://aqkprogrammer.github.io/visual-engineering/playground/hybrid-search/) | 🧭 Explorer · AI Engineering | Run the same question through BM25 keyword search, a toy vector search and reciprocal rank fusion, and compare what each finds and misses. |
 | [**Context window budget**](https://aqkprogrammer.github.io/visual-engineering/playground/context-budget/) | 🧭 Explorer · AI Engineering | Fill a context window with a system prompt, tools, chat history and documents, choose what gives when it overflows, and see the cost. |
+| [**Agent loop with tools**](https://aqkprogrammer.github.io/visual-engineering/playground/agent-loop/) | 👣 Walkthrough · AI Engineering | Step through an agent that refunds an order with tools from an MCP server, then break it with a timeout, a prompt injection and a loop that never ends. |
 | [**B+ tree index explorer**](https://aqkprogrammer.github.io/visual-engineering/playground/btree-index/) | 👣 Walkthrough · Computer Science | Search a table with and without an index, count the page reads, and insert keys to watch B+ tree pages split. |
 | [**DNS resolution, step by step**](https://aqkprogrammer.github.io/visual-engineering/playground/dns-resolution/) | 👣 Walkthrough · Networking & Web | Follow a lookup from your browser through recursive, root, TLD and authoritative servers, then see how caching short-circuits repeat lookups. |
 | [**RAG pipeline inspector**](https://aqkprogrammer.github.io/visual-engineering/playground/rag-pipeline/) | 👣 Walkthrough · AI Engineering | Inspect every stage of a retrieval-augmented generation pipeline and see how chunking, top-k and reranking decide whether the answer is right. |
@@ -98,7 +99,7 @@ flowchart LR
 ## 🧭 Curriculum
 
 <!-- curriculum:start -->
-**21 live lessons** · 7 domains · 43 modules · 199 planned topics. Expand a domain to see what's inside.
+**22 live lessons** · 7 domains · 43 modules · 197 planned topics. Expand a domain to see what's inside.
 
 <details open>
 <summary><b>System Design</b> — How large systems stay fast, available and correct under real traffic. <sub>🟢 4 live · 45 planned</sub></summary>
@@ -128,15 +129,15 @@ flowchart LR
 
 </details>
 <details open>
-<summary><b>AI Engineering</b> — From tokens and embeddings to retrieval, agents and production LLM systems. <sub>🟢 6 live · 32 planned</sub></summary>
+<summary><b>AI Engineering</b> — From tokens and embeddings to retrieval, agents and production LLM systems. <sub>🟢 7 live · 30 planned</sub></summary>
 
 | Module | Live lessons | Planned topics |
 |---|---|---|
 | **Foundations** | — | AI, ML, deep learning and generative AI · Supervised, unsupervised and reinforcement learning · Neural networks · Training versus inference |
 | **Language Models** | [Embeddings and vector similarity](https://aqkprogrammer.github.io/visual-engineering/ai/embeddings/)<br>[Tokens and tokenization](https://aqkprogrammer.github.io/visual-engineering/ai/tokenization/) | Attention mechanisms · Transformers · Large language models · Pretraining, fine-tuning and inference |
-| **Building with LLMs** | [Context windows and token budgets](https://aqkprogrammer.github.io/visual-engineering/ai/context-windows/) | Prompt engineering · Structured outputs · Function and tool calling |
+| **Building with LLMs** | [Context windows and token budgets](https://aqkprogrammer.github.io/visual-engineering/ai/context-windows/) | Prompt engineering · Structured outputs |
 | **Retrieval & RAG** | [Chunking documents for retrieval](https://aqkprogrammer.github.io/visual-engineering/ai/chunking/)<br>[How retrieval-augmented generation (RAG) works](https://aqkprogrammer.github.io/visual-engineering/ai/how-rag-works/)<br>[Keyword, vector and hybrid search](https://aqkprogrammer.github.io/visual-engineering/ai/hybrid-search/) | Embedding pipelines · Vector databases · Reranking · RAG evaluation |
-| **Agents** | — | AI agents and agentic workflows · Planning, memory, tools and execution · Model Context Protocol (MCP) · Multi-agent systems |
+| **Agents** | [AI agents, tool calling and MCP](https://aqkprogrammer.github.io/visual-engineering/ai/agents-and-tool-calling/) | Agent planning and memory · Multi-agent systems · Evaluating agents |
 | **Production AI** | — | AI gateways and model routing · Semantic caching · Model latency, throughput and cost · GPU inference fundamentals · Quantization · AI observability and tracing |
 | **Safety & Quality** | — | Hallucinations and grounding · Guardrails and prompt injection · LLM evaluation · AI security and privacy |
 | **Multimodal AI** | — | Multimodal AI · Computer vision · Speech recognition and text-to-speech |
@@ -209,13 +210,14 @@ flowchart LR
 - [x] **Phase 7b — Software architecture lessons.** Monoliths and microservices, hexagonal architecture, event sourcing and CQRS
 - [x] **Phase 8 — Polish.** Demos compute 6–30× faster, progress export and import, shareable sandbox links — [v1.2.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.2.0)
 - [x] **Phase 9 — AI engineering playground.** Chunking, keyword-versus-vector-versus-hybrid search, and context-window budgets — three lessons, each with an explorer — [v1.3.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.3.0)
-- [ ] **Later.** Agents and tool calling, side-by-side sandbox comparisons, a knowledge map
+- [x] **Phase 10a — AI agents.** Tool calling, the Model Context Protocol and agent safety, with a step-by-step agent loop
+- [ ] **Later.** Sharding and replication, side-by-side sandbox comparisons, a knowledge map
 
 ## ⚠️ Known limitations
 
 Honest about what the site doesn't do yet:
 
-- **Coverage.** 21 lessons across all seven domains; most domains still have more planned topics than published lessons.
+- **Coverage.** 22 lessons across all seven domains; most domains still have more planned topics than published lessons.
 - **Teaching models, not benchmarks.** Simulations simplify on purpose, list their assumptions, and use illustrative capacities and timings.
 - **Phones.** Diagrams are fitted to the screen and their text is small; each simulation can be enlarged into a scrollable view, and its numbers are also shown as text.
 - **Progress is per browser.** It isn't synced between devices; export it to a file and import it elsewhere to move it.

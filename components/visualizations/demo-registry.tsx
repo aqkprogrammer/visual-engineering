@@ -72,6 +72,9 @@ const HybridSearchExplorer = dynamic(() =>
 const ContextBudgetExplorer = dynamic(() =>
   import("./scenes/context-budget/context-budget-explorer").then((m) => m.ContextBudgetExplorer),
 );
+const AgentWalkthrough = dynamic(() =>
+  import("./scenes/agent-loop/agent-walkthrough").then((m) => m.AgentWalkthrough),
+);
 const SandboxSimulation = dynamic(() =>
   import("./scenes/sandbox/sandbox-simulation").then((m) => m.SandboxSimulation),
 );
@@ -125,5 +128,7 @@ export function Demo({ slug }: { slug: DemoSlug }) {
       return <HybridSearchExplorer />;
     case "context-budget":
       return <ContextBudgetExplorer />;
+    case "agent-loop":
+      return <AgentWalkthrough />;
   }
 }

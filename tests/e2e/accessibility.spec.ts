@@ -38,6 +38,8 @@ const PAGES = [
   "/playground/chunking",
   "/playground/hybrid-search",
   "/playground/context-budget",
+  "/playground/agent-loop",
+  "/ai/agents-and-tool-calling",
   "/ai/chunking",
   "/ai/hybrid-search",
   "/ai/context-windows",

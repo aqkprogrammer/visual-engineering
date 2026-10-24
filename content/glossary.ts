@@ -454,9 +454,9 @@ export default defineGlossary([
     id: "prompt-injection",
     term: "Prompt injection",
     definition:
-      "Text crafted to override a model's instructions, for example hidden inside a retrieved document or web page. Retrieved content should be treated as untrusted data.",
-    lesson: "ai/how-rag-works",
-    related: ["rag"],
+      "Text crafted to override a model's instructions, for example hidden inside a retrieved document, web page or tool result. Retrieved content should be treated as untrusted data.",
+    lesson: "ai/agents-and-tool-calling",
+    related: ["rag", "ai-agent", "excessive-agency"],
   },
   {
     id: "chunk-overlap",
@@ -541,6 +541,41 @@ export default defineGlossary([
       "The finding that language models often use information at the start or end of a long input more reliably than information in the middle.",
     lesson: "ai/context-windows",
     related: ["context-window"],
+  },
+  {
+    id: "tool-calling",
+    term: "Tool calling",
+    aliases: ["Function calling"],
+    definition:
+      "A model replying with a structured request to run one of the functions it was given, instead of plain text. The application runs it and returns the result.",
+    lesson: "ai/agents-and-tool-calling",
+    related: ["ai-agent", "model-context-protocol"],
+  },
+  {
+    id: "ai-agent",
+    term: "AI agent",
+    aliases: ["Agentic loop"],
+    definition:
+      "A language model running in a loop of tool calls, choosing its next step from the results so far, until it answers or a limit stops it.",
+    lesson: "ai/agents-and-tool-calling",
+    related: ["tool-calling", "prompt-injection"],
+  },
+  {
+    id: "model-context-protocol",
+    term: "Model Context Protocol",
+    aliases: ["MCP"],
+    definition:
+      "An open protocol, built on JSON-RPC, through which applications discover and call tools exposed by servers: tools/list to find them, tools/call to use one.",
+    lesson: "ai/agents-and-tool-calling",
+    related: ["tool-calling"],
+  },
+  {
+    id: "excessive-agency",
+    term: "Excessive agency",
+    definition:
+      "Giving a model-driven system more tools, permissions or autonomy than its task needs, so a mistake or an injected instruction can do real damage.",
+    lesson: "ai/agents-and-tool-calling",
+    related: ["prompt-injection", "ai-agent"],
   },
   // Computer science — databases
   {

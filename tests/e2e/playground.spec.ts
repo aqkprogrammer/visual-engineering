@@ -333,3 +333,15 @@ test("context budget: dropping old turns loses the order number; summarising kee
   await page.getByRole("radio", { name: /Summarise older turns/ }).check();
   await expect(page.getByText(/The assistant can answer/)).toBeVisible();
 });
+
+test("agent loop: approval blocks an injected refund", async ({ page }) => {
+  await page.goto("/playground/agent-loop");
+  await page.getByText("Prompt injection", { exact: true }).click();
+  await expect(page.getByText(/Where this run ends: Harmful/)).toBeVisible();
+  await page.getByText("Human approval for refunds", { exact: true }).click();
+  await expect(page.getByText(/the injected \$500 refund was blocked/)).toBeVisible();
+  await page.getByRole("button", { name: "Next step" }).click();
+  await expect(
+    page.getByRole("list", { name: "Messages so far" }).getByRole("listitem"),
+  ).toHaveCount(2);
+});

@@ -270,6 +270,36 @@ export default definePlayground([
     ],
   },
   {
+    slug: "agent-loop",
+    title: "Agent loop with tools",
+    summary:
+      "Step through an agent that refunds an order with tools from an MCP server, then break it with a timeout, a prompt injection and a loop that never ends.",
+    domain: "ai",
+    lesson: "ai/agents-and-tool-calling",
+    related: ["ai/context-windows"],
+    kind: "walkthrough",
+    tryThis: [
+      "Step through the normal run: four model calls, three tools, then an answer. Watch the conversation — and the tokens billed — grow with every call.",
+      "Choose Tool times out with a step limit of 3: the loop stops before the refund. Raise the limit to 5 and the model's retry succeeds.",
+      "Choose Prompt injection with no safeguards: an instruction hidden in the order's note gets $500 refunded to a stranger. Turn on human approval or server-side validation and the correct $84 is refunded instead.",
+      "Choose Never finishes: the step limit is the only thing that ends the loop, after billing almost three times the input tokens of a normal run.",
+    ],
+    references: [
+      {
+        title: "Model Context Protocol specification: Tools",
+        url: "https://modelcontextprotocol.io/specification/latest/server/tools",
+        publisher: "Model Context Protocol",
+        kind: "specification",
+      },
+      {
+        title: "Building effective agents",
+        url: "https://www.anthropic.com/engineering/building-effective-agents",
+        publisher: "Anthropic",
+        kind: "article",
+      },
+    ],
+  },
+  {
     slug: "btree-index",
     title: "B+ tree index explorer",
     summary:

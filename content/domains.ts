@@ -224,7 +224,7 @@ export default defineDomains([
         id: "building-with-llms",
         title: "Building with LLMs",
         summary: "Prompting, structured output and letting models call your code.",
-        plannedTopics: ["Prompt engineering", "Structured outputs", "Function and tool calling"],
+        plannedTopics: ["Prompt engineering", "Structured outputs"],
       },
       {
         id: "retrieval",
@@ -236,12 +236,7 @@ export default defineDomains([
         id: "agents",
         title: "Agents",
         summary: "Loops of planning, tool use and memory — and how to keep them on track.",
-        plannedTopics: [
-          "AI agents and agentic workflows",
-          "Planning, memory, tools and execution",
-          "Model Context Protocol (MCP)",
-          "Multi-agent systems",
-        ],
+        plannedTopics: ["Agent planning and memory", "Multi-agent systems", "Evaluating agents"],
       },
       {
         id: "production-ai",
