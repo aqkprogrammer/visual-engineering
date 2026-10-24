@@ -31,6 +31,8 @@ import { ActionButton, SegmentedControl, Stat, Toggle } from "../../player/contr
 import { SimulationPlayer } from "../../player/simulation-player";
 import { useActionLog } from "../../player/use-action-log";
 import { usePlayback } from "../../player/use-playback";
+import { CompareDesigns } from "./compare-designs";
+import { NumberSelect, range } from "./number-select";
 import { SandboxScene } from "./sandbox-scene";
 
 const SEED = 1;
@@ -42,43 +44,6 @@ export const SANDBOX_ASSUMPTIONS = [
   `A flushed cache warms up linearly over ${WARMUP_TICKS} seconds. Reads go to replicas when there are any; writes always go to the primary.`,
   "Cost is in illustrative units (one per server, replica or cache, half per queue and worker), not prices.",
 ];
-
-const range = (from: number, to: number) =>
-  Array.from({ length: to - from + 1 }, (_, i) => from + i);
-
-function NumberSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  options: number[];
-  onChange(value: number): void;
-}) {
-  const id = useId();
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-xs font-medium text-fg-muted">
-        {label}
-      </label>
-      <select
-        id={id}
-        data-native-keys
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="rounded-md border border-border-strong bg-bg px-2.5 py-1 text-sm"
-      >
-        {options.map((n) => (
-          <option key={n} value={n}>
-            {n}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
 
 const per = (n: number) => `${Math.round(n).toLocaleString("en-US")}/s`;
 const pctText = (n: number) => `${(n * 100).toFixed(n > 0 && n < 0.1 ? 1 : 0)}%`;
@@ -216,15 +181,19 @@ function Sandbox({ shared }: { shared: SharedDesign | null }) {
   };
 
   const ticks = Math.max(challenge.ticks, (log.actions.at(-1)?.tick ?? 0) + 30);
+  const actions = useMemo(
+    () => [...challenge.script, ...log.actions].sort((x, y) => x.tick - y.tick),
+    [challenge.script, log.actions],
+  );
   const frames = useMemo(
     () =>
       runSimulation(sandboxModel, {
         params: { architecture, traffic },
         seed: SEED,
         ticks,
-        actions: [...challenge.script, ...log.actions].sort((x, y) => x.tick - y.tick),
+        actions,
       }),
-    [architecture, traffic, ticks, challenge.script, log.actions],
+    [architecture, traffic, ticks, actions],
   );
   const playback = usePlayback({ frameCount: frames.length, frameMs: 400 });
   const state = frames[Math.min(playback.frame, frames.length - 1)]!.state;
@@ -524,6 +493,15 @@ function Sandbox({ shared }: { shared: SharedDesign | null }) {
             </div>
           </div>
         }
+      />
+      <CompareDesigns
+        architecture={architecture}
+        traffic={traffic}
+        ticks={ticks}
+        actions={actions}
+        framesA={frames}
+        goals={challenge.goals}
+        onAdopt={(b) => design(b)}
       />
     </div>
   );
