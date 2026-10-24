@@ -8,6 +8,9 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 - **AI agents, tool calling and MCP** — a lesson with a step-by-step agent loop: a support assistant refunds an order using tools from an MCP server, and you can break it with a timeout, a prompt injection hidden in a tool result, and a task that never finishes, then fix it with a step limit, human approval and server-side validation.
 - The **AI engineering foundations** path ends with the agents lesson, and the glossary gains 4 terms.
+- **Database replication** — a lesson and simulation: a leader streams changes to two followers; watch replication lag cause stale reads, fix them with read-your-writes, crash the leader and lose unshipped writes, and compare synchronous replication's safety and latency.
+- **Sharding and consistent hashing** — a lesson and explorer: see hash modulo move 80% of keys when a node is added, consistent hashing move far fewer, virtual nodes even out the load, and a hot key overload one node whatever you do.
+- The **System design foundations** path gains both lessons, and the glossary 12 terms.
 
 ## [1.3.0] — 2026-10-24
 
