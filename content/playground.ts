@@ -300,6 +300,64 @@ export default definePlayground([
     ],
   },
   {
+    slug: "sharding",
+    title: "Sharding explorer",
+    summary:
+      "Spread 600 keys across nodes with hash modulo or consistent hashing, add and remove nodes, and see how many keys move and which node gets hot.",
+    domain: "system-design",
+    lesson: "system-design/sharding-and-consistent-hashing",
+    kind: "explorer",
+    tryThis: [
+      "With hash mod N, add a fifth node: about 80% of keys move, when only 20% needed to.",
+      "Switch to consistent hashing with one position per node: adding a node moves few keys, but the busiest node holds about twice its fair share.",
+      "Give each node 64 virtual nodes: about as many keys move as an even split needs, and they spread evenly.",
+      "Choose one hot key: whatever the strategy, the node that owns it takes a third or more of all requests.",
+    ],
+    references: [
+      {
+        title: "Dynamo: Amazon's Highly Available Key-value Store",
+        url: "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+        publisher: "DeCandia et al., SOSP 2007",
+        kind: "paper",
+      },
+      {
+        title: "Dynamo (Cassandra architecture)",
+        url: "https://cassandra.apache.org/doc/latest/cassandra/architecture/dynamo.html",
+        publisher: "Apache Cassandra",
+        kind: "official-docs",
+      },
+    ],
+  },
+  {
+    slug: "replication",
+    title: "Leader-follower replication",
+    summary:
+      "Stream changes from a leader to two followers, read from replicas, crash the leader and compare asynchronous and synchronous writes.",
+    domain: "system-design",
+    lesson: "system-design/replication",
+    kind: "simulation",
+    tryThis: [
+      "Play with reads going to followers: about one read in ten misses the user's latest save. Slow down db-3 and it becomes about half.",
+      "Switch reads to read-your-writes: stale reads disappear — until db-3 lags for longer than the read-your-writes window.",
+      "With asynchronous writes, crash the leader: a write already confirmed as saved never reached the new leader, and is lost.",
+      "Switch to waiting for db-2 and crash the leader again: nothing is lost, but every write takes 55 ms instead of 5. Then stop db-2 and watch writes stop being saved at all.",
+    ],
+    references: [
+      {
+        title: "Log-Shipping Standby Servers (streaming and synchronous replication)",
+        url: "https://www.postgresql.org/docs/current/warm-standby.html",
+        publisher: "PostgreSQL",
+        kind: "official-docs",
+      },
+      {
+        title: "Dynamo: Amazon's Highly Available Key-value Store",
+        url: "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+        publisher: "DeCandia et al., SOSP 2007",
+        kind: "paper",
+      },
+    ],
+  },
+  {
     slug: "btree-index",
     title: "B+ tree index explorer",
     summary:

@@ -42,13 +42,7 @@ export default defineDomains([
         title: "Data at Scale",
         summary:
           "Caching, indexing, replication and partitioning — and how to choose a data store.",
-        plannedTopics: [
-          "Database indexing and query optimization",
-          "SQL versus NoSQL",
-          "Replication and partitioning",
-          "Sharding",
-          "Consistent hashing",
-        ],
+        plannedTopics: ["Database indexing and query optimization", "SQL versus NoSQL"],
       },
       {
         id: "consistency",
