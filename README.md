@@ -213,7 +213,7 @@ flowchart LR
 - [x] **Phase 8 — Polish.** Demos compute 6–30× faster, progress export and import, shareable sandbox links — [v1.2.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.2.0)
 - [x] **Phase 9 — AI engineering playground.** Chunking, keyword-versus-vector-versus-hybrid search, and context-window budgets — three lessons, each with an explorer — [v1.3.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.3.0)
 - [x] **Phase 10a — AI agents.** Tool calling, the Model Context Protocol and agent safety, with a step-by-step agent loop
-- [x] **Phase 10b — Data at scale.** Replication (lag, stale reads, synchronous writes, failover) and sharding with consistent hashing, each with a new demo
+- [x] **Phase 10b — Data at scale.** Replication (lag, stale reads, synchronous writes, failover) and sharding with consistent hashing, each with a new demo — [v1.4.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.4.0)
 - [ ] **Later.** Side-by-side sandbox comparisons, a knowledge map, more system design lessons
 
 ## ⚠️ Known limitations
