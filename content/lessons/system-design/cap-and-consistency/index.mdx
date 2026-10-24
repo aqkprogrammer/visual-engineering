@@ -1,0 +1,126 @@
+<Definition>
+
+The **CAP theorem** says that when a network **partition** separates the replicas of a system, it must choose between **consistency** — every read sees the latest write — and **availability** — every request gets an answer. **PACELC** adds what happens the rest of the time: **else**, without a partition, the trade-off is between **latency** and consistency.
+
+</Definition>
+
+## The problem it solves
+
+Once data lives in more than one place, two copies can disagree. Most of the time the network carries every change quickly and the disagreement is brief. But networks do fail: a link between data centres goes down, and each side carries on without hearing from the other.
+
+At that moment the system has to decide what to do with a request it can't coordinate. It can refuse, and stay consistent. Or it can answer from what it has, and stay available — accepting that the two sides may now disagree and will have to be reconciled. There is no option that does both, and the choice changes what users experience and what the code must handle.
+
+## An everyday analogy
+
+<Analogy>
+
+Two branches of a bank that share an account ledger by phone. If the phone line goes dead, a cautious branch refuses withdrawals until it can call head office: no money is ever overdrawn, but customers are turned away. A permissive branch lets customers withdraw and writes it down: customers are served, but when the line comes back, the two ledgers have to be merged — and an account might be overdrawn.
+
+</Analogy>
+
+Where the analogy breaks down: a bank clerk can use judgement when merging ledgers. Software needs the merge rule decided in advance — and a careless rule, such as "keep whichever entry is newest", silently throws transactions away.
+
+## See it in action
+
+<Demo slug="consistency" />
+
+Things to try:
+
+- With **strong consistency**, every answer takes 82 ms — a round trip to another region — and every user sees the same count.
+- **Cut Europe off**: Europe's likes are refused, because one replica isn't a majority, while the US carries on — at 122 ms, through Asia. Nothing is lost.
+- Switch to **Eventual, last writer wins**: answers take 2 ms and Europe keeps working, but the regions disagree. **Heal the partition** and one side's likes disappear for good — whichever side didn't write last.
+- Switch to **Eventual, merge counts**: the same disagreement while cut off, but after healing every like is counted.
+
+## Step by step: what each choice does during a partition
+
+<Steps>
+
+1. **The network splits.** Europe's replica can't reach the US or Asia; the US and Asia can still reach each other.
+2. **Consistent (CP) behaviour:** an update needs a majority of replicas. The US and Asia together are a majority and keep working; Europe alone isn't, so it refuses requests rather than risk answers that disagree.
+3. **Available (AP) behaviour:** every replica keeps accepting updates and answering reads from its own data. Both sides work, and their data drifts apart.
+4. **The partition heals.** CP replicas simply catch up. AP replicas must reconcile two histories that both happened.
+5. **Reconciliation decides what survives.** Keeping the newest write loses the other side's changes; merging, where the data type allows it, keeps them all.
+
+</Steps>
+
+## Under the hood
+
+**CAP is about partitions, not a menu of two.** Brewer's conjecture was proved by Gilbert and Lynch in 2002. Brewer later wrote that the "2 of 3" formulation was always misleading: partitions are rare, so there is little reason to give up consistency or availability when the system isn't partitioned. The choice only bites during a partition, and it can be made differently for different operations and data.
+
+**PACELC: the everyday trade-off is latency.** Abadi pointed out that CAP says nothing about normal operation, where most of a system's life is spent. Even with a healthy network, keeping replicas strongly consistent means waiting for other replicas before answering — in the demo, 82 ms instead of 2 ms. PACELC classifies systems by both choices: under a Partition, Availability or Consistency; Else, Latency or Consistency.
+
+**Quorums.** Strong consistency in a leaderless store often comes from majority quorums: if updates and reads each reach a majority, any read overlaps the latest write. That is why one isolated replica of three can't serve strongly consistent requests: it can't reach a majority.
+
+**Consistency is a spectrum.** Between "every read sees the latest write" (linearizability) and "replicas agree eventually" (eventual consistency) lie useful middle grounds, such as read-your-writes from the replication lesson. Many databases let you choose per request: DynamoDB, for example, makes eventually consistent reads the default and offers strongly consistent reads at twice the cost.
+
+**Last writer wins.** Resolving conflicts by keeping the write with the newest timestamp is simple and common, but for anything that accumulates — counters, carts, balances — it discards every concurrent change but one. Clock skew between machines makes "newest" unreliable too.
+
+**CRDTs.** Conflict-free replicated data types, formalised by Shapiro, Preguiça, Baquero and Zawirski in 2011, are data structures designed so that replicas which have seen the same updates converge to the same value, whatever order the updates arrived in — **strong eventual consistency**. The demo's counter is the simplest: each replica keeps its own tally, and the count is their sum, so merging two histories loses nothing.
+
+## Example: a counter that merges safely
+
+```ts
+type GCounter = Record<string, number>; // replica id → likes counted there
+
+const increment = (c: GCounter, replica: string, n = 1): GCounter => ({
+  ...c,
+  [replica]: (c[replica] ?? 0) + n,
+});
+
+// Merging takes the larger tally for each replica: order and duplicates don't matter.
+const merge = (a: GCounter, b: GCounter): GCounter =>
+  Object.fromEntries(
+    [...new Set([...Object.keys(a), ...Object.keys(b)])].map((k) => [k, Math.max(a[k] ?? 0, b[k] ?? 0)]),
+  );
+
+const value = (c: GCounter) => Object.values(c).reduce((n, v) => n + v, 0);
+```
+
+## In production
+
+**Choose per operation.** A product's like count can be eventually consistent; a bank balance or a seat reservation usually can't. Many systems mix both.
+
+**Make the trade-off visible.** If reads may be stale, design the interface for it: show the user's own changes immediately, label counts as approximate, or re-read before an irreversible action.
+
+**Decide conflict rules up front.** For AP data, choose merge semantics — CRDTs, application-level merges, or compensating actions — before the first partition, not during it. Brewer's advice is to detect partitions, operate in a limited mode, and recover with explicit compensation.
+
+**Test partitions.** Partitions are rare, which is why their handling is often broken. Inject them in testing and check what users see and what data survives.
+
+<Callout kind="illustrative" title="The demo's numbers">
+
+Three replicas, a 100 ms step and round trips of 80–160 ms are round numbers for teaching. Real systems have many more replicas and much more varied latency, but the choices — and what they cost — are the same.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Strong consistency (CP) for data where a wrong or conflicting answer is worse than no answer: balances, inventory, unique usernames.",
+    "Eventual consistency (AP) for data where staying up matters more than perfect agreement: likes, view counts, feeds, shopping carts with merges.",
+    "CRDTs or explicit merge logic whenever replicas can accept writes independently.",
+  ]}
+  avoid={[
+    "Last-writer-wins for values that accumulate, such as counters or carts.",
+    "Strong consistency across distant regions for latency-sensitive paths without measuring the cost.",
+    "Assuming partitions never happen because they are rare.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Pick any two of consistency, availability and partition tolerance."** Partitions aren't optional in a distributed system. The real choice is what to do when one happens — and without a partition you can have both.
+
+**"Eventual consistency means data might never be correct."** It means replicas converge once updates stop arriving. How quickly, and what is lost on the way, depends on the design.
+
+**"A CP system is down during a partition."** Only the side without a majority stops serving; in the demo, the US keeps working.
+
+**"Last writer wins is safe because the newest data is kept."** It keeps one write and drops the others, and "newest" depends on clocks that can disagree.
+
+## Failure modes and debugging
+
+- **Counts or totals drop after a network incident** — last-writer-wins resolved conflicts by discarding updates. Use a mergeable type or record changes as events.
+- **One region returns errors while others are fine** — it is on the minority side of a partition in a quorum system. Expected behaviour; check that clients retry against reachable regions.
+- **Users see their own change disappear and reappear** — reads hit replicas at different points. Add read-your-writes or session stickiness.
+- **Writes in a distant region are slow even when healthy** — strong consistency waits for other regions on every write. Measure it, and relax consistency where the data allows.
+- **Duplicate or conflicting records after a split** — both sides accepted writes for the same key. Define conflict resolution, or route each key's writes to one home region.

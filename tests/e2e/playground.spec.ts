@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 const player = (page: Page) =>
   page
     .getByRole("region", {
-      name: /simulation|handshake|self-healing|explorer|index|resolution|pipeline|cache|zones|strategies|autoscaling|microservices|event sourcing|replication|retries|breakers|cdn/i,
+      name: /simulation|handshake|self-healing|explorer|index|resolution|pipeline|cache|zones|strategies|autoscaling|microservices|event sourcing|replication|retries|breakers|cdn|partition/i,
     })
     .first();
 const caption = (page: Page) => player(page).locator("p[aria-live]");
@@ -389,4 +389,25 @@ test("cdn: turning the CDN off sends every request to the origin", async ({ page
   await seek(page, 30);
   await expect(caption(page)).toContainText("the origin receives 900 requests/s");
   await expect(caption(page)).toContainText("users in Asia wait 250 ms");
+});
+
+test("consistency: last writer wins loses likes after a partition; merging keeps them", async ({
+  page,
+}) => {
+  await page.goto("/playground/consistency");
+  await page.getByText("Eventual, last writer wins", { exact: true }).click();
+  await seek(page, 40);
+  await page.getByRole("button", { name: "Cut Europe off" }).click();
+  await seek(page, 80);
+  await page.getByRole("button", { name: "Heal the partition" }).click();
+  await seek(page, 120);
+  await expect(caption(page)).toContainText(/; [1-9]\d* lost\./);
+
+  await page.getByText("Eventual, merge counts", { exact: true }).click();
+  await seek(page, 40);
+  await page.getByRole("button", { name: "Cut Europe off" }).click();
+  await seek(page, 80);
+  await page.getByRole("button", { name: "Heal the partition" }).click();
+  await seek(page, 120);
+  await expect(caption(page)).toContainText("0 lost");
 });

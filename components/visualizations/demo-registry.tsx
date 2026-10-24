@@ -87,6 +87,9 @@ const RetriesSimulation = dynamic(() =>
 const CdnSimulation = dynamic(() =>
   import("./scenes/cdn/cdn-simulation").then((m) => m.CdnSimulation),
 );
+const ConsistencySimulation = dynamic(() =>
+  import("./scenes/consistency/consistency-simulation").then((m) => m.ConsistencySimulation),
+);
 const SandboxSimulation = dynamic(() =>
   import("./scenes/sandbox/sandbox-simulation").then((m) => m.SandboxSimulation),
 );
@@ -150,5 +153,7 @@ export function Demo({ slug }: { slug: DemoSlug }) {
       return <RetriesSimulation />;
     case "cdn":
       return <CdnSimulation />;
+    case "consistency":
+      return <ConsistencySimulation />;
   }
 }

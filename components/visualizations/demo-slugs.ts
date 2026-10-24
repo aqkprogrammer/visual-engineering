@@ -27,6 +27,7 @@ export const DEMO_SLUGS = [
   "replication",
   "retries",
   "cdn",
+  "consistency",
 ] as const;
 
 export type DemoSlug = (typeof DEMO_SLUGS)[number];

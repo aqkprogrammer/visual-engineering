@@ -78,6 +78,10 @@ export default defineLearningPaths([
         why: "When writes or data outgrow one machine, the data itself has to be split.",
       },
       {
+        lesson: "system-design/cap-and-consistency",
+        why: "With data in several places, a network failure forces a choice between refusing requests and letting copies disagree.",
+      },
+      {
         lesson: "system-design/rate-limiting",
         why: "Limits protect shared capacity from bursts, abuse and runaway retries.",
       },

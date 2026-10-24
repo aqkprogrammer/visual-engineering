@@ -412,6 +412,51 @@ export default defineGlossary([
     related: ["cdn"],
   },
 
+  {
+    id: "cap-theorem",
+    term: "CAP theorem",
+    aliases: ["CAP"],
+    definition:
+      "During a network partition, a replicated system must choose between consistency (refusing requests it can't coordinate) and availability (answering from data that may diverge).",
+    lesson: "system-design/cap-and-consistency",
+    related: ["pacelc", "network-partition", "quorum"],
+  },
+  {
+    id: "pacelc",
+    term: "PACELC",
+    definition:
+      "An extension of CAP: if there is a Partition, choose Availability or Consistency; Else, choose Latency or Consistency — because consistent replicas wait for each other even when the network is healthy.",
+    lesson: "system-design/cap-and-consistency",
+    related: ["cap-theorem"],
+  },
+  {
+    id: "network-partition",
+    term: "Network partition",
+    aliases: ["Partition"],
+    definition:
+      "A network failure that splits a system's nodes into groups that can't communicate with each other, while each group keeps running.",
+    lesson: "system-design/cap-and-consistency",
+    related: ["cap-theorem", "split-brain"],
+  },
+  {
+    id: "crdt",
+    term: "CRDT",
+    aliases: ["Conflict-free replicated data type"],
+    definition:
+      "A data type designed so that replicas updated independently converge to the same value when they exchange updates, in any order — for example a counter that keeps a tally per replica.",
+    lesson: "system-design/cap-and-consistency",
+    related: ["last-writer-wins", "eventual-consistency"],
+  },
+  {
+    id: "last-writer-wins",
+    term: "Last writer wins",
+    aliases: ["LWW"],
+    definition:
+      "Resolving conflicting copies by keeping the one with the newest timestamp. Simple, but it discards concurrent changes, which loses data for counters, carts and other accumulating values.",
+    lesson: "system-design/cap-and-consistency",
+    related: ["crdt"],
+  },
+
   // Networking
   {
     id: "dns",
