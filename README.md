@@ -208,7 +208,7 @@ flowchart LR
 - [x] **Phase 7a — Cloud lessons.** Regions and Availability Zones, blue-green and canary deployments, autoscaling — each with a new simulation
 - [x] **Phase 7b — Software architecture lessons.** Monoliths and microservices, hexagonal architecture, event sourcing and CQRS
 - [x] **Phase 8 — Polish.** Demos compute 6–30× faster, progress export and import, shareable sandbox links — [v1.2.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.2.0)
-- [x] **Phase 9 — AI engineering playground.** Chunking, keyword-versus-vector-versus-hybrid search, and context-window budgets — three lessons, each with an explorer
+- [x] **Phase 9 — AI engineering playground.** Chunking, keyword-versus-vector-versus-hybrid search, and context-window budgets — three lessons, each with an explorer — [v1.3.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.3.0)
 - [ ] **Later.** Agents and tool calling, side-by-side sandbox comparisons, a knowledge map
 
 ## ⚠️ Known limitations
