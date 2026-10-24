@@ -39,6 +39,8 @@ export function SiteHeader() {
           </a>
           <Link
             href="/search"
+            title="Search (⌘K or Ctrl+K)"
+            aria-keyshortcuts="Meta+K Control+K"
             className="inline-flex size-9 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
           >
             <Search aria-hidden className="size-[18px]" strokeWidth={1.75} />
