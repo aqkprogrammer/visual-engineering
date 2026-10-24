@@ -2,6 +2,14 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Knowledge map** (`/map`) — every lesson on one map, row by domain, with arrows to the lessons that build on each one and every learning path drawn as a numbered route. Lessons you've completed, and the ones you're ready for, are marked from the progress saved in your browser.
+- **Compare two sandbox designs** — run a second design under exactly the same traffic and failures, and compare goals, cost, requests served, worst error rate and latency, and the usual bottleneck side by side.
+- **Timeouts, retries and circuit breakers** — a lesson and simulation: slow a dependency for five seconds and watch immediate retries keep it overloaded long afterwards, backoff fail to help on its own, and a retry budget or circuit breaker let it recover. The first lesson in the Resilience module, with 4 new glossary terms.
+
 ## [1.4.0] — 2026-10-24
 
 Agents, replication and sharding: three lessons, each with its own demo — 24 lessons and 25 demos in all.
@@ -77,6 +85,7 @@ The first release: an open, static, accessible platform for learning how technol
 - CI runs lint, strict types, 330+ unit and component tests, a static build, page-weight budgets, an internal link check, end-to-end journeys on desktop and phone (including keyboard-only journeys and a no-third-party-requests check), axe WCAG 2.2 AA audits of every page type in both themes, Lighthouse budgets and a full-history secret scan. The site deploys only when all of them pass.
 - No accounts, analytics, cookies or third-party requests.
 
+[Unreleased]: https://github.com/aqkprogrammer/visual-engineering/compare/v1.4.0...HEAD
 [1.4.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.4.0
 [1.3.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.3.0
 [1.2.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.2.0
