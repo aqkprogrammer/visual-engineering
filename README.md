@@ -204,16 +204,17 @@ flowchart LR
 - [x] **Phase 6 — Release 1.0.** Release checklist, full-history secret scan, link check, changelog — [v1.0.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.0.0)
 - [x] **Phase 7a — Cloud lessons.** Regions and Availability Zones, blue-green and canary deployments, autoscaling — each with a new simulation
 - [x] **Phase 7b — Software architecture lessons.** Monoliths and microservices, hexagonal architecture, event sourcing and CQRS
-- [ ] **Later.** Shareable scenario links, progress export, AI engineering playground
+- [x] **Phase 8 — Polish.** Demos compute 6–30× faster, progress export and import, shareable sandbox links
+- [ ] **Later.** AI engineering playground, side-by-side sandbox comparisons, a knowledge map
 
 ## ⚠️ Known limitations
 
-Honest about what 1.0 doesn't do yet:
+Honest about what the site doesn't do yet:
 
 - **Coverage.** 18 lessons across all seven domains; most domains still have more planned topics than published lessons.
 - **Teaching models, not benchmarks.** Simulations simplify on purpose, list their assumptions, and use illustrative capacities and timings.
 - **Phones.** Diagrams are fitted to the screen and their text is small; each simulation can be enlarged into a scrollable view, and its numbers are also shown as text.
-- **Progress is per browser.** It isn't synced between devices and can't be exported yet.
+- **Progress is per browser.** It isn't synced between devices; export it to a file and import it elsewhere to move it.
 - **English only.** No translations yet.
 - **Lab performance only.** Speed budgets are checked with Lighthouse in CI; there is no field (real-user) data, because the site doesn't collect any.
 
