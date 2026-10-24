@@ -1,6 +1,39 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("search", () => {
+  test("Ctrl+K opens quick search from any page", async ({ page }) => {
+    await page.goto("/glossary/");
+    await expect(page.locator("html")).toHaveAttribute("data-quick-search", "ready");
+    await page.keyboard.press("Control+K");
+    const box = page.getByRole("combobox", { name: "Search" });
+    await expect(box).toBeFocused();
+    await box.fill("consistent hashing");
+    await expect(page.getByRole("option").first()).toContainText("consistent hashing", {
+      ignoreCase: true,
+    });
+    await page.keyboard.press("Enter");
+    await expect(page).not.toHaveURL(/\/glossary\/?$/);
+    await expect(page.getByRole("combobox", { name: "Search" })).toHaveCount(0);
+  });
+
+  test("keeps what is typed straight after Ctrl+K", async ({ page }) => {
+    await page.goto("/explore/");
+    await expect(page.locator("html")).toHaveAttribute("data-quick-search", "ready");
+    await page.keyboard.press("Control+K");
+    await page.keyboard.type("dns", { delay: 0 });
+    await expect(page.getByRole("combobox", { name: "Search" })).toHaveValue("dns");
+    await expect(page.getByRole("option").first()).toContainText("DNS");
+  });
+
+  test("Escape closes quick search", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("html")).toHaveAttribute("data-quick-search", "ready");
+    await page.keyboard.press("Control+K");
+    await expect(page.getByRole("combobox", { name: "Search" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("combobox", { name: "Search" })).toHaveCount(0);
+  });
+
   test("finds a glossary term and opens it", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("link", { name: "Search", exact: true }).first().click();

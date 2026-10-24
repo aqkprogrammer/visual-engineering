@@ -118,6 +118,16 @@ for (const theme of ["dark", "light"] as const) {
       });
     }
 
+    test("quick search with results has no WCAG A/AA violations", async ({ page }) => {
+      await page.goto("/");
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      await expect(page.locator("html")).toHaveAttribute("data-quick-search", "ready");
+      await page.keyboard.press("Control+K");
+      await page.getByRole("combobox", { name: "Search" }).fill("cache");
+      await expect(page.getByRole("option").first()).toBeVisible();
+      expect(await auditPage(page)).toEqual([]);
+    });
+
     for (const path of PROGRESS_PAGES) {
       test(`${path} with saved progress has no WCAG A/AA violations`, async ({ page }) => {
         await page.addInitScript((value) => {

@@ -216,7 +216,8 @@ flowchart LR
 - [x] **Phase 10a — AI agents.** Tool calling, the Model Context Protocol and agent safety, with a step-by-step agent loop
 - [x] **Phase 10b — Data at scale.** Replication (lag, stale reads, synchronous writes, failover) and sharding with consistent hashing, each with a new demo — [v1.4.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.4.0)
 - [x] **Phase 11 — Connections.** A knowledge map of every lesson and path, side-by-side sandbox comparisons, and a resilience lesson on timeouts, retries and circuit breakers
-- [ ] **Later.** More system design lessons (CDNs, consistency, idempotency), a `⌘K` search palette, layouts designed for phones
+- [x] **Phase 12 — Quick search.** Press ⌘K or Ctrl+K on any page to search everything
+- [ ] **Later.** More system design lessons (CDNs, consistency, idempotency), layouts designed for phones
 
 ## ⚠️ Known limitations
 

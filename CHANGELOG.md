@@ -8,6 +8,7 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 - **Knowledge map** (`/map`) — every lesson on one map, row by domain, with arrows to the lessons that build on each one and every learning path drawn as a numbered route. Lessons you've completed, and the ones you're ready for, are marked from the progress saved in your browser.
 - **Compare two sandbox designs** — run a second design under exactly the same traffic and failures, and compare goals, cost, requests served, worst error rate and latency, and the usual bottleneck side by side.
+- **Quick search** — press ⌘K or Ctrl+K on any page to search lessons, demos, paths, incidents, interview questions and terms, and jump straight to a result with the arrow keys and Enter. It loads only when first used, so pages are no heavier.
 - **Timeouts, retries and circuit breakers** — a lesson and simulation: slow a dependency for five seconds and watch immediate retries keep it overloaded long afterwards, backoff fail to help on its own, and a retry budget or circuit breaker let it recover. The first lesson in the Resilience module, with 4 new glossary terms.
 
 ## [1.4.0] — 2026-10-24

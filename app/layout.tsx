@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { CommandPaletteTrigger } from "@/components/search/command-palette-trigger";
 import { absoluteUrl, site } from "@/lib/site";
 import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
@@ -79,6 +80,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <SiteHeader />
+        <CommandPaletteTrigger />
         <main id="main" tabIndex={-1} className="flex-1 outline-none">
           {children}
         </main>
