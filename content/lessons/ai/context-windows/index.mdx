@@ -1,0 +1,138 @@
+<Definition>
+
+A language model's **context window** is the maximum amount of text, counted in tokens, that it can take into account at once — everything in the request, plus the answer it writes. A **token budget** is how you divide that space, and its cost, between the parts of a request.
+
+</Definition>
+
+## The problem it solves
+
+A model doesn't remember earlier requests. Each time an application calls it, the request has to contain everything the model should know: instructions, tool definitions, retrieved documents, the conversation so far and the new question. All of it, and the answer, must fit in the window.
+
+Applications grow into that limit. A chat gets longer every turn. A feature adds four more tools. Retrieval sends eight documents instead of three. Eventually a request doesn't fit, and something has to give — or the request fails. Even before that point, every token sent is paid for, on every request.
+
+Deciding what goes in, in what order, and what to cut first is an engineering decision, not something the model handles for you.
+
+## An everyday analogy
+
+<Analogy>
+
+A whiteboard in a meeting room. Before each discussion you write up the agenda, the reference figures and notes from earlier meetings, and leave space at the bottom for the decision. When the board is full you have to rub something out: the oldest notes, a summary of them, or some of the reference figures.
+
+</Analogy>
+
+Where the analogy breaks down: a meeting keeps its whiteboard between discussions. A model gets a fresh, empty board for every request, so the application rewrites everything it wants kept — and pays for writing it again each time.
+
+## See it in action
+
+<Demo slug="context-budget" />
+
+Things to try:
+
+- With an **8K window** and **12 earlier turns**, choose **Send it anyway**. The request doesn't fit and is rejected.
+- Choose **Drop the oldest turns**. It fits, but the order number from turn 1 is gone, so the assistant can't answer.
+- Choose **Summarise older turns**. The answer is right again, but the exact error code the customer pasted is lost: summaries keep facts, not wording.
+- Switch to a **32K window**. Everything fits, but each request costs more. With **40 turns** the conversation costs about fifteen times a 4-turn one, for ten times the turns.
+
+## Step by step: building one request
+
+<Steps>
+
+1. **Fixed parts first.** The system prompt and tool definitions are the same on every request.
+2. **Retrieved context.** Documents found for this question, if the application uses retrieval.
+3. **Conversation history.** Earlier user messages and replies, oldest first — or a summary of the older ones.
+4. **The new message.** The user's latest question.
+5. **Reserve room for the answer.** The maximum output length (often called `max_tokens`) must fit in the window too.
+6. **Count and trim.** If the total is over budget, apply the application's rule: drop, summarise or retrieve less, in a deliberate order.
+
+</Steps>
+
+## Under the hood
+
+**Everything counts.** Anthropic's documentation lists it plainly: the system prompt, every message — including tool results, images and documents — and the tool definitions count towards the window, and so does the output the model generates. Windows vary widely between models; Anthropic's current models, for example, accept up to a million tokens.
+
+**What happens at the limit depends on the API.** Anthropic's API, for example, returns an error if the input alone is longer than the window. On its newer models, a request whose input plus maximum output exceeds the window is accepted, but generation stops if it reaches the limit. Either way, an application that doesn't manage its budget eventually fails or gets cut-off answers.
+
+**Every turn re-sends the history.** Because each request carries the whole conversation, request size grows with every turn and the cost of a conversation grows faster than its length: turn 40 pays for the 39 before it. This is why long chats get expensive and slow even when no single request is large.
+
+**Bigger isn't automatically better.** Liu et al. found that models' performance is often highest when relevant information is at the beginning or end of the input, and degrades when it is in the middle of a long context. Anthropic's documentation describes accuracy and recall degrading as token count grows. Curating what goes in matters as much as the size of the window.
+
+**Prompt caching changes the price, not the space.** When consecutive requests start with an identical prefix — system prompt, tools, earlier turns — providers can cache it and bill those tokens at a discount; Anthropic bills cache reads at a tenth of the normal input price for most of its models, and writes to the cache at a premium. Cached tokens still occupy the window. Put stable content first and changing content last, or nothing can be cached.
+
+**Trimming strategies each lose something.** Dropping the oldest turns loses early facts — often the most important ones, such as an account or order number. Summarising keeps the gist but not exact wording, and costs an extra model call. Retrieving fewer documents may drop the one that answers the question. Many applications combine them: keep critical facts in a structured "memory" field, summarise the middle, and keep recent turns verbatim.
+
+## Example: trimming history to a budget
+
+```ts
+type Message = { role: "user" | "assistant"; content: string; tokens: number };
+
+/** Keeps the newest messages that fit, always keeping pinned facts and the latest message. */
+function fitHistory(
+  pinned: Message[],
+  history: Message[],
+  budget: number,
+): Message[] {
+  const used = pinned.reduce((n, m) => n + m.tokens, 0);
+  const kept: Message[] = [];
+  let total = used;
+  for (let i = history.length - 1; i >= 0; i--) {
+    const message = history[i];
+    if (total + message.tokens > budget && kept.length > 0) break;
+    kept.unshift(message);
+    total += message.tokens;
+  }
+  return [...pinned, ...kept];
+}
+```
+
+Count tokens with the provider's tokenizer or token-counting endpoint, not by characters: the ratio varies by language and content.
+
+## In production
+
+**Count before you send.** Measure every part of a request, log the totals, and alert when requests approach the window. Most providers report token usage in every response.
+
+**Budget per part.** Give retrieval, history and tools explicit shares of the window, so a growing conversation can't silently squeeze out the documents.
+
+**Pin what must survive.** Extract key facts — identifiers, the user's goal, decisions made — into a structured section that is always included, instead of hoping they survive trimming.
+
+**Order for caching.** Stable instructions and tools first, then slowly changing context, then the new message. A single changed character early in the prompt invalidates the cache after it.
+
+**Watch cost per conversation, not per request.** A feature that adds 2,000 tokens to every request adds 2,000 tokens to every turn of every conversation.
+
+<Callout kind="illustrative" title="The demo's numbers">
+
+Token counts and prices are round numbers for teaching, not any model's or provider's. The shape is real: input grows with every part you add and every turn you keep, and so does the bill.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Summarising older turns when conversations are long and their gist matters more than exact wording.",
+    "Pinned, structured facts for anything that must never be trimmed, such as account identifiers.",
+    "Prompt caching for long, stable prefixes such as instructions, tool definitions and reference documents.",
+  ]}
+  avoid={[
+    "Dropping the oldest turns blindly: the first messages often contain the most important facts.",
+    "Filling a large window just because it is available — it costs more and can make answers less reliable.",
+    "Putting changing content before stable content, which defeats caching.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"The model remembers the conversation."** The application re-sends it every time. Whatever isn't in the request doesn't exist for the model.
+
+**"A bigger context window solves memory."** It postpones the problem and raises the cost of every request. Models also use long contexts unevenly.
+
+**"Only the prompt counts."** The answer shares the same window, and tool definitions and tool results count too.
+
+**"Caching makes long prompts free."** It discounts repeated prefixes; the tokens still fill the window, and the first request pays full price or more.
+
+## Failure modes and debugging
+
+- **Requests start failing after a conversation gets long** — the history has outgrown the window. Log token counts per part and add a trimming strategy.
+- **The assistant forgets something the user said at the start** — oldest-first trimming removed it. Pin key facts or summarise instead.
+- **Answers are cut off mid-sentence** — not enough space was reserved for output, or the output limit is too low. Check the stop reason in the response.
+- **Costs grow much faster than traffic** — longer conversations, more tools or more retrieved documents per request. Track tokens per request and per conversation.
+- **Prompt caching shows few cache hits** — something early in the prompt changes on every request, such as a timestamp. Move changing content to the end.

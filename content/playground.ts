@@ -180,6 +180,96 @@ export default definePlayground([
     ],
   },
   {
+    slug: "chunking",
+    title: "Chunking explorer",
+    summary:
+      "Split a runbook into chunks by size, by sentence or by section, add overlap and headings, and see which questions retrieval can still answer.",
+    domain: "ai",
+    lesson: "ai/chunking",
+    related: ["ai/how-rag-works"],
+    kind: "explorer",
+    tryThis: [
+      "Start with fixed 30-word chunks: every chunk cuts a sentence, the retry answer loses its warning and the failover approval isn't found.",
+      "Switch to fixed 60-word chunks, then add 10 words of overlap: the instruction and its warning end up in the same chunk.",
+      "Choose Structure-aware and turn on section headings: the failover approval chunk now says what “it” is, and is retrieved.",
+      "Compare fixed 120-word chunks with structure-aware 30-word chunks and two retrieved: both answer the retry question, but the first sends three times the words.",
+    ],
+    references: [
+      {
+        title: "Recursive text splitter",
+        url: "https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter",
+        publisher: "LangChain",
+        kind: "official-docs",
+      },
+      {
+        title: "Introducing Contextual Retrieval",
+        url: "https://www.anthropic.com/news/contextual-retrieval",
+        publisher: "Anthropic",
+        kind: "article",
+      },
+    ],
+  },
+  {
+    slug: "hybrid-search",
+    title: "Keyword, vector and hybrid search",
+    summary:
+      "Run the same question through BM25 keyword search, a toy vector search and reciprocal rank fusion, and compare what each finds and misses.",
+    domain: "ai",
+    lesson: "ai/hybrid-search",
+    related: ["ai/embeddings"],
+    kind: "explorer",
+    tryThis: [
+      "Search for error E1042: keyword search puts the exact article first; vector search prefers a general one about failed payments.",
+      "Search for how do I get my money back: keyword search never finds the refunds article; vector search ranks it first.",
+      "Try I want my money back after cancelling premium: keyword search misses the refunds article, but fusion still ranks both relevant articles first.",
+      "Type your own question and read each article's score breakdown: BM25 term weights, matched concepts and the fusion sum.",
+    ],
+    references: [
+      {
+        title: "Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods",
+        url: "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf",
+        publisher: "Cormack, Clarke and Büttcher, SIGIR 2009",
+        kind: "paper",
+      },
+      {
+        title: "Similarity settings (BM25)",
+        url: "https://www.elastic.co/docs/reference/elasticsearch/index-settings/similarity",
+        publisher: "Elastic",
+        kind: "official-docs",
+      },
+    ],
+  },
+  {
+    slug: "context-budget",
+    title: "Context window budget",
+    summary:
+      "Fill a context window with a system prompt, tools, chat history and documents, choose what gives when it overflows, and see the cost.",
+    domain: "ai",
+    lesson: "ai/context-windows",
+    related: ["ai/tokenization"],
+    kind: "explorer",
+    tryThis: [
+      "With an 8K window and 12 earlier turns, send it anyway: the request is rejected.",
+      "Drop the oldest turns instead: it fits, but the order number from turn 1 is gone.",
+      "Summarise older turns: the answer is right again, but the exact error code is lost.",
+      "Switch to a 32K window: everything fits, but each request costs more. With 40 turns the conversation costs about 15 times a 4-turn one, for 10 times the turns.",
+    ],
+    references: [
+      {
+        title: "Context windows",
+        url: "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+        publisher: "Anthropic",
+        kind: "official-docs",
+      },
+      {
+        title: "Lost in the Middle: How Language Models Use Long Contexts",
+        url: "https://arxiv.org/abs/2307.03172",
+        publisher: "Liu et al., 2023",
+        kind: "paper",
+      },
+    ],
+  },
+  {
     slug: "btree-index",
     title: "B+ tree index explorer",
     summary:

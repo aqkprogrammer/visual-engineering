@@ -1,0 +1,127 @@
+<Definition>
+
+**Keyword search** ranks documents by the words they share with a query, weighted by how rare and how frequent those words are. **Vector search** ranks them by how close their embeddings are to the query's, so it matches meaning rather than words. **Hybrid search** runs both and merges the results.
+
+</Definition>
+
+## The problem it solves
+
+Retrieval decides what a RAG system's model gets to read, and each kind of search has a blind spot.
+
+Keyword search can't see meaning. Ask "how do I get my money back?" and an article titled "Refunds for cancelled orders" shares no important word with the question, so keyword search never finds it — while an article about sending money scores well for "money".
+
+Vector search can't see exact strings it doesn't understand. Ask about "error E1042" and an embedding model may treat the code as noise and return a general article about failed payments, ahead of the one page that explains that exact code. Product names, part numbers, error codes, people's names and rare jargon are where this hurts most.
+
+Real questions mix both kinds. Hybrid search exists so that neither blind spot decides the answer on its own.
+
+## An everyday analogy
+
+<Analogy>
+
+Two librarians. One knows the catalogue by heart and finds every book containing the exact words you say, but has no idea that "money back" and "refund" are the same thing. The other understands what you mean but is vague about exact titles and codes. You ask both, then take the books that came up high on either list.
+
+</Analogy>
+
+Where the analogy breaks down: people can explain why they chose a book. A vector search can only report a similarity score, so when it is wrong, finding out why is much harder than reading which words matched.
+
+## See it in action
+
+<Demo slug="hybrid-search" />
+
+Things to try:
+
+- Search for **error E1042**. Keyword search puts the exact article first; the toy embedding doesn't know the code and prefers a general article about failed payments.
+- Search for **how do I get my money back**. Keyword search never finds the refunds article; vector search ranks it first, and fusion keeps it in the top two.
+- Try **I want my money back after cancelling premium**. Keyword search misses the refunds article, but fusion still ranks both relevant articles first.
+- Type your own question and read the score breakdowns: BM25's per-word weights, the concepts the embedding matched, and the fusion sum.
+
+## Step by step
+
+<Steps>
+
+1. **At indexing time, build two indexes** from the same chunks: an inverted index, which maps every word to the documents containing it, and a vector index of their embeddings.
+2. **At query time, run both searches.** Keyword search analyses the query into words and scores documents with BM25; vector search embeds the query and finds the nearest chunk vectors.
+3. **Fuse the rankings.** Reciprocal rank fusion gives each document 1 ÷ (k + rank) for every list it appears in, and sorts by the sum.
+4. **Optionally rerank** the fused top results with a slower, more accurate model that reads the question and each passage together.
+5. **Send the best few to the model** as context.
+
+</Steps>
+
+## Under the hood
+
+**BM25.** Each query word contributes a weight to a document's score. Rare words count for more (inverse document frequency, IDF): "E1042" appears in one article, "the" in nearly all. Repeating a word helps less each time — the term-frequency contribution *saturates*, controlled by the parameter k1. Long documents are penalised for matching just by being long, controlled by b. Elasticsearch uses BM25 with k1 = 1.2 and b = 0.75 by default, and the demo uses the same values. Robertson and Zaragoza's review explains where the formula comes from.
+
+**Analysis matters as much as scoring.** Before indexing, text is *analysed*: lower-cased, split into words and, depending on the analyzer, stemmed ("refunds" → "refund") or stripped of stop words. The demo, like Elasticsearch's standard analyzer, does neither, so "refund" and "refunds" are different words and common words such as "to" and "it" still add a little to scores — which is why an unrelated article sneaks into one of its keyword results.
+
+**Vector search.** The query is embedded with the same model as the documents and compared by cosine similarity or dot product, usually through an approximate nearest-neighbour index. In the demo the "embedding" is a hand-written lexicon over nine named concepts, so you can see why each article matched; a real model learns hundreds of unnamed dimensions from data.
+
+**Why fuse ranks rather than scores.** BM25 scores have no fixed upper bound and depend on the collection; cosine similarities fall between −1 and 1. Adding them needs careful normalisation and weighting. Reciprocal rank fusion sidesteps that by using only positions. Cormack, Clarke and Büttcher introduced it in 2009 with k = 60, a value they found near-optimal in pilot experiments but not critical; Elasticsearch uses 60 as its default rank constant. A document ranked first by one method and nowhere by the other scores 1/61; one ranked second by both scores 2/62, and wins.
+
+**Combining helps in practice.** In Anthropic's contextual retrieval experiments, adding BM25 to embedding search (both over context-enriched chunks) cut the rate of failed top-20 retrievals from 5.7% to 2.9%, and reranking brought it to 1.9%.
+
+## Example: reciprocal rank fusion
+
+```ts
+type Ranked = { id: string }[]; // best first
+
+function reciprocalRankFusion(rankings: Ranked[], k = 60): { id: string; score: number }[] {
+  const scores = new Map<string, number>();
+  for (const ranking of rankings) {
+    ranking.forEach(({ id }, index) => {
+      scores.set(id, (scores.get(id) ?? 0) + 1 / (k + index + 1));
+    });
+  }
+  return [...scores].map(([id, score]) => ({ id, score })).sort((a, b) => b.score - a.score);
+}
+
+const fused = reciprocalRankFusion([keywordResults, vectorResults]);
+```
+
+## In production
+
+**Measure retrieval with labelled questions.** Collect real queries, mark which passages answer them, and track **recall@k** (the share of relevant passages in the top k) and **reciprocal rank** (1 ÷ the position of the first relevant one, averaged as mean reciprocal rank). Compare keyword, vector and hybrid on the same set before deciding.
+
+**Look at the failures by type.** Exact identifiers and names point to keyword search; paraphrases, synonyms and other languages point to vector search. A mix points to hybrid.
+
+**Most search engines support it directly.** Elasticsearch, OpenSearch and many vector databases offer hybrid queries with rank fusion or weighted score combination, so you rarely need to merge results in application code.
+
+**Keep the analyzers deliberate.** Stemming, synonyms and stop words change keyword results more than tuning k1 or b does. Index identifiers such as error codes in a field that isn't stemmed or split.
+
+<Callout kind="illustrative" title="The demo's numbers">
+
+The articles, lexicon and relevance judgements are invented for teaching, and ten articles make every score swing more than it would in a real collection. The BM25 formula and parameters and the fusion formula are the real ones.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Hybrid search for user-facing questions that mix natural language with exact names, codes or identifiers.",
+    "Keyword search alone when queries are mostly exact terms — logs, codes, part numbers — or as a strong baseline to beat.",
+    "Rank fusion when the two methods' scores aren't comparable and you don't have labelled data to tune weights.",
+  ]}
+  avoid={[
+    "Vector search alone when users search for exact identifiers or rare names.",
+    "Keyword search alone when users describe problems in their own words.",
+    "Adding raw BM25 and cosine scores without normalising them.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Vector search has replaced keyword search."** It complements it. Exact matches on rare terms are still where keyword search is strongest, and most production systems use both.
+
+**"A higher similarity score means a better match across methods."** Scores from different methods — or even different queries — aren't on the same scale. Compare ranks, or normalise carefully.
+
+**"Hybrid search always beats each method."** Usually, not always. In the demo's paraphrase question, fusion ranks the refunds article second, behind a keyword result that vector search didn't support. Measure on your own queries.
+
+**"BM25 understands synonyms."** It matches analysed words exactly. Synonyms need an analyzer that adds them, or vector search.
+
+## Failure modes and debugging
+
+- **Searches for codes, SKUs or names return vaguely related results** — vector search alone, or an analyzer that splits identifiers. Add keyword search on an unanalysed field.
+- **Paraphrased questions find nothing** — keyword search alone. Add vector search or synonyms.
+- **Hybrid results look worse than vector results alone** — the keyword side is noisy (stop words, short documents) or score combination is unnormalised. Check each list separately, then the fusion.
+- **Common words dominate keyword results** — analysis keeps stop words that carry no meaning in your queries. Review the analyzer.
+- **Recall looks fine in tests but users still complain** — the test questions don't represent real ones. Sample real queries and label them.

@@ -230,13 +230,7 @@ export default defineDomains([
         id: "retrieval",
         title: "Retrieval & RAG",
         summary: "Grounding model answers in your own documents.",
-        plannedTopics: [
-          "Document ingestion and chunking",
-          "Embedding pipelines",
-          "Vector databases",
-          "Hybrid retrieval and reranking",
-          "RAG evaluation",
-        ],
+        plannedTopics: ["Embedding pipelines", "Vector databases", "Reranking", "RAG evaluation"],
       },
       {
         id: "agents",

@@ -302,3 +302,34 @@ test("hexagonal explorer: swapping the database adds only an adapter", async ({ 
   await page.getByLabel("Change a discount rule").check();
   await expect(table.getByRole("row", { name: /layered/i })).toContainText("yes");
 });
+
+test("chunking explorer: structure-aware chunks with headings find the failover approval", async ({
+  page,
+}) => {
+  await page.goto("/playground/chunking");
+  await page.getByLabel(/Who has to approve a database failover/).check();
+  await expect(page.getByText(/^Not answerable/)).toBeVisible();
+  await page.getByText("Structure-aware", { exact: true }).click();
+  await page.getByText("Add section headings", { exact: true }).click();
+  await expect(page.getByText(/^Answerable/)).toBeVisible();
+});
+
+test("hybrid search: only vector search finds a paraphrased question", async ({ page }) => {
+  await page.goto("/playground/hybrid-search");
+  await page.getByText("how do I get my money back", { exact: true }).click();
+  const keyword = page.getByRole("region", { name: "Keyword (BM25) results" });
+  const vector = page.getByRole("region", { name: "Vector (toy embedding) results" });
+  await expect(keyword).not.toContainText("Refunds for cancelled orders");
+  await expect(vector.getByRole("listitem").first()).toContainText("Refunds for cancelled orders");
+});
+
+test("context budget: dropping old turns loses the order number; summarising keeps it", async ({
+  page,
+}) => {
+  await page.goto("/playground/context-budget");
+  await expect(page.getByText(/^Rejected:/)).toBeVisible();
+  await page.getByRole("radio", { name: /Drop the oldest turns/ }).check();
+  await expect(page.getByText(/has lost the order number/)).toBeVisible();
+  await page.getByRole("radio", { name: /Summarise older turns/ }).check();
+  await expect(page.getByText(/The assistant can answer/)).toBeVisible();
+});

@@ -63,6 +63,15 @@ const EventSourcingSimulation = dynamic(() =>
 const HexagonalExplorer = dynamic(() =>
   import("./scenes/hexagonal/hexagonal-explorer").then((m) => m.HexagonalExplorer),
 );
+const ChunkingExplorer = dynamic(() =>
+  import("./scenes/chunking/chunking-explorer").then((m) => m.ChunkingExplorer),
+);
+const HybridSearchExplorer = dynamic(() =>
+  import("./scenes/hybrid-search/hybrid-search-explorer").then((m) => m.HybridSearchExplorer),
+);
+const ContextBudgetExplorer = dynamic(() =>
+  import("./scenes/context-budget/context-budget-explorer").then((m) => m.ContextBudgetExplorer),
+);
 const SandboxSimulation = dynamic(() =>
   import("./scenes/sandbox/sandbox-simulation").then((m) => m.SandboxSimulation),
 );
@@ -110,5 +119,11 @@ export function Demo({ slug }: { slug: DemoSlug }) {
       return <EventSourcingSimulation />;
     case "hexagonal-architecture":
       return <HexagonalExplorer />;
+    case "chunking":
+      return <ChunkingExplorer />;
+    case "hybrid-search":
+      return <HybridSearchExplorer />;
+    case "context-budget":
+      return <ContextBudgetExplorer />;
   }
 }
