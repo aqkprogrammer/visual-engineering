@@ -419,6 +419,36 @@ export default definePlayground([
     ],
   },
   {
+    slug: "consistency",
+    title: "Consistency under a partition",
+    summary:
+      "Replicate a likes counter across three regions, cut one off, and compare a majority quorum with eventual consistency that keeps the last write or merges the counts.",
+    domain: "system-design",
+    lesson: "system-design/cap-and-consistency",
+    related: ["system-design/replication"],
+    kind: "simulation",
+    tryThis: [
+      "With strong consistency, every answer takes 82 ms — a round trip to another region — and every user sees the same count.",
+      "Cut Europe off: Europe's likes are refused, because one replica isn't a majority, while the US carries on — at 122 ms, through Asia. Nothing is lost.",
+      "Switch to Eventual, last writer wins: answers take 2 ms and Europe keeps working, but the regions disagree. Heal the partition and one side's likes disappear for good — whichever side didn't write last.",
+      "Switch to Eventual, merge counts: the same disagreement while cut off, but after healing every like is counted.",
+    ],
+    references: [
+      {
+        title: 'CAP Twelve Years Later: How the "Rules" Have Changed',
+        url: "https://www.infoq.com/articles/cap-twelve-years-later-how-the-rules-have-changed/",
+        publisher: "Eric Brewer",
+        kind: "article",
+      },
+      {
+        title: "Conflict-free Replicated Data Types",
+        url: "https://inria.hal.science/inria-00609399",
+        publisher: "Shapiro, Preguiça, Baquero and Zawirski, 2011",
+        kind: "paper",
+      },
+    ],
+  },
+  {
     slug: "btree-index",
     title: "B+ tree index explorer",
     summary:

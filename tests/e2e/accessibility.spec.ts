@@ -44,6 +44,8 @@ const PAGES = [
   "/playground/replication",
   "/playground/retries",
   "/playground/cdn",
+  "/playground/consistency",
+  "/system-design/cap-and-consistency",
   "/system-design/cdn-and-edge-caching",
   "/system-design/timeouts-retries-and-circuit-breakers",
   "/system-design/replication",

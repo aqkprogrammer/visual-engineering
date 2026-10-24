@@ -2,6 +2,12 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **CAP, PACELC and consistency models** — a lesson and simulation: replicate a likes counter across three regions, cut one off, and compare a majority quorum (consistent, slower, refuses the cut-off side), last-writer-wins (fast, but one side's likes vanish on healing) and a merging CRDT counter (nothing lost). With 5 new glossary terms.
+
 ## [1.5.0] — 2026-10-24
 
 Connections and speed: a knowledge map, design comparisons, quick search, and lessons on resilience and CDNs — 26 lessons and 27 demos in all.
@@ -94,6 +100,7 @@ The first release: an open, static, accessible platform for learning how technol
 - CI runs lint, strict types, 330+ unit and component tests, a static build, page-weight budgets, an internal link check, end-to-end journeys on desktop and phone (including keyboard-only journeys and a no-third-party-requests check), axe WCAG 2.2 AA audits of every page type in both themes, Lighthouse budgets and a full-history secret scan. The site deploys only when all of them pass.
 - No accounts, analytics, cookies or third-party requests.
 
+[Unreleased]: https://github.com/aqkprogrammer/visual-engineering/compare/v1.5.0...HEAD
 [1.5.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.5.0
 [1.4.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.4.0
 [1.3.0]: https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.3.0

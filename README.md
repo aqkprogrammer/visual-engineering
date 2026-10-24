@@ -74,6 +74,7 @@ Every demo runs on the same deterministic simulation engine: play, pause, step, 
 | [**Leader-follower replication**](https://aqkprogrammer.github.io/visual-engineering/playground/replication/) | 🧪 Simulation · System Design | Stream changes from a leader to two followers, read from replicas, crash the leader and compare asynchronous and synchronous writes. |
 | [**Timeouts, retries and circuit breakers**](https://aqkprogrammer.github.io/visual-engineering/playground/retries/) | 🧪 Simulation · System Design | Slow a dependency for five seconds and see immediate retries keep it overloaded long after, while a retry budget or a circuit breaker lets it recover. |
 | [**CDN and edge caching**](https://aqkprogrammer.github.io/visual-engineering/playground/cdn/) | 🧪 Simulation · System Design | Serve users in three regions from one origin or from edge caches, publish an update, purge the caches, and add stale-while-revalidate and an origin shield. |
+| [**Consistency under a partition**](https://aqkprogrammer.github.io/visual-engineering/playground/consistency/) | 🧪 Simulation · System Design | Replicate a likes counter across three regions, cut one off, and compare a majority quorum with eventual consistency that keeps the last write or merges the counts. |
 | [**B+ tree index explorer**](https://aqkprogrammer.github.io/visual-engineering/playground/btree-index/) | 👣 Walkthrough · Computer Science | Search a table with and without an index, count the page reads, and insert keys to watch B+ tree pages split. |
 | [**DNS resolution, step by step**](https://aqkprogrammer.github.io/visual-engineering/playground/dns-resolution/) | 👣 Walkthrough · Networking & Web | Follow a lookup from your browser through recursive, root, TLD and authoritative servers, then see how caching short-circuits repeat lookups. |
 | [**RAG pipeline inspector**](https://aqkprogrammer.github.io/visual-engineering/playground/rag-pipeline/) | 👣 Walkthrough · AI Engineering | Inspect every stage of a retrieval-augmented generation pipeline and see how chunking, top-k and reranking decide whether the answer is right. |
@@ -103,17 +104,17 @@ flowchart LR
 ## 🧭 Curriculum
 
 <!-- curriculum:start -->
-**26 live lessons** · 7 domains · 43 modules · 194 planned topics. Expand a domain to see what's inside.
+**27 live lessons** · 7 domains · 43 modules · 191 planned topics. Expand a domain to see what's inside.
 
 <details open>
-<summary><b>System Design</b> — How large systems stay fast, available and correct under real traffic. <sub>🟢 8 live · 42 planned</sub></summary>
+<summary><b>System Design</b> — How large systems stay fast, available and correct under real traffic. <sub>🟢 9 live · 39 planned</sub></summary>
 
 | Module | Live lessons | Planned topics |
 |---|---|---|
 | **Foundations** | — | System design fundamentals · Functional and non-functional requirements · Scalability and performance · Availability, reliability, durability and consistency · Horizontal versus vertical scaling |
 | **Traffic & Edge** | [CDNs and edge caching](https://aqkprogrammer.github.io/visual-engineering/system-design/cdn-and-edge-caching/)<br>[How load balancing works](https://aqkprogrammer.github.io/visual-engineering/system-design/load-balancing/)<br>[How rate limiting works](https://aqkprogrammer.github.io/visual-engineering/system-design/rate-limiting/) | Reverse proxies · API gateways · Edge computing |
 | **Data at Scale** | [Caching: hits, eviction and stale data](https://aqkprogrammer.github.io/visual-engineering/system-design/caching/)<br>[Database replication: leaders, followers and lag](https://aqkprogrammer.github.io/visual-engineering/system-design/replication/)<br>[Sharding and consistent hashing](https://aqkprogrammer.github.io/visual-engineering/system-design/sharding-and-consistent-hashing/) | Database indexing and query optimization · SQL versus NoSQL |
-| **Consistency & Coordination** | — | CAP theorem · PACELC · Eventual consistency · Distributed transactions · Saga pattern · Idempotency · Distributed locking |
+| **Consistency & Coordination** | [CAP, PACELC and consistency models](https://aqkprogrammer.github.io/visual-engineering/system-design/cap-and-consistency/) | Distributed transactions · Saga pattern · Idempotency · Distributed locking |
 | **Messaging & Async** | [Message queues and backpressure](https://aqkprogrammer.github.io/visual-engineering/system-design/message-queues/) | Event streaming (logs versus queues) · Kafka fundamentals · RabbitMQ fundamentals · Synchronous versus asynchronous communication · Event-driven architecture |
 | **Resilience** | [Timeouts, retries and circuit breakers](https://aqkprogrammer.github.io/visual-engineering/system-design/timeouts-retries-and-circuit-breakers/) | Bulkheads and load shedding · High availability · Disaster recovery · Observability |
 | **Real-time & APIs** | — | WebSockets, polling and Server-Sent Events · API versioning · Service discovery · Multi-tenancy |
@@ -219,13 +220,14 @@ flowchart LR
 - [x] **Phase 11 — Connections.** A knowledge map of every lesson and path, side-by-side sandbox comparisons, and a resilience lesson on timeouts, retries and circuit breakers
 - [x] **Phase 12 — Quick search.** Press ⌘K or Ctrl+K on any page to search everything
 - [x] **Phase 13 — CDNs.** A lesson and simulation on edge caching: TTLs, purges, stale-while-revalidate and origin shields — [v1.5.0](https://github.com/aqkprogrammer/visual-engineering/releases/tag/v1.5.0)
-- [ ] **Later.** More system design lessons (consistency, idempotency), layouts designed for phones
+- [x] **Phase 14 — Consistency.** CAP, PACELC and consistency models, with a partition simulation comparing quorums, last-writer-wins and CRDTs
+- [ ] **Later.** More system design lessons (idempotency, sagas), layouts designed for phones
 
 ## ⚠️ Known limitations
 
 Honest about what the site doesn't do yet:
 
-- **Coverage.** 26 lessons across all seven domains; most domains still have more planned topics than published lessons.
+- **Coverage.** 27 lessons across all seven domains; most domains still have more planned topics than published lessons.
 - **Teaching models, not benchmarks.** Simulations simplify on purpose, list their assumptions, and use illustrative capacities and timings.
 - **Phones.** Diagrams are fitted to the screen and their text is small; each simulation can be enlarged into a scrollable view, and its numbers are also shown as text.
 - **Progress is per browser.** It isn't synced between devices; export it to a file and import it elsewhere to move it.

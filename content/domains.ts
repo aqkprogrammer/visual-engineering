@@ -49,9 +49,6 @@ export default defineDomains([
         title: "Consistency & Coordination",
         summary: "What 'correct' means once data lives in more than one place.",
         plannedTopics: [
-          "CAP theorem",
-          "PACELC",
-          "Eventual consistency",
           "Distributed transactions",
           "Saga pattern",
           "Idempotency",
