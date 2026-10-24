@@ -377,6 +377,41 @@ export default defineGlossary([
     related: ["retry-storm"],
   },
 
+  {
+    id: "cdn",
+    term: "Content delivery network",
+    aliases: ["CDN", "Edge cache", "Point of presence", "PoP"],
+    definition:
+      "Caching servers spread around the world that answer users from a nearby copy and fetch from the origin only when they must.",
+    lesson: "system-design/cdn-and-edge-caching",
+    related: ["origin-shield", "stale-while-revalidate", "ttl"],
+  },
+  {
+    id: "stale-while-revalidate",
+    term: "Stale-while-revalidate",
+    definition:
+      "An HTTP cache directive that lets a cache keep serving a response for a while after it goes stale, while it fetches a fresh copy in the background.",
+    lesson: "system-design/cdn-and-edge-caching",
+    related: ["cdn", "ttl"],
+  },
+  {
+    id: "origin-shield",
+    term: "Origin shield",
+    aliases: ["Tiered cache"],
+    definition:
+      "A shared caching layer between a CDN's edges and the origin, so requests from many regions are consolidated and the origin sees fewer duplicates.",
+    lesson: "system-design/cdn-and-edge-caching",
+    related: ["cdn"],
+  },
+  {
+    id: "cache-key",
+    term: "Cache key",
+    definition:
+      "What a cache uses to decide whether two requests can share a stored response — usually the URL, sometimes headers or cookies. Too much in it lowers the hit ratio; too little serves the wrong content.",
+    lesson: "system-design/cdn-and-edge-caching",
+    related: ["cdn"],
+  },
+
   // Networking
   {
     id: "dns",

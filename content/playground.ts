@@ -389,6 +389,36 @@ export default definePlayground([
     ],
   },
   {
+    slug: "cdn",
+    title: "CDN and edge caching",
+    summary:
+      "Serve users in three regions from one origin or from edge caches, publish an update, purge the caches, and add stale-while-revalidate and an origin shield.",
+    domain: "system-design",
+    lesson: "system-design/cdn-and-edge-caching",
+    related: ["system-design/caching"],
+    kind: "simulation",
+    tryThis: [
+      "Turn the CDN off: users in Asia wait about 250 ms and the origin handles 900 requests a second. Turn it back on: about 20 ms, and a few requests a second.",
+      "Publish new versions with a 10-minute TTL: users keep getting old pages for as long as the run lasts. With 10 s, old pages are gone within seconds — at six times the origin load of 60 s.",
+      "Turn on stale-while-revalidate: no request waits for the origin any more, at the cost of serving an expired page for a little longer.",
+      "Purge every cache: the origin gets 150 requests in one second. Add the origin shield and it gets 100, because the edges share one cache in front of it.",
+    ],
+    references: [
+      {
+        title: "RFC 9111: HTTP Caching",
+        url: "https://www.rfc-editor.org/rfc/rfc9111",
+        publisher: "IETF",
+        kind: "specification",
+      },
+      {
+        title: "Use Amazon CloudFront Origin Shield",
+        url: "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-shield.html",
+        publisher: "Amazon Web Services",
+        kind: "official-docs",
+      },
+    ],
+  },
+  {
     slug: "btree-index",
     title: "B+ tree index explorer",
     summary:

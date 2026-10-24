@@ -35,7 +35,7 @@ export default defineDomains([
         title: "Traffic & Edge",
         summary:
           "Getting requests to the right place: load balancers, proxies, gateways, CDNs and rate limits.",
-        plannedTopics: ["Reverse proxies", "API gateways", "CDN and edge computing"],
+        plannedTopics: ["Reverse proxies", "API gateways", "Edge computing"],
       },
       {
         id: "data",

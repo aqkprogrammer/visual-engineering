@@ -1,0 +1,121 @@
+<Definition>
+
+A **content delivery network** (CDN) is a set of caching servers — **edges**, or points of presence — spread around the world. Users' requests go to a nearby edge, which answers from its cache when it can and fetches from your server, the **origin**, when it can't.
+
+</Definition>
+
+## The problem it solves
+
+Distance costs time. A user in Asia fetching a page from a server in the Americas pays for a long round trip on every request, and the origin pays for serving the same page to millions of people.
+
+Most of what websites serve — images, scripts, stylesheets, and many pages — is the same for everyone. A CDN keeps copies close to users, so most requests never travel far and never reach the origin at all. The cost is a new question every cached copy raises: how long may it be served before it might be out of date?
+
+## An everyday analogy
+
+<Analogy>
+
+A newspaper doesn't send every reader to the printing press. It prints copies and ships them to newsagents in every town. Readers walk to the nearest shop. If a story changes, the shops keep selling yesterday's edition until the new one arrives — or until someone tells them to pull it from the shelves.
+
+</Analogy>
+
+Where the analogy breaks down: newsagents get deliveries on a schedule. A CDN edge fetches a fresh copy only when a reader asks for one after the old copy has expired — so the first reader after expiry waits for the delivery.
+
+## See it in action
+
+<Demo slug="cdn" />
+
+Things to try:
+
+- **Turn the CDN off.** Users in Asia wait about 250 ms and the origin handles 900 requests a second. Turn it back on: about 20 ms, and a few requests a second.
+- **Publish new versions** with a **10-minute TTL**: users keep getting old pages for as long as the run lasts. With **10 s**, old pages are gone within seconds — at six times the origin load of 60 s.
+- Turn on **stale-while-revalidate**: no request waits for the origin any more, at the cost of serving an expired page for a little longer.
+- **Purge every cache**: the origin gets 150 requests in one second. Add the **origin shield** and it gets 100, because the edges share one cache in front of it.
+
+## Step by step: one request
+
+<Steps>
+
+1. **DNS sends the user to a nearby edge.** CDNs use DNS answers or anycast routing to direct each user to a close point of presence.
+2. **The edge looks up its cache**, using a cache key built from the URL and sometimes headers or cookies.
+3. **Fresh copy: answer at once.** If the stored response is younger than its freshness lifetime, the edge returns it without contacting anyone.
+4. **Stale or missing: fetch it.** The edge asks the origin — or a shield in front of it — perhaps revalidating with `If-None-Match` so an unchanged page costs only a small `304 Not Modified`.
+5. **Store and answer.** The edge caches the new response for as long as its headers allow, and requests for the same page that arrived meanwhile share the one fetch.
+
+</Steps>
+
+## Under the hood
+
+**Freshness comes from headers.** HTTP caching (RFC 9111) decides whether a stored response is fresh by comparing its age with its freshness lifetime. `Cache-Control: max-age=60` makes a response fresh for 60 seconds; `s-maxage` overrides it for shared caches such as CDNs, so browsers and edges can keep copies for different lengths of time. `no-cache` means a stored copy must be revalidated before every use.
+
+**The TTL trade-off.** A long freshness lifetime means more hits, faster pages and less origin load — and old content for longer after a change. A short one keeps content fresh but sends more traffic to the origin. In the demo, a 10-second TTL costs about six times the origin requests of a 60-second one.
+
+**Getting rid of old content.** An invalidation or purge removes cached copies before they expire, but the next request for each one goes back to the origin, all at once. AWS recommends that content updated often primarily uses **versioned file names** — `app.3f9c2.js` instead of `app.js` — so a new version is simply a new URL that nothing has cached yet, and old copies can safely live for a long time.
+
+**Stale-while-revalidate.** RFC 5861's `stale-while-revalidate=60` lets a cache keep serving a response for up to 60 seconds after it becomes stale while it fetches a fresh copy in the background. Users never wait for the refresh; they may get a slightly old copy once. `stale-if-error` lets a cache serve a stale copy when the origin returns errors.
+
+**Origin shields.** Without one, every edge region fetches from the origin separately. CloudFront's Origin Shield, for example, adds a shared caching layer in front of the origin: all requests from the CDN's caches go through it, and requests for content it doesn't have are consolidated, so the origin can receive as few as one request per object.
+
+**Request collapsing.** When many users ask an edge for the same expired page at once, good CDNs send one request upstream and make the rest wait for it, rather than sending them all — the same idea as the stampede protection in the caching lesson.
+
+## Example: cache headers for an app
+
+```http
+# HTML: shared caches may keep it 60 s, browsers must revalidate, and an expired copy
+# can be served for another 5 minutes while the CDN refetches it.
+Cache-Control: public, max-age=0, s-maxage=60, stale-while-revalidate=300
+
+# Fingerprinted assets: the URL changes when the content does, so cache for a year.
+Cache-Control: public, max-age=31536000, immutable
+
+# Personal pages: never store in shared caches.
+Cache-Control: private, no-store
+```
+
+## In production
+
+**Watch the hit ratio and origin load together.** A falling hit ratio usually means something is fragmenting the cache key — a query string, a cookie or a header that varies per user.
+
+**Be deliberate about the cache key.** Every header or cookie included in it multiplies the number of copies and lowers the hit ratio; leaving out one that changes the response serves the wrong content to the wrong users.
+
+**Never cache personal data in shared caches.** Mark responses that depend on the user `private` or `no-store`, and test it: a cached account page served to the next visitor is a serious incident.
+
+**Plan purges.** Purge by specific paths or tags rather than everything, and expect a burst of origin traffic afterwards. Prefer versioned URLs for assets.
+
+<Callout kind="illustrative" title="The demo's numbers">
+
+Round-trip times, request rates and the 50-page catalogue are round numbers for teaching. Real CDNs have hundreds of locations, tiered caches and much larger catalogues, but the trade-offs are the same.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "A CDN for static assets, images, video and public pages served to users far from the origin.",
+    "Long TTLs with versioned URLs for assets, and short TTLs with stale-while-revalidate for pages.",
+    "An origin shield when users are spread across regions or the origin is expensive to call.",
+  ]}
+  avoid={[
+    "Caching personalised or sensitive responses in shared caches.",
+    "Long TTLs on content that must change immediately, unless it is versioned or purged on change.",
+    "Purging everything as a routine way to deploy.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"A CDN is only for images and videos."** Any response that is the same for many users can be cached at the edge, including HTML and API responses — with the right headers.
+
+**"Purging the cache is free."** It removes the protection the cache gave the origin: every next request goes back to it.
+
+**"A higher TTL is always better."** It helps performance and origin load, but users see old content for longer after a change.
+
+**"Stale content is a bug."** Serving slightly stale content on purpose — with stale-while-revalidate — is often the best trade between speed and freshness.
+
+## Failure modes and debugging
+
+- **The origin falls over right after a deploy** — a full purge sent every request back at once. Purge selectively, use versioned URLs, or add a shield.
+- **Users see an old version after a release** — long TTLs on unversioned URLs. Version assets, shorten the TTL on HTML, or purge the changed paths.
+- **The hit ratio is low despite long TTLs** — the cache key includes something that varies per request, such as a tracking query string or a cookie.
+- **One user's page shown to another** — a personalised response was cacheable by shared caches. Mark it `private` or `no-store` and purge.
+- **Edge latency is fine but some regions are slow** — misses in far regions go all the way to the origin. A shield or a regional origin helps.
