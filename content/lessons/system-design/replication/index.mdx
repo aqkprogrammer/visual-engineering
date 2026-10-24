@@ -1,0 +1,129 @@
+<Definition>
+
+**Replication** keeps copies of the same data on several machines. In **leader-follower** replication, one node — the leader, or primary — accepts every write and streams each change to the others — followers, replicas or standbys — which apply them in the same order.
+
+</Definition>
+
+## The problem it solves
+
+A database on one machine has two hard limits. If the machine fails, the data is unavailable — or gone. And every read and write competes for the same CPU, memory and disk.
+
+Copies fix both. A follower that already has the data can take over when the leader fails, and followers can answer read queries, so read capacity grows with each one you add. Followers in another zone or region also put data closer to users and survive the loss of a whole data centre.
+
+The catch is that copying takes time. While a change is on its way, the copies disagree — and every design decision in replication is about what to do with that gap.
+
+## An everyday analogy
+
+<Analogy>
+
+A head office keeps the master price list and posts every change to its branches. Most of the time the branches agree with head office. But a customer who phones head office to change their address, then walks into a branch a minute later, may find the branch still has the old one — the letter hasn't arrived yet.
+
+</Analogy>
+
+Where the analogy breaks down: if head office burns down, a branch can take over — but any letters that were never posted are gone for good. Nobody at the branch even knows they existed.
+
+## See it in action
+
+<Demo slug="replication" />
+
+Things to try:
+
+- Play with **reads going to followers**: about one read in ten misses the user's latest save. Choose **Slow down db-3** and it becomes about half.
+- Switch reads to **Read-your-writes**: stale reads disappear — until db-3 lags for longer than the read-your-writes window.
+- With **asynchronous** writes, **crash the leader**: a write already confirmed as saved never reached the new leader, and is lost.
+- Switch to **Wait for db-2** and crash the leader again: nothing is lost, but every write takes 55 ms instead of 5. Then **stop db-2** and watch writes stop being saved at all.
+
+## Step by step: one write
+
+<Steps>
+
+1. **The client writes to the leader.** Only the leader accepts writes, so they have a single order.
+2. **The leader records the change** in its log — in PostgreSQL, the write-ahead log (WAL) — and applies it.
+3. **The leader acknowledges the write.** With asynchronous replication it does this straight away. With synchronous replication it first waits for one or more followers to confirm they have the change.
+4. **The change streams to the followers**, which apply it in log order. Until they do, they are behind: this is **replication lag**.
+5. **Reads go wherever the application sends them.** The leader always has the latest data; a follower has everything up to its lag.
+
+</Steps>
+
+## Under the hood
+
+**Asynchronous by default.** PostgreSQL's streaming replication is asynchronous unless configured otherwise: there is a small delay between a commit on the primary and the change becoming visible on a standby, which its documentation describes as typically under a second when the standby can keep up. Under heavy load, long queries or a slow network, lag can grow much larger.
+
+**What failover can lose.** With asynchronous replication, the leader confirms a write before any follower has it. If the leader then crashes, those writes are gone: PostgreSQL's documentation says the amount of data lost is proportional to the replication delay at the time of failover. The application told its user "saved", and it wasn't.
+
+**Synchronous replication.** The leader waits for a follower to confirm before acknowledging. In PostgreSQL, with `synchronous_commit = on` and a synchronous standby configured, data can only be lost if the primary and that standby fail at the same time. The price is latency — at least one network round trip per commit — and availability: if the synchronous standby is gone, commits wait and may never complete until it returns or the configuration is changed. `remote_apply` goes further and waits until the standby has *applied* the change, so it is visible to queries there.
+
+**Stale reads and read-your-writes.** Reading from a follower can return data older than a write the same user just made. **Read-your-writes** (also called read-after-write) consistency guarantees a user sees their own changes. Common ways to get it: send a user's reads to the leader for a while after they write, track the log position of their last write and only read from followers that have reached it, or wait for synchronous apply.
+
+**Failover.** Detecting a dead leader, choosing the most up-to-date follower, promoting it and pointing clients at it takes time, during which writes fail. Getting it wrong is worse: if the old leader comes back still believing it leads, two nodes accept writes — **split brain** — and their histories diverge. Failover systems use timeouts, fencing and consensus to prevent it.
+
+**Leaderless replication and quorums.** Dynamo-style systems such as Cassandra send writes to several replicas and read from several. With N copies, a write waits for W of them and a read for R; if **R + W > N**, every read overlaps at least one replica that has the latest acknowledged write. The Dynamo paper describes (N, R, W) = (3, 2, 2) as a common configuration; Cassandra's `QUORUM` level waits for a majority, n/2 + 1, of the replicas.
+
+## Example: making reads consistent for the writer
+
+```ts
+// After a user writes, remember the log position of their write.
+async function saveProfile(userId: string, profile: Profile) {
+  const { lsn } = await leader.query("UPDATE … RETURNING pg_current_wal_lsn() AS lsn", [/* … */]);
+  session.set(userId, { lastWriteLsn: lsn });
+}
+
+// Read from a follower only if it has replayed at least that far; otherwise use the leader.
+async function loadProfile(userId: string) {
+  const last = session.get(userId)?.lastWriteLsn;
+  const replica = pickFollower();
+  if (last && !(await replica.hasReplayed(last))) return leader.query("SELECT …", [userId]);
+  return replica.query("SELECT …", [userId]);
+}
+```
+
+A simpler alternative is to read from the leader for a fixed window after each write — as the demo's read-your-writes option does — which works as long as lag stays shorter than the window.
+
+## In production
+
+**Monitor lag, not just health.** A follower that is up but minutes behind is a stale-data and data-loss risk. PostgreSQL's `pg_stat_replication` view reports how far each standby is behind; alert on it.
+
+**Decide per query where reads go.** Dashboards and search can tolerate seconds of staleness; a user's own profile, balance or order status usually can't. Route accordingly.
+
+**Rehearse failover.** Measure how long it takes, what the application sees during it, and how much data a crash would lose with your current lag. Practise it before you need it.
+
+**Replicas are not backups.** A mistaken `DELETE` replicates to every follower in milliseconds. Keep point-in-time backups as well.
+
+<Callout kind="illustrative" title="The demo's numbers">
+
+Lags of 50 and 150 ms, 5 ms local commits and a 500 ms failover are round numbers for teaching. Real values depend on hardware, network distance and load — measure your own.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Asynchronous followers to scale reads and keep a warm copy, when losing the last moment of writes on a crash is acceptable.",
+    "Synchronous replication to at least one nearby follower when acknowledged writes must survive the loss of the leader.",
+    "Quorum reads and writes (R + W > N) in leaderless stores when you need to tune consistency per operation.",
+  ]}
+  avoid={[
+    "Reading a user's own just-written data from asynchronous followers without a read-your-writes strategy.",
+    "A single synchronous standby with no fallback: if it fails, writes stop.",
+    "Treating replicas as backups: they replicate mistakes too.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Replication means every copy is always identical."** Copies converge, but asynchronous followers are always somewhat behind.
+
+**"A confirmed write is safe."** With asynchronous replication, it is safe on the leader only. Crash the leader before the change ships and it is gone.
+
+**"Synchronous replication is free consistency."** It costs a network round trip on every commit and makes writes depend on the follower being available.
+
+**"Adding replicas scales writes."** Every replica still applies every write. Replicas scale reads; splitting data across nodes — sharding — scales writes.
+
+## Failure modes and debugging
+
+- **Users don't see the change they just made** — reads go to a lagging follower. Add read-your-writes routing, or check whether lag has grown.
+- **Writes confirmed before a failover have disappeared** — asynchronous replication lost them. Measure lag at failover time; consider synchronous replication for that data.
+- **Every write suddenly hangs** — a synchronous standby is down or unreachable. Restore it, or reduce the number of synchronous standbys required.
+- **Replica lag grows steadily under load** — the follower can't apply changes as fast as the leader produces them: under-provisioned hardware, long-running queries on the follower, or network limits.
+- **Two nodes both accept writes after a network split** — split brain. Use fencing or a consensus-based failover manager so only one leader can exist.

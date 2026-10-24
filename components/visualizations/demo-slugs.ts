@@ -23,6 +23,8 @@ export const DEMO_SLUGS = [
   "hybrid-search",
   "context-budget",
   "agent-loop",
+  "sharding",
+  "replication",
 ] as const;
 
 export type DemoSlug = (typeof DEMO_SLUGS)[number];

@@ -1,0 +1,128 @@
+<Definition>
+
+**Sharding** (also called partitioning) splits one dataset across several nodes, so that each node stores and serves only part of it. A **shard key** — such as a user id — decides which node owns each record. **Consistent hashing** is a way of making that decision so that adding or removing a node moves as little data as possible.
+
+</Definition>
+
+## The problem it solves
+
+Replication copies all of the data to every node, which scales reads but not writes or storage: every replica still applies every write and holds everything. When one machine can no longer keep up with the writes, or hold the data, the data itself has to be divided.
+
+Dividing it raises three questions. Which node owns a given key? How do you keep the work even, so one node isn't overloaded while others idle? And what happens when you add a node — does a little data move, or nearly all of it?
+
+## An everyday analogy
+
+<Analogy>
+
+A cloakroom with numbered hooks spread across several attendants. If each coat goes to attendant "ticket number mod 4", hiring a fifth attendant means almost every coat is now with the wrong person. If instead the hooks are arranged in a circle and each attendant looks after the stretch of hooks up to their position, a new attendant only takes over one stretch — everyone else's coats stay put.
+
+</Analogy>
+
+Where the analogy breaks down: coats are all the same size and each one is collected once. In real systems some keys are far busier than others, and no arrangement of hooks helps if half the queue wants the same coat.
+
+## See it in action
+
+<Demo slug="sharding" />
+
+Things to try:
+
+- With **hash mod N**, **add a node** to go from four to five: about 80% of keys move, when only 20% needed to.
+- Switch to **consistent hashing** with **one position per node**: adding a node moves few keys, but the busiest node holds about twice its fair share.
+- Give each node **64 virtual nodes**: about as many keys move as an even split needs, and they spread evenly.
+- Choose **one hot key**: whatever the strategy, the node that owns it takes a third or more of all requests.
+
+## Step by step: finding a key's node
+
+<Steps>
+
+1. **Choose a shard key** that spreads data and traffic and appears in most queries — a user id, say, rather than a country.
+2. **Hash it** to a large number, so that similar keys land far apart.
+3. **Map the hash to a node.** With hash modulo, node = hash mod N. With consistent hashing, place nodes at points on a ring of hash values and give the key to the first node clockwise from its hash.
+4. **Route the request** to that node — from the client, a proxy, or a node that knows the map.
+5. **Replicate each shard**, usually to the next few nodes on the ring or to dedicated followers, so a failed node doesn't take its data with it.
+
+</Steps>
+
+## Under the hood
+
+**Why modulo reshuffles.** hash mod 4 and hash mod 5 agree for only about one key in five, so going from four nodes to five moves roughly 80% of the data — all of it copied across the network while the system is serving traffic. Ideally only the new node's fair share, 20%, would move.
+
+**Consistent hashing.** Karger and colleagues introduced it in 1997 for distributing web caches. Nodes and keys are hashed onto the same ring; each node owns the arc that ends at its position. When a node joins, it takes over only part of one arc; when one leaves, its arc passes to its neighbour. As the Dynamo paper puts it, the arrival or departure of a node affects only its immediate neighbours.
+
+**Virtual nodes.** With one random position per node, arcs vary a lot in size, so some nodes own far more than others. The Dynamo paper describes this non-uniform distribution and addresses it with virtual nodes: each physical node takes many positions, or tokens, on the ring, and the arcs average out. Many positions per node also lets a powerful machine take more tokens than a small one, and lets a departing node's load spread across many nodes instead of one neighbour. Cassandra maps each node to one or more tokens in the same way; its documentation notes that older versions needed a high default of 256 tokens per node, and newer versions allocate tokens deterministically so fewer are needed.
+
+**Hash versus range partitioning.** Hashing spreads keys evenly but scatters ranges: "all orders from last week" touches every shard. Range partitioning keeps ordered keys together, which makes range scans cheap, but sequential keys such as timestamps send every new write to the same shard.
+
+**Hot keys.** Sharding spreads *keys*; it can't split a single key. If one key gets a large share of traffic — a celebrity's profile, a flash-sale product — the node that owns it is overloaded however the ring is laid out. DynamoDB, for example, designs each partition for at most 3,000 read units and 1,000 write units per second, and AWS recommends designing for uniform activity across partition keys. Fixes live in the application: cache the hot key, split it into several sub-keys (AWS calls this write sharding), or give it dedicated capacity.
+
+## Example: a ring with virtual nodes
+
+```ts
+type Token = { position: number; node: string };
+
+function buildRing(nodes: string[], vnodes: number, hash: (s: string) => number): Token[] {
+  return nodes
+    .flatMap((node) => Array.from({ length: vnodes }, (_, i) => ({ position: hash(`${node}#${i}`), node })))
+    .sort((a, b) => a.position - b.position);
+}
+
+/** The first token at or after the key's hash owns it, wrapping around the ring. */
+function ownerOf(ring: Token[], key: string, hash: (s: string) => number): string {
+  const h = hash(key);
+  let lo = 0, hi = ring.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (ring[mid].position < h) lo = mid + 1; else hi = mid;
+  }
+  return ring[lo % ring.length].node;
+}
+```
+
+## In production
+
+**The shard key is the hardest decision.** It should spread data and traffic evenly, keep data that is queried together on one shard, and be present in most queries. Changing it later means moving all the data.
+
+**Cross-shard work is expensive.** Queries that don't include the shard key fan out to every shard. Transactions and joins across shards need distributed coordination or careful design around them.
+
+**Rebalancing takes time and capacity.** Moving data competes with live traffic. Systems throttle it, and some pre-split data into many more small partitions than nodes, so rebalancing moves whole partitions rather than re-hashing keys.
+
+**Watch per-shard metrics.** Averages hide hot shards. Track load, latency and storage per shard, and look for keys that dominate traffic.
+
+<Callout kind="note" title="Sharding and replication together">
+
+Production systems do both: data is split into shards, and each shard is replicated. A Dynamo-style ring typically stores each key on the next few distinct nodes clockwise, so one failure doesn't make any data unavailable.
+
+</Callout>
+
+## Trade-offs
+
+<TradeOffs
+  use={[
+    "Sharding when writes or data size outgrow one machine — after indexes, caching and replicas have been used.",
+    "Consistent hashing with virtual nodes when nodes join and leave and data must move as little as possible.",
+    "Range partitioning when range scans on the key matter more than perfectly even writes.",
+  ]}
+  avoid={[
+    "Sharding early: it makes queries, transactions and operations harder for good.",
+    "Hash modulo placement for a cluster that will grow or shrink.",
+    "Shard keys with few values or skewed traffic, such as a country or a status flag.",
+  ]}
+/>
+
+## Common misconceptions
+
+**"Consistent hashing balances load."** With few positions per node it can be quite uneven; virtual nodes are what make it balanced. And no hashing scheme balances a single hot key.
+
+**"Sharding and replication are the same thing."** Replication copies all the data to more nodes; sharding splits it. Most systems combine them.
+
+**"Adding a node with consistent hashing moves 1/N of the data."** That's the ideal, approached with many virtual nodes. With one position per node, the new node takes whatever its arc happens to cover.
+
+**"Any unique id is a good shard key."** Unique isn't enough: it must also spread traffic and match how data is queried.
+
+## Failure modes and debugging
+
+- **One shard is overloaded while others are idle** — a hot key or a skewed shard key. Look at per-key traffic; cache or split the hot key, or choose a better key.
+- **Adding a node causes a huge data migration** — placement uses hash modulo. Move to consistent hashing or fixed partitions.
+- **Nodes have very different amounts of data** — too few ring positions per node. Use virtual nodes.
+- **Some queries got much slower after sharding** — they don't include the shard key and fan out to every shard. Add the key to the query, or keep a secondary index or a denormalised copy.
+- **New writes all land on one shard** — range partitioning on a sequential key such as a timestamp. Hash the key, or prefix it with a bucket.

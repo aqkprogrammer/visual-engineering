@@ -44,7 +44,7 @@ export default defineLearningPaths([
     slug: "system-design-foundations",
     title: "System design foundations",
     summary:
-      "The building blocks behind most system design discussions: spreading load, caching, indexing, protecting capacity and decoupling work with queues.",
+      "The building blocks behind most system design discussions: spreading load, caching, indexing, replicating and sharding data, protecting capacity and queues.",
     audience:
       "Developers preparing for system design interviews or starting to own backend services, who want the trade-offs behind each building block.",
     outcomes: [
@@ -64,6 +64,14 @@ export default defineLearningPaths([
       {
         lesson: "computer-science/database-indexes",
         why: "Most slow endpoints end at a slow query; indexes are the first tool to reach for.",
+      },
+      {
+        lesson: "system-design/replication",
+        why: "Copies of the data survive failures and scale reads — with lag, stale reads and failover to reason about.",
+      },
+      {
+        lesson: "system-design/sharding-and-consistent-hashing",
+        why: "When writes or data outgrow one machine, the data itself has to be split.",
       },
       {
         lesson: "system-design/rate-limiting",

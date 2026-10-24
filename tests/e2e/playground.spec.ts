@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 const player = (page: Page) =>
   page
     .getByRole("region", {
-      name: /simulation|handshake|self-healing|explorer|index|resolution|pipeline|cache|zones|strategies|autoscaling|microservices|event sourcing/i,
+      name: /simulation|handshake|self-healing|explorer|index|resolution|pipeline|cache|zones|strategies|autoscaling|microservices|event sourcing|replication/i,
     })
     .first();
 const caption = (page: Page) => player(page).locator("p[aria-live]");
@@ -344,4 +344,22 @@ test("agent loop: approval blocks an injected refund", async ({ page }) => {
   await expect(
     page.getByRole("list", { name: "Messages so far" }).getByRole("listitem"),
   ).toHaveCount(2);
+});
+
+test("sharding: hash modulo moves most keys when a node is added", async ({ page }) => {
+  await page.goto("/playground/sharding");
+  await page.getByRole("button", { name: "Add a node" }).click();
+  await expect(page.getByText(/^Going from 4 to 5 nodes moved/)).toBeVisible();
+  await page.getByText("Consistent hashing", { exact: true }).click();
+  await expect(page.getByText("Virtual nodes per node")).toBeVisible();
+});
+
+test("replication: crashing the leader promotes a follower", async ({ page }) => {
+  await page.goto("/playground/replication");
+  await seek(page, 100);
+  await page.getByRole("button", { name: "Crash the leader" }).click();
+  await seek(page, 115);
+  await expect(page.getByRole("log").or(page.locator("body"))).toContainText(
+    "db-2 promoted to leader",
+  );
 });

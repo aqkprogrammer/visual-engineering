@@ -239,6 +239,109 @@ export default defineGlossary([
     related: ["at-least-once-delivery", "dead-letter-queue"],
   },
 
+  // System design — replication and sharding
+  {
+    id: "replication",
+    term: "Replication",
+    definition:
+      "Keeping copies of the same data on several machines, so that it survives a failure and reads can be spread across the copies.",
+    lesson: "system-design/replication",
+    related: ["replication-lag", "failover", "sharding"],
+  },
+  {
+    id: "replication-lag",
+    term: "Replication lag",
+    definition:
+      "How far a follower is behind its leader. Reads from a lagging follower can return data older than a write that has already been confirmed.",
+    lesson: "system-design/replication",
+    related: ["replication", "read-after-write-consistency"],
+  },
+  {
+    id: "synchronous-replication",
+    term: "Synchronous replication",
+    definition:
+      "The leader waits for a follower to confirm a change before acknowledging the write, so acknowledged writes survive the leader's loss — at the cost of latency on every write.",
+    lesson: "system-design/replication",
+    related: ["replication", "failover"],
+  },
+  {
+    id: "failover",
+    term: "Failover",
+    definition:
+      "Promoting a follower to take over when the leader fails. With asynchronous replication, writes the old leader hadn't yet sent are lost.",
+    lesson: "system-design/replication",
+    related: ["replication", "split-brain"],
+  },
+  {
+    id: "split-brain",
+    term: "Split brain",
+    definition:
+      "Two nodes both acting as leader and accepting writes, usually after a network partition, so their data diverges. Failover systems use fencing and consensus to prevent it.",
+    lesson: "system-design/replication",
+    related: ["failover"],
+  },
+  {
+    id: "read-after-write-consistency",
+    term: "Read-your-writes consistency",
+    aliases: ["Read-after-write consistency"],
+    definition:
+      "A guarantee that a user always sees their own changes, even when other reads may come from replicas that are slightly behind.",
+    lesson: "system-design/replication",
+    related: ["replication-lag"],
+  },
+  {
+    id: "quorum",
+    term: "Quorum",
+    definition:
+      "The number of replicas that must take part in a read (R) or write (W). With N copies, R + W > N makes every read overlap the latest acknowledged write.",
+    lesson: "system-design/replication",
+    related: ["replication"],
+  },
+  {
+    id: "sharding",
+    term: "Sharding",
+    aliases: ["Partitioning", "Horizontal partitioning"],
+    definition:
+      "Splitting one dataset across several nodes, so each stores and serves only part of it. A shard key decides where each record lives.",
+    lesson: "system-design/sharding-and-consistent-hashing",
+    related: ["shard-key", "consistent-hashing", "replication"],
+  },
+  {
+    id: "shard-key",
+    term: "Shard key",
+    aliases: ["Partition key"],
+    definition:
+      "The field that decides which shard owns a record. A good one has many values, spreads traffic evenly and appears in most queries.",
+    lesson: "system-design/sharding-and-consistent-hashing",
+    related: ["sharding", "hot-partition"],
+  },
+  {
+    id: "consistent-hashing",
+    term: "Consistent hashing",
+    definition:
+      "Placing nodes and keys on a ring of hash values, each key owned by the next node clockwise, so adding or removing a node moves only a small share of keys.",
+    lesson: "system-design/sharding-and-consistent-hashing",
+    related: ["virtual-nodes", "sharding"],
+  },
+  {
+    id: "virtual-nodes",
+    term: "Virtual nodes",
+    aliases: ["Vnodes", "Tokens"],
+    definition:
+      "Giving each physical node many positions on a consistent-hashing ring, which evens out how much each node owns and spreads a departing node's load.",
+    lesson: "system-design/sharding-and-consistent-hashing",
+    related: ["consistent-hashing"],
+  },
+  {
+    id: "hot-partition",
+    term: "Hot partition",
+    aliases: ["Hot key", "Hot shard"],
+    definition:
+      "A shard or key receiving a much larger share of traffic than the rest. Sharding can't split a single key; caching or splitting the key can.",
+    lesson: "system-design/sharding-and-consistent-hashing",
+    related: ["shard-key", "sharding"],
+  },
+
   // Networking
   {
     id: "dns",

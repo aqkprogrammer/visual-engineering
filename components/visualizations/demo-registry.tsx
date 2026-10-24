@@ -75,6 +75,12 @@ const ContextBudgetExplorer = dynamic(() =>
 const AgentWalkthrough = dynamic(() =>
   import("./scenes/agent-loop/agent-walkthrough").then((m) => m.AgentWalkthrough),
 );
+const ShardingExplorer = dynamic(() =>
+  import("./scenes/sharding/sharding-explorer").then((m) => m.ShardingExplorer),
+);
+const ReplicationSimulation = dynamic(() =>
+  import("./scenes/replication/replication-simulation").then((m) => m.ReplicationSimulation),
+);
 const SandboxSimulation = dynamic(() =>
   import("./scenes/sandbox/sandbox-simulation").then((m) => m.SandboxSimulation),
 );
@@ -130,5 +136,9 @@ export function Demo({ slug }: { slug: DemoSlug }) {
       return <ContextBudgetExplorer />;
     case "agent-loop":
       return <AgentWalkthrough />;
+    case "sharding":
+      return <ShardingExplorer />;
+    case "replication":
+      return <ReplicationSimulation />;
   }
 }
