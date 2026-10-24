@@ -8,3 +8,6 @@ allowBuilds:
 overrides:
   # GHSA-vc2v-76pw-4v95 (via serve, dev-only). Remove once serve depends on >=1.8.2 itself.
   compression: ^1.8.2
+  # GHSA advisories for fast-uri < 3.1.9 (via ajv in serve and lighthouse, dev-only).
+  # Remove once both depend on >=3.1.9 themselves.
+  fast-uri: ^3.1.9
